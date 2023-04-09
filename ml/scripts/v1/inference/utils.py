@@ -26,9 +26,10 @@ class ModelHelper:
 
     def predict_singular(self, image_path):
         tensor = self.convert_to_tensor(image_path)
-        batch = self.batch([tensor, tensor])
+        batch = self.batch([tensor])
 
-        return self.predict_batch(batch)
+        images, predictions = self.predict_batch(batch)
+        return images[0], predictions[0]
 
     def unbatch(self, batch):
       """
@@ -70,10 +71,9 @@ class ModelHelper:
       predictions = self.model(X)
       return [x.cpu() for x in X], predictions[1]
 
-class DisplayHelper:
     def decode_prediction(self,
-                          prediction,
-                          score_threshold = 0.8,
+                          predictions,
+                          score_threshold = 0.6,
                           nms_iou_threshold = 0.2):
       """
       Inputs
@@ -83,32 +83,36 @@ class DisplayHelper:
       Returns
         prediction: tuple
       """
-      boxes = prediction['boxes']
-      scores = prediction['scores']
-      labels = prediction['labels']
+      res = []
+      for prediction in predictions:
+          boxes = prediction['boxes']
+          scores = prediction['scores']
+          labels = prediction['labels']
 
-      if score_threshold:
-        want = scores > score_threshold
-        boxes = boxes[want]
-        scores = scores[want]
-        labels = labels[want]
+          if score_threshold:
+            want = scores > score_threshold
+            boxes = boxes[want]
+            scores = scores[want]
+            labels = labels[want]
 
-      if nms_iou_threshold:
-        want = torchvision.ops.nms(boxes = boxes, 
-                                   scores = scores, 
-                                   iou_threshold = nms_iou_threshold)
-        boxes = boxes[want]
-        scores = scores[want]
-        labels = labels[want]
+          if nms_iou_threshold:
+            want = torchvision.ops.nms(boxes = boxes, 
+                                       scores = scores, 
+                                       iou_threshold = nms_iou_threshold)
+            boxes = boxes[want]
+            scores = scores[want]
+            labels = labels[want]
 
-      return (boxes.cpu().numpy(),
-              labels.cpu().numpy(),
-              scores.cpu().numpy())
+          res.append((boxes.cpu().numpy(),
+                  labels.cpu().numpy(),
+                  scores.cpu().numpy()))
+      return res
 
-    def display_single(self, images, predictions, img_idx = 0): 
-        boxes, labels, scores = self.decode_prediction(predictions[img_idx])
+class DisplayHelper:
+    def display_single(self, image, prediction):
+        boxes, labels, scores = prediction
         fig, ax = plt.subplots(figsize = [15, 15])
-        ax.imshow(images[img_idx].permute(1, 2, 0).numpy())
+        ax.imshow(image.permute(1, 2, 0).numpy())
         for i, b in enumerate(boxes):
             rect = patches.Rectangle(b[:2].astype(int),
                                      (b[2] - b[0]).astype(int),
