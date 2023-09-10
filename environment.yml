@@ -1,0 +1,11 @@
+name: screw-sorter
+dependencies:
+  - python=3.10
+  - click
+  - pip
+  - selenium
+  - pip:
+    - undetected-chromedriver
+    - webdriver-manager
+    - bpy
+    - trimesh
