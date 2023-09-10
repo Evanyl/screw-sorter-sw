@@ -1,45 +1,42 @@
 import json
+import logging
 import os
-from selenium import webdriver
-import undetected_chromedriver as uc
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
 import time
 
-#url = "https://www.mcmaster.com/products/screws/hex-drive-rounded-head-screws/18-8-stainless-steel-button-head-hex-drive-screws-9/"
-url = "https://www.mcmaster.com/"
-download_path = "/home/evanyl/ewa/school/screw-sorter-sw/sim/cads/"
+from pathlib import Path
+
+import click
+import undetected_chromedriver as uc
+
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+
+from utils import convert_step_to_stl
+
+
+URL = "https://www.mcmaster.com/"
 properties = {
     "Length": 'length', 
     "Thread Size": 'thread_size',
     "Thread Pitch": 'thread_pitch'
 }
 
-def create_browser(id, delay):
-    '''options = webdriver.ChromeOptions()
-    options.add_argument("--disable-blink-features=AutomationControlled") 
-    options.add_experimental_option("excludeSwitches", ["enable-automation"]) 
-    options.add_experimental_option("useAutomationExtension", False) '''
-
+def create_browser(download_path: Path, delay):
     options = uc.ChromeOptions()
 
-    options.user_data_dir = "/home/evanyl"
-
-    prefs = {'download.default_directory' : download_path + str(id)}
+    prefs = {'download.default_directory' : str(download_path)}
     options.add_experimental_option('prefs', prefs)
-    #driver = webdriver.Chrome(ChromeDriverManager().install(), options=options) 
-    #driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
     driver = uc.Chrome(
         options = options,
-        version_main = 111
     )
     driver.implicitly_wait(delay)
 
     return driver
 
 def download_STEP(driver):
-    #dropdown_wrapper = driver.find_element(By.CSS_SELECTOR, 'div.Dropdown_divDropdownWrapper__3tOMl')
-    dropdown_wrapper = driver.find_element(By.CSS_SELECTOR, 'div.Dropdown_divDropdownWrapper__3h06Q')
+    dropdown_wrapper = driver.find_element(By.CSS_SELECTOR, 'div.DownloadComponentIdentifier')
     dropdown_wrapper.find_element(By.TAG_NAME, 'button').click()
     dropdown = dropdown_wrapper.find_element(By.TAG_NAME, 'ul')
     options = dropdown.find_elements(By.TAG_NAME, 'li')
@@ -51,8 +48,14 @@ def download_STEP(driver):
     download = driver.find_element(By.XPATH, "//div/a/button/span")
     download.click()
 
-def generate_label(driver, id, model):
-    #driver.find_element(By.CSS_SELECTOR, 'a.SecondaryLnk').click()
+def convert_cad(download_folder_path: Path):
+    to_convert = [file for file in os.listdir(download_folder_path) if file.endswith(".STEP")]
+    for step_file in to_convert:
+        file_name = step_file.split(".")[-2]
+        convert_step_to_stl(download_folder_path / step_file, download_folder_path / f"{file_name}.STL")
+        os.remove(download_folder_path / step_file)
+
+def generate_label(driver, label_path: Path):
     table = driver.find_element(By.TAG_NAME, 'tbody')
     rows = table.find_elements(By.TAG_NAME, 'tr')
     label = {}
@@ -65,66 +68,43 @@ def generate_label(driver, id, model):
         if property in properties:
             label[properties[property]] = value.replace(" ", "")
 
-    path = os.path.join(download_path, str(id), f"{model}.json")
-    print(path)
-    with open(path, "w") as outfile:
+    logging.info(f"Creating label at: {label_path}")
+    with open(label_path, "w") as outfile:
         json.dump(label, outfile)
 
-def fetch_model(url, num_to_fetch=None, delay=20):
-    count = 0
-    while count < num_to_fetch:
-        driver = create_browser(count, delay)
-    
-        driver.get(url)
-        parts = driver.find_elements(By.CSS_SELECTOR, 'a.PartNbrLnk')
-        part = parts[count]
-        part.click()
+def fetch_cads(output_path, url=URL, cads=[], delay=20):
+    for cad in cads:
+        mcmaster_id = cad["mcmaster_id"]
+        category = cad["category"]
+        download_folder_path = output_path / category
+
+        driver = create_browser(download_folder_path, delay)
+        driver.get(url + mcmaster_id)
 
         download_STEP(driver)
-        generate_label(driver, count)
+        generate_label(driver, output_path / category / f"{mcmaster_id}.json")
 
-        driver.close()
-        driver.quit
-        count += 1
-
-def fetch_models(url, models=[], delay=20):
-    for model in models:
-        driver = create_browser(model[1], delay)
-    
-        driver.get(url + model[0])
-        #parts = driver.find_elements(By.CSS_SELECTOR, 'a.PartNbrLnk')
-        #part = parts[count]
-        #part.click()
-
-        download_STEP(driver)
-        generate_label(driver, model[1], model[0])
-
-        
         time.sleep(1)
+        convert_cad(download_folder_path)
         driver.close()
         driver.quit
 
 
+@click.command(help="Scrape McMaster Carr for CAD models")
+@click.option("--cads_json", "cads_json", default=None, help="Input json containing cad models to pull")
+@click.option("--output_path", "output_path", required=True, help="Output folder to download cad models to")
+def main(cads_json, output_path):
+    logging.basicConfig(level=logging.INFO)
+    cads_json_path = Path(cads_json)
+    assert cads_json_path.exists(), f"{cads_json_path} does not exist"
 
-models_to_fetch = [
-    #('92095A179', 'M3x0_5mm'),
-    #('92949A327', 'I4x48'),
-    #('92095A182', 'M3x0_5mm'),
-    #('92949A328', 'I4x48'),
-    #('92095A183', 'M3x0_5mm'),
-    #('92949A329', 'I4x48'),
-    #('92095A159', 'M3_5x0_6mm'),
-    #('92095A161', 'M3_5x0_6mm'),
-    #('92095A124', 'M3_5x0_6mm'),
-    #('92949A337', 'I6x40'),
-    ('92949A338', 'I6x40'),
-    ('92949A419', 'I6x40'),
-    ('92095A188', 'M4x0_7mm'),
-    ('92095A192', 'M4x0_7mm'),
-    ('92095A196', 'M4x0_7mm'),
-    ('92949A424', 'I8x36'),
-    ('92949A426', 'I8x36'),
-    ('91255A837', 'I8x36'),
-]
+    output_path = Path(output_path)
+    assert output_path.exists(), f"{output_path} does not exist"
+        
+    with open(cads_json_path) as f:
+        cads = json.load(f)
 
-fetch_models(url, models=models_to_fetch)
+    fetch_cads(output_path, cads=cads)
+
+if __name__ == "__main__":
+    main()
