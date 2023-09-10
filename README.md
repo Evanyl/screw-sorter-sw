@@ -13,5 +13,9 @@ To run blender simulation, need to install blender
 2. Update environment using `conda env update --file environment.yml --prune`
 
 ## Usage
+### Using scraper
+1. Run `python sim/scripts/scraper.py --help` to see all options
+
+### Using simulation
 Example command to run to generate sim images
 `blender side_profile_2.blend --background --python ./scripts/run_sim.py`
