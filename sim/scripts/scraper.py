@@ -108,7 +108,6 @@ def generate_label(driver, label_path: Path):
 def login(driver, auth):
     email_field = driver.find_element(By.ID, "Email")
     password_field = driver.find_element(By.ID, "Password")
-
     email_field.send_keys(auth[0])
     password_field.send_keys(auth[1])
     submit_login = driver.find_element(By.XPATH, "//input[@value='Log in']")
@@ -125,7 +124,6 @@ def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
             download_folder_path = output_path / mcmaster_id
             if download_folder_path.exists():
                 shutil.rmtree(download_folder_path)
-
             driver = create_browser(delay, download_folder_path=download_folder_path)
             driver.get(url + mcmaster_id)
 
