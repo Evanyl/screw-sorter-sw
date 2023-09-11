@@ -27,7 +27,7 @@ def main(input_folder_path, output_folder_path, copies, batch_size):
     logging.info(f"{len(cad_models - existing)} to convert")
 
     curr_state = {
-        "remaining": list(cad_models),
+        "remaining": list(set(cad_models) - set(existing)),
         "to_convert": [],
         "failed": [],
     }
