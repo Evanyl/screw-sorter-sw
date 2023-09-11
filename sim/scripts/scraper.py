@@ -1,4 +1,5 @@
 import json
+import getpass
 import logging
 import os
 import time
@@ -36,18 +37,27 @@ def create_browser(delay: int, download_folder_path: Optional[Path] = None):
 
     return driver
 
+def click_element(driver, element):
+    """ 
+        Selenium won't click an element if it's not in view, so we want
+        to scroll
+    """
+    driver.execute_script("arguments[0].scrollIntoView();", element)
+    element.click()
+
 def download_STEP(driver):
     dropdown_wrapper = driver.find_element(By.CSS_SELECTOR, 'div.DownloadComponentIdentifier')
-    dropdown_wrapper.find_element(By.TAG_NAME, 'button').click()
+    dropdown_list = dropdown_wrapper.find_element(By.TAG_NAME, 'button')
+    click_element(driver, dropdown_list)
     dropdown = dropdown_wrapper.find_element(By.TAG_NAME, 'ul')
     options = dropdown.find_elements(By.TAG_NAME, 'li')
     for option in options:
         if option.get_attribute('innerText') == "3-D STEP":
-            option.click()
+            click_element(driver, option)
             break
 
     download = driver.find_element(By.XPATH, "//div/a/button/span")
-    download.click()
+    click_element(driver, download)
 
 def convert_cad(download_folder_path: Path, mcmaster_id: str):
     """ 
@@ -80,7 +90,16 @@ def generate_label(driver, label_path: Path):
     with open(label_path, "w") as f:
         json.dump(label, f)
 
-def fetch_cads(output_path, url, cads=[], delay=20):
+def login(driver, auth):
+    email_field = driver.find_element(By.ID, "Email")
+    password_field = driver.find_element(By.ID, "Password")
+
+    email_field.send_keys(auth[0])
+    password_field.send_keys(auth[1])
+    submit_login = driver.find_element(By.XPATH, "//input[@value='Log in']")
+    click_element(driver, submit_login)
+
+def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
     for cad in cads:
         mcmaster_id = cad["mcmaster_id"]
         category = cad["category"]
@@ -88,6 +107,10 @@ def fetch_cads(output_path, url, cads=[], delay=20):
 
         driver = create_browser(delay, download_folder_path=download_folder_path)
         driver.get(url + mcmaster_id)
+
+        if auth:
+            login(driver, auth)
+            time.sleep(1)
 
         download_STEP(driver)
         generate_label(driver, output_path / category / f"{mcmaster_id}.json")
@@ -113,10 +136,10 @@ def search_for(search_params_file_path: Path, search_limit: int, output_path: Pa
             # click one of the filter params twice(for no-op) so things actually filter
             example_href = url.split("/")[-2] + "/"
             filter_param = driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]')
-            filter_param.click()
+            click_element(driver, filter_param)
             time.sleep(0.5)
             filter_param = driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]')
-            filter_param.click()
+            click_element(driver, filter_param)
 
             links = driver.find_elements(By.CSS_SELECTOR, "a.PartNbrLnk")
             cad_ids = [{"mcmaster_id": link.text, "category": link.text} for link in links if link.text]
@@ -146,8 +169,9 @@ def search_for(search_params_file_path: Path, search_limit: int, output_path: Pa
 @click.option("--cads_json", "cads_json", default=None, help="Input json containing cad models to pull")
 @click.option("--search_params", "search_params", default=None, help="Input json containing search params for cad models to pull")
 @click.option("--search_limit", default=1, help="Limit of cad models to pull for each category")
+@click.option("--login", is_flag=True, help="Choose to login")
 @click.option("--output_path", "output_path", required=True, help="Output folder to download cad models to")
-def main(cads_json, search_params, search_limit, output_path):
+def main(cads_json, search_params, search_limit, output_path, login):
     logging.basicConfig(level=logging.INFO)
     assert not (search_params and cads_json), f"'search_params' and 'cads_json' flags can't both be specified, as they are different methods of pulling models."
 
@@ -165,7 +189,13 @@ def main(cads_json, search_params, search_limit, output_path):
     with open(cads_json_path) as f:
         cads = json.load(f)
 
-    fetch_cads(output_path, f"{URL}/", cads=cads)
+    auth = None
+    if login:
+        email = input("McMaster Login Email: ")
+        password = getpass.getpass("McMaster Login Password: ")
+        auth = (email, password)
+
+    fetch_cads(output_path, f"{URL}/", cads=cads, auth=auth)
 
 if __name__ == "__main__":
     main()
