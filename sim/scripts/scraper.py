@@ -134,12 +134,11 @@ def search_for(search_params_file_path: Path, search_limit: int, output_path: Pa
 
             # Pretty dumb, mcmaster carr search query params are kinda bugged, so actually 
             # click one of the filter params twice(for no-op) so things actually filter
-            example_href = url.split("/")[-2] + "/"
-            filter_param = driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]')
-            click_element(driver, filter_param)
-            time.sleep(0.5)
-            filter_param = driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]')
-            click_element(driver, filter_param)
+            search_params = url.split("/")[5:]
+            example_href = search_params[-1] + "/"
+            driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]').click()
+            time.sleep(1)
+            driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]').click()
 
             links = driver.find_elements(By.CSS_SELECTOR, "a.PartNbrLnk")
             cad_ids = [{"mcmaster_id": link.text, "category": link.text} for link in links if link.text]
