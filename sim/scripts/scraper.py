@@ -2,6 +2,7 @@ import json
 import getpass
 import logging
 import os
+import shutil
 import time
 
 from pathlib import Path
@@ -24,17 +25,27 @@ properties = {
 }
 
 def create_browser(delay: int, download_folder_path: Optional[Path] = None):
-    options = uc.ChromeOptions()
+    backoff_times = [2, 4, 8, 16, 32]
+    driver = None
+    for backoff_time in backoff_times:
+        try:
+            options = uc.ChromeOptions()
+            options.add_argument('--ignore-certificate-errors')
+            options.add_argument('--ignore-ssl-errors')
 
-    if download_folder_path is not None:
-        prefs = {'download.default_directory' : str(download_folder_path)}
-        options.add_experimental_option('prefs', prefs)
+            if download_folder_path is not None:
+                prefs = {'download.default_directory' : str(download_folder_path)}
+                options.add_experimental_option('prefs', prefs)
 
-    driver = uc.Chrome(
-        options = options,
-    )
-    driver.implicitly_wait(delay)
+            driver = uc.Chrome(
+                options = options,
+            )
+            driver.implicitly_wait(delay)
+            break
+        except Exception:
+            time.sleep(backoff_time)
 
+    assert driver, "Failed to open browser"
     return driver
 
 def click_element(driver, element):
@@ -70,7 +81,11 @@ def convert_cad(download_folder_path: Path, mcmaster_id: str):
     assert len(to_convert) == 1, "Found multiple STEP files in folder, read function doc for why this is wack"
     for step_file in to_convert:
         file_name = step_file.split(".")[-2]
-        convert_step_to_stl(download_folder_path / step_file, download_folder_path / f"{file_name}.stl")
+        # Skip already completed
+        stl_file = download_folder_path / f"{mcmaster_id}.stl"
+        if stl_file.exists(): continue
+
+        convert_step_to_stl(download_folder_path / step_file, stl_file)
         os.remove(download_folder_path / step_file)
 
 def generate_label(driver, label_path: Path):
@@ -98,27 +113,40 @@ def login(driver, auth):
     password_field.send_keys(auth[1])
     submit_login = driver.find_element(By.XPATH, "//input[@value='Log in']")
     click_element(driver, submit_login)
+    time.sleep(1)
+    driver.refresh()
 
 def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
-    for cad in cads:
-        mcmaster_id = cad["mcmaster_id"]
-        category = cad["category"]
-        download_folder_path = output_path / category
+    failed = []
+    for i, cad in enumerate(cads):
+        logging.info(f"Downloading {i}/{len(cads)}")
+        try:
+            mcmaster_id = cad
+            download_folder_path = output_path / mcmaster_id
+            if download_folder_path.exists():
+                shutil.rmtree(download_folder_path)
 
-        driver = create_browser(delay, download_folder_path=download_folder_path)
-        driver.get(url + mcmaster_id)
+            driver = create_browser(delay, download_folder_path=download_folder_path)
+            driver.get(url + mcmaster_id)
 
-        if auth:
-            login(driver, auth)
+            if auth:
+                login(driver, auth)
+                time.sleep(1)
+
+            download_STEP(driver)
+            generate_label(driver, output_path / mcmaster_id / f"{mcmaster_id}.json")
+
             time.sleep(1)
+            convert_cad(download_folder_path, mcmaster_id)
 
-        download_STEP(driver)
-        generate_label(driver, output_path / category / f"{mcmaster_id}.json")
+            driver.close()
+            driver.quit()
+        except Exception as e:
+            logging.error(e)
+            failed.append(mcmaster_id)
 
-        time.sleep(1)
-        convert_cad(download_folder_path, mcmaster_id)
-        driver.close()
-        driver.quit
+    with open(output_path / "failed.json", "w") as f:
+        json.dump(failed, f)
 
 def search_for(search_params_file_path: Path, search_limit: int, output_path: Path, delay=20):
     with open(search_params_file_path) as f:
@@ -141,7 +169,7 @@ def search_for(search_params_file_path: Path, search_limit: int, output_path: Pa
             driver.find_element(By.XPATH, '//a[@href="'+example_href+'"]').click()
 
             links = driver.find_elements(By.CSS_SELECTOR, "a.PartNbrLnk")
-            cad_ids = [{"mcmaster_id": link.text, "category": link.text} for link in links if link.text]
+            cad_ids = [link.text for link in links if link.text]
 
             if not cad_ids:
                 logging.error(f"Could not find any fasteners under {url}")
@@ -195,6 +223,8 @@ def main(cads_json, search_params, search_limit, output_path, login):
         auth = (email, password)
 
     fetch_cads(output_path, f"{URL}/", cads=cads, auth=auth)
+
+    # Convert cads functionality
 
 if __name__ == "__main__":
     main()

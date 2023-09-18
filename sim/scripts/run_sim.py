@@ -15,6 +15,7 @@ TOPDOWN_SCENE = "top-down"
 def take_image(C, path):
     C.scene.render.filepath = str(path)
     print(f"Rendering {path}: {datetime.datetime.now().time()}")
+    C.scene.render.engine = "CYCLES"
     bpy.ops.render.render(write_still = True, use_viewport = True)
     print(f"Done rendering {path}: {datetime.datetime.now().time()}")
 
@@ -25,7 +26,6 @@ def init_cuda(C, scenes):
     ].preferences.compute_device_type = "CUDA" # or "OPENCL"
 
     for scene in scenes.values():
-        scene.render.engine = "CYCLES"
         scene.cycles.device = "GPU"
 
     # get_devices() to let Blender detects GPU device
@@ -62,17 +62,26 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
     x = random.randint(-2000, 2000) / 1000.0
     y = random.randint(-2000, 2000) / 1000.0
 
-    x_angle = random.randint(-90, 90)
-    y_angle = random.randint(-90, 90)
-    z_angle = random.randint(0, 359)
+    x_angle = math.radians(random.randint(0, 360))
+    
+    if random.randint(0, 1):
+        y_angle = math.radians(random.randint(-30, 30))
+    else:
+        y_angle = math.radians(random.randint(150, 210))
+    z_angle = math.radians(random.randint(0, 359))
 
     fastener.location = (x, y, 60)
     fastener.rotation_euler = (x_angle, y_angle, z_angle)
 
     bpy.ops.rigidbody.objects_add(type='ACTIVE')
-    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+    #bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
     fastener.select_set(False)
     play_scene(C)
+
+    print(fastener.rotation_euler)
+    post_rotation = fastener.matrix_world.to_euler()
+    print(post_rotation)
+    return post_rotation[-1]
 
 def play_scene(C, until_frame=250):
     frame = 0
@@ -82,8 +91,15 @@ def play_scene(C, until_frame=250):
         frame += 1
 
 
-def rotate_and_take_image(C, fastener, output_model_path, model_name):
+def rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=None):
     rotate = bpy.data.objects.get('side-on-rotation')
+    if z_angle:
+        rotate.rotation_euler = (0, 0, z_angle)
+
+        rotate_image_path = output_model_path / f"{model_name}_side.jpg"
+        take_image(C, rotate_image_path)
+
+        return
     full_rotation = 6.2831
     for i in range(9):
         angle = i * full_rotation / 9.0
@@ -103,10 +119,10 @@ def run_sim(model_path, output_path, copies, label):
     for copy in range(copies):
         C = bpy.context
         scenes = {scene.name: scene for scene in bpy.data.scenes}
-        bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X')
+        bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X', axis_forward="-Y")
         fastener = bpy.data.objects[model_name]
 
-        init_and_sim_fastener(C, fastener, scenes)
+        z_angle_of_fastener = init_and_sim_fastener(C, fastener, scenes)
 
         output_model_path = output_path / f"{model_name}_{copy}"
         output_model_path.mkdir(exist_ok=True)
@@ -119,11 +135,11 @@ def run_sim(model_path, output_path, copies, label):
 
         C.window.scene = scenes[SIDEON_SCENE]
         play_scene(C)
-        rotate_and_take_image(C, fastener, output_model_path, model_name)
 
-        bpy.ops.object.select_all(action='DESELECT')
-        fastener.select_set(True)
-        bpy.ops.object.delete()
+        z_angle_of_fastener += math.radians(random.randint(-10, 10))
+        rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
+
+        bpy.data.objects.remove(fastener, do_unlink=True)
 
 def main():
     """ 
@@ -131,7 +147,7 @@ def main():
     """
     argv = sys.argv
     argv = argv[argv.index("--") + 1:]  # get all args after "--"
-    input_folder, output_folder, copies = argv
+    input_folder, output_folder, to_convert, copies = argv
 
     input_folder_path = Path(input_folder)
     assert input_folder_path.exists(), f"{input_folder_path} does not exist"
@@ -139,7 +155,13 @@ def main():
     output_folder_path = Path(output_folder)
     assert output_folder_path.exists(), f"{output_folder_path} does not exist"
 
-    cad_models = [d for d in os.listdir(input_folder_path) if os.path.isdir(input_folder_path / d)]
+    to_convert_path = Path(to_convert)
+    assert to_convert_path.exists(), f"{to_convert_path} does not exist"
+
+    with open(to_convert_path) as f:
+        cad_models = json.load(f)["to_convert"]
+
+    #cad_models = [d for d in os.listdir(input_folder_path) if os.path.isdir(input_folder_path / d)]
     print(f"Taking {copies=} of following models: {cad_models}")
 
     input_label_output_tuples = []

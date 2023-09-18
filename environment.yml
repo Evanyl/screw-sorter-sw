@@ -8,5 +8,4 @@ dependencies:
     - undetected-chromedriver
     - webdriver-manager
     - bpy
-    - trimesh
-    - gmsh
+    - cadquery
