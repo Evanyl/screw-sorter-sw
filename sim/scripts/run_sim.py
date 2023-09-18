@@ -1,114 +1,161 @@
 import bpy
+import datetime
 import json
 import math
 import os
 import random
+import sys
+import time
 
-def take_image(C, path, fastener, rotate):
-    init_and_sim_fastener(C, fastener)
+from pathlib import Path
 
-    #if not os.path.exists(path):
-    #    os.makedirs(path)
+SIDEON_SCENE = "side-on"
+TOPDOWN_SCENE = "top-down"
 
-    if rotate:
-        full_rotation = 6.2831
-        for i in range(13):
-            angle = i * full_rotation / 12.0
-            rotate.rotation_euler = (0, 0, angle)
-            C.scene.render.filepath = f"{path}_{i * 30}.jpg"
-            bpy.ops.render.render(write_still = True, use_viewport = True)
-    else:
-        C.scene.render.filepath = path
-        bpy.ops.render.render(write_still = True, use_viewport = True)
+def take_image(C, path):
+    C.scene.render.filepath = str(path)
+    print(f"Rendering {path}: {datetime.datetime.now().time()}")
+    bpy.ops.render.render(write_still = True, use_viewport = True)
+    print(f"Done rendering {path}: {datetime.datetime.now().time()}")
 
-def init_and_sim_fastener(C, fastener):
-    mat = bpy.data.materials.get("metal2")
+def init_cuda(C, scenes):
+    # Set the device_type
+    C.preferences.addons[
+        "cycles"
+    ].preferences.compute_device_type = "CUDA" # or "OPENCL"
+
+    for scene in scenes.values():
+        scene.render.engine = "CYCLES"
+        scene.cycles.device = "GPU"
+
+    # get_devices() to let Blender detects GPU device
+    C.preferences.addons["cycles"].preferences.get_devices()
+    print(C.preferences.addons["cycles"].preferences.compute_device_type)
+    for d in C.preferences.addons["cycles"].preferences.devices:
+        d["use"] = 1 # Using all devices, include GPU and CPU
+        print(d["name"], d["use"])
+
+def apply_texture(C, fastener):
+    C.view_layer.objects.active = fastener
+    # Toggle into Edit Mode
+    bpy.ops.object.mode_set(mode='EDIT')
+    # Select the geometry
+    bpy.ops.mesh.select_all(action='SELECT')
+    # Call the smart project operator
+    bpy.ops.uv.smart_project()
+    # Toggle out of Edit Mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    mat = bpy.data.materials.get("stainless-steel")
     fastener.data.materials.append(mat)
 
-    x = random.randint(0, 2000) / 1000.0
-    y = random.randint(0, 2000) / 1000.0
 
-    x_angle = random.randint(0, 359)
-    y_angle = math.radians(random.randint(0, 180))
-    z_angle = random.randint(0, 359)
+def init_and_sim_fastener(C, fastener, scenes, height=60):
+    init_cuda(C, scenes)
 
-    fastener.location = (x, y, 2)
-    fastener.rotation_euler = (x_angle, y_angle, z_angle)
+    for scene in scenes.values():
+        scene.collection.objects.link(fastener)
 
     fastener.select_set(True)
+    apply_texture(C, fastener)
+
+    x = random.randint(-2000, 2000) / 1000.0
+    y = random.randint(-2000, 2000) / 1000.0
+
+    x_angle = random.randint(-90, 90)
+    y_angle = random.randint(-90, 90)
+    z_angle = random.randint(0, 359)
+
+    fastener.location = (x, y, 60)
+    fastener.rotation_euler = (x_angle, y_angle, z_angle)
+
     bpy.ops.rigidbody.objects_add(type='ACTIVE')
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-    frame = 1
-    C.scene.frame_set(frame)
-    for _ in range(130):
-        frame += 1
+    fastener.select_set(False)
+    play_scene(C)
+
+def play_scene(C, until_frame=250):
+    frame = 0
+    for _ in range(until_frame):
         C.scene.frame_set(frame)
+        C.view_layer.update()
+        frame += 1
 
-def run_sim(model_path, image_path, model_name, copies_to_take, label):
-    for copy in range(copies_to_take):
+
+def rotate_and_take_image(C, fastener, output_model_path, model_name):
+    rotate = bpy.data.objects.get('side-on-rotation')
+    full_rotation = 6.2831
+    for i in range(9):
+        angle = i * full_rotation / 9.0
+        rotate.rotation_euler = (0, 0, angle)
+
+        rotate_image_path = output_model_path / f"{model_name}_{i * 45}.jpg"
+        take_image(C, rotate_image_path)
+
+def run_sim(model_path, output_path, copies, label):
+    output_path.mkdir(exist_ok=True)
+    model_name = model_path.stem
+
+    label_path = output_path / f"{model_name}.json"
+    with open(label_path, 'w') as f:
+        json.dump(label, f)
+
+    for copy in range(copies):
         C = bpy.context
-        bpy.ops.import_mesh.stl(filepath=model_path, global_scale=0.070, axis_up='X')
+        scenes = {scene.name: scene for scene in bpy.data.scenes}
+        bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X')
         fastener = bpy.data.objects[model_name]
-        dir_name = f"{model_name}_{copy}" 
-        label_path = os.path.join(image_path, dir_name, "label.json")
-        dir_name += f"/{dir_name}"
-        final_image_path = os.path.join(image_path, dir_name)
 
-        rotate = bpy.data.objects.get('Empty')
-        take_image(C, final_image_path, fastener, rotate)
+        init_and_sim_fastener(C, fastener, scenes)
 
-        with open(label_path, 'w') as outfile:
-            json.dump(label, outfile)
+        output_model_path = output_path / f"{model_name}_{copy}"
+        output_model_path.mkdir(exist_ok=True)
+
+        top_down_image_path = output_model_path / f"{model_name}_top.jpg"
+
+        C.window.scene = scenes[TOPDOWN_SCENE]
+        play_scene(C)
+        take_image(C, top_down_image_path)
+
+        C.window.scene = scenes[SIDEON_SCENE]
+        play_scene(C)
+        rotate_and_take_image(C, fastener, output_model_path, model_name)
 
         bpy.ops.object.select_all(action='DESELECT')
         fastener.select_set(True)
         bpy.ops.object.delete()
-    
+
 def main():
-    #types = ["M2x0_4mm", "M3x0_5mm"]
-    types = ["M3_5x0_6mm", "M4x0_7mm", "I4x48", "I6x40", "I8x36"]
-    #models = ['92095A453','92095A454','92095A104', '92095A179', '92095A181', '92095A182']
-    models = [
-        '92095A179',
-        '92095A182',
-        '92095A183',
-        '92095A159',
-        '92095A161',
-        '92095A124',
-        '92095A188',
-        '92095A192',
-        '92095A196',
-        '92949A327',
-        '92949A328',
-        '92949A329',
-        '92949A337',
-        '92949A338',
-        '92949A419',
-        '92949A424',
-        '92949A426',
-        '91255A837',
-    ]
+    """ 
+        Run simulation in blender. Arguments are 'INPUT_FOLDER OUTPUT_FOLDER COPIES'
+    """
+    argv = sys.argv
+    argv = argv[argv.index("--") + 1:]  # get all args after "--"
+    input_folder, output_folder, copies = argv
 
+    input_folder_path = Path(input_folder)
+    assert input_folder_path.exists(), f"{input_folder_path} does not exist"
 
-    base_path_to_model = "/home/evanyl/ewa/school/screw-sorter-sw/sim/cads"
-    base_path_to_image = "/home/evanyl/Dataset/sim_images/top_down"
+    output_folder_path = Path(output_folder)
+    assert output_folder_path.exists(), f"{output_folder_path} does not exist"
 
-    copies_to_take = 100
+    cad_models = [d for d in os.listdir(input_folder_path) if os.path.isdir(input_folder_path / d)]
+    print(f"Taking {copies=} of following models: {cad_models}")
 
-    for model_type in types:
-        path_to_model = os.path.join(base_path_to_model, model_type)
-        path_to_image = os.path.join(base_path_to_image, model_type)
+    input_label_output_tuples = []
+    for cad_model in cad_models:
+        model_path = input_folder_path / cad_model / f"{cad_model}.stl"
+        assert model_path.exists(), f"{model_path} does not exist. Should be formatted like output from 'scraper.py'"
 
-        for model in [f for f in os.listdir(path_to_model) if not f.startswith(".") and f.endswith("stl")]:
-            model_name = model.split(".")[0]
-            if model_name not in models:
-                print(f"Skipping {model_name}")
-                continue
-            model_path = os.path.join(path_to_model, model)
-            image_path = os.path.join(path_to_image, model_name)
-            with open(os.path.join(path_to_model, model_name + ".json"), 'r') as infile:
-                label = json.load(infile)
-            run_sim(model_path, image_path, model_name, copies_to_take, label)
+        label_path = input_folder_path / cad_model / f"{cad_model}.json"
+        assert label_path.exists(), f"{label_path} does not exist. Should be formatted like output from 'scraper.py'"
+        output_path = output_folder_path / cad_model
+        input_label_output_tuples.append((model_path, label_path, output_path))
+
+    for model_path, label_path, output_path in input_label_output_tuples:
+        with open(label_path, 'r') as f:
+            label = json.load(f)
+        run_sim(model_path, output_path, int(copies), label)
 
 if __name__ == "__main__":
     main()

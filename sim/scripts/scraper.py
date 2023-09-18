@@ -52,7 +52,7 @@ def convert_cad(download_folder_path: Path):
     to_convert = [file for file in os.listdir(download_folder_path) if file.endswith(".STEP")]
     for step_file in to_convert:
         file_name = step_file.split(".")[-2]
-        convert_step_to_stl(download_folder_path / step_file, download_folder_path / f"{file_name}.STL")
+        convert_step_to_stl(download_folder_path / step_file, download_folder_path / f"{file_name}.stl")
         os.remove(download_folder_path / step_file)
 
 def generate_label(driver, label_path: Path):
