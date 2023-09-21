@@ -17,7 +17,6 @@ def take_image(C, path):
     print(f"Rendering {path}: {datetime.datetime.now().time()}")
     C.scene.render.engine = "CYCLES"
     bpy.ops.render.render(write_still = True, use_viewport = True)
-    print(f"Done rendering {path}: {datetime.datetime.now().time()}")
 
 def init_cuda(C, scenes):
     # Set the device_type
@@ -30,10 +29,8 @@ def init_cuda(C, scenes):
 
     # get_devices() to let Blender detects GPU device
     C.preferences.addons["cycles"].preferences.get_devices()
-    print(C.preferences.addons["cycles"].preferences.compute_device_type)
     for d in C.preferences.addons["cycles"].preferences.devices:
         d["use"] = 1 # Using all devices, include GPU and CPU
-        print(d["name"], d["use"])
 
 def apply_texture(C, fastener):
     C.view_layer.objects.active = fastener
@@ -74,13 +71,11 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
     fastener.rotation_euler = (x_angle, y_angle, z_angle)
 
     bpy.ops.rigidbody.objects_add(type='ACTIVE')
-    #bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
     fastener.select_set(False)
     play_scene(C)
 
-    print(fastener.rotation_euler)
     post_rotation = fastener.matrix_world.to_euler()
-    print(post_rotation)
     return post_rotation[-1]
 
 def play_scene(C, until_frame=250):
@@ -178,6 +173,8 @@ def main():
         with open(label_path, 'r') as f:
             label = json.load(f)
         run_sim(model_path, output_path, int(copies), label)
+
+    bpy.ops.wm.quit_blender()
 
 if __name__ == "__main__":
     main()
