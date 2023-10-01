@@ -119,6 +119,7 @@ def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
     failed = []
     for i, cad in enumerate(cads):
         logging.info(f"Downloading {i}/{len(cads)}")
+        driver = None
         try:
             mcmaster_id = cad
             download_folder_path = output_path / mcmaster_id
@@ -137,11 +138,12 @@ def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
             time.sleep(1)
             convert_cad(download_folder_path, mcmaster_id)
 
-            driver.close()
             driver.quit()
         except Exception as e:
             logging.exception("Failed")
             failed.append(mcmaster_id)
+            if driver:
+                driver.quit()
 
     with open(output_path / "failed.json", "w") as f:
         json.dump(failed, f)
