@@ -78,7 +78,7 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
     post_rotation = fastener.matrix_world.to_euler()
     return post_rotation[-1]
 
-def play_scene(C, until_frame=250):
+def play_scene(C, until_frame=230):
     frame = 0
     for _ in range(until_frame):
         C.scene.frame_set(frame)
@@ -112,6 +112,7 @@ def run_sim(model_path, output_path, copies, label):
         json.dump(label, f)
 
     for copy in range(copies):
+        copy = copy + 1
         C = bpy.context
         scenes = {scene.name: scene for scene in bpy.data.scenes}
         bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X', axis_forward="-Y")
@@ -132,9 +133,10 @@ def run_sim(model_path, output_path, copies, label):
         C.window.scene = scenes[SIDEON_SCENE]
         play_scene(C)
 
-        z_angle_of_fastener += math.radians(random.randint(-15, 15))
-        rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
+        #z_angle_of_fastener += math.radians(random.randint(-15, 15))
+        #rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
 
+        print("Finished")
         bpy.data.objects.remove(fastener, do_unlink=True)
 
 def main():
