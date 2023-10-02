@@ -21,12 +21,17 @@ from typing import Optional
 properties = {
     "Length": 'length', 
     "Thread Size": 'thread_size',
-    "Thread Pitch": 'thread_pitch'
+    "Thread Pitch": 'thread_pitch',
+    "System of Measurement": "system_of_measurement",
+    "Head Type": "head_type",
+    "Drive Style": "drive_style",
+    "Head Diameter": "head_diameter",
 }
 
 def create_browser(delay: int, download_folder_path: Optional[Path] = None):
     backoff_times = [2, 4, 8, 16, 32]
     driver = None
+    logging.getLogger().setLevel(logging.WARNING)
     for backoff_time in backoff_times:
         try:
             options = uc.ChromeOptions()
@@ -45,6 +50,7 @@ def create_browser(delay: int, download_folder_path: Optional[Path] = None):
         except Exception:
             time.sleep(backoff_time)
 
+    logging.getLogger().setLevel(logging.INFO)
     assert driver, "Failed to open browser"
     return driver
 
@@ -96,12 +102,20 @@ def generate_label(driver, label_path: Path):
     for row in rows:
         cols = row.find_elements(By.TAG_NAME, 'td')
         property = cols[0].get_attribute('innerText')
-        value = cols[1].get_attribute('innerText')
+        value = cols[1].get_attribute('innerText').replace(" ", "")
 
         if property in properties:
-            label[properties[property]] = value.replace(" ", "")
+            label[properties[property]] = value
+        elif property == "Diameter " or property == "Diameter":
+            label["head_diameter"] = value
 
-    logging.info(f"Creating label at: {label_path}")
+    if "thread_pitch" not in label:
+        threads_per_inch = label["thread_size"].split("-")[-1]
+        label["thread_pitch"] = f"1/{threads_per_inch}\""
+
+    #logging.info(f"Creating label at: {label_path}")
+    if len(label) != len(properties):
+        logging.warning(f"Label at: {label_path} does not have all properties...")
     with open(label_path, "w") as f:
         json.dump(label, f)
 

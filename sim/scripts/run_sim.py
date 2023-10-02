@@ -128,10 +128,11 @@ def run_sim(model_path, output_path, copies, label):
         play_scene(C)
         take_image(C, top_down_image_path)
 
+        
         C.window.scene = scenes[SIDEON_SCENE]
         play_scene(C)
 
-        z_angle_of_fastener += math.radians(random.randint(-10, 10))
+        z_angle_of_fastener += math.radians(random.randint(-15, 15))
         rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
 
         bpy.data.objects.remove(fastener, do_unlink=True)
