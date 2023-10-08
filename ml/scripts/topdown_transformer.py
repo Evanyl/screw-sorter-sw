@@ -1,0 +1,246 @@
+################################################################################
+#                                I M P O R T S                                 #
+################################################################################
+
+from matplotlib import pyplot as plt
+import math
+import os
+import cv2
+import numpy  as np
+import json
+import re
+import sys
+
+################################################################################
+#                              C O N S T A N T S                               #
+################################################################################
+
+# label processing constants
+INCH_TO_MM = 25.4
+
+num2inchwidth = [
+    0.060, # No.0
+    0.073, # No.1
+    0.086, # No.2
+    0.099, # No.3
+    0.112, # No.4
+    0.125, # No.5 
+]
+
+# image processing constants
+THRESH = 150
+
+################################################################################
+#                              V A R I A B L E S                               #
+################################################################################
+
+################################################################################
+#                      P R I V A T E  F U N C T I O N S                        #
+################################################################################
+
+# helpers for label generation
+def _sfrac2float(s):
+    """
+    in:  str fraction "{num}/{denom}"
+    out: float
+    """
+    nums = s.split("/")
+    return int(nums[0]) / int(nums[1])
+
+def _processMetric(label):
+    """
+    in:  metric label dict
+    out: unified metric label dict
+    """
+    w = float(label["thread_size"].split("M")[-1])
+    l = float(label["length"].split("mm")[0])
+    p = float(label["thread_pitch"].split("mm")[0])
+    return {"width": w, "length": l, "pitch": p, "metric": True}
+
+def _processImperial(label):
+    """
+    in:  imperial label dict
+    out: unified metric label dict
+    """
+    thread_size = label["thread_size"].split("-")
+    w = num2inchwidth[int(thread_size[0])]*INCH_TO_MM
+    l = _sfrac2float(label["length"].split('"')[0])*INCH_TO_MM
+    p = 1.0/int(thread_size[1])*INCH_TO_MM
+    return {"width": w, "length": l, "pitch": p, "metric": False}
+
+# helpers for pose estimation and screw normalization
+def _get_center(contours, x, y, vx, vy):
+    """
+    in:  - contour of screw from binarized image contours,
+         - point on the fit line through the contour x and y,
+         - slope components from cv2.fitLine LS fit of countour
+    out: coordinates of the true mid-point of the contour (x,y)
+    """
+    err1 = sys.float_info.max
+    err2 = sys.float_info.max
+    p1 = (0,0)
+    p2 = (0,0)
+    m = -vy[0]/vx[0]
+    p0_x = x[0]
+    p0_y = y[0]
+
+    for c in contours:
+        p_x = c[0][0]
+        p_y = c[0][1]
+        if abs(-(p0_y-p_y)/(p0_x-p_x) - m) < err1 and p_x < p0_x:
+            err1 = abs(-(p0_y-p_y)/(p0_x-p_x) - m)
+            p1 = (p_x,p_y)
+        if abs(-(p_y-p0_y)/(p_x-p0_x) - m) < err2 and p_x > p0_x:
+            err2 = abs(-(p_y-p0_y)/(p_x-p0_x) - m)
+            p2 = (p_x,p_y)
+
+    return (int((p2[0] + p1[0])/2), int((p2[1] + p1[1])/2))
+
+# rename this to _make_vector or something
+def _make_vector(vx, vy, x_center, y_center, x_centroid, y_centroid):
+    """
+    in:  - slope components from cv2.fitLine LS fit of contours vx and vy,
+         - true midpoint coordinates of the contour x_center and y_center,
+         - centroid coordinates of the contour x_centroid, y_centroid
+    out: cartesian unit vector pointing in the direction of the screw head
+    """
+    vec = None
+    m = -vy/vx
+
+    if  ((m >= 1/2 and m >= 0) and (y_center >= y_centroid)) or \
+        ((m < 1/2 and m >= 0) and (x_center <= x_centroid)):
+        # Quadrant 1
+        vec = (abs(vx), abs(vy))
+    elif ((m <= -1/2 and m <= 0) and (y_center >= y_centroid)) or \
+         ((m > -1/2 and m <= 0) and (x_center >= x_centroid)):
+        # Quadrant 2
+        vec = (-abs(vx), abs(vy))
+    elif ((m <= 1/2 and m >= 0) and (x_center >= x_centroid)) or \
+         ((m > 1/2 and m >= 0) and (y_center <= y_centroid)):
+        # Quadrant 3
+        vec = (-abs(vx), -abs(vy))
+    elif ((m <= -1/2 and m <= 0) and (y_center <= y_centroid)) or \
+         ((m > -1/2 and m <= 0) and (x_center <= x_centroid)):
+        # Quadrant 4
+        vec = (abs(vx), -abs(vy))
+    return vec
+
+def _correction_angle(vec):
+    """
+    in:  unit vector in the direction of screw head
+    out: angle to rotate CW s/t unit vector is || to <1,0>
+    """
+    theta = np.arccos(np.dot([vec[0],vec[1]], [1,0]))*180/np.pi
+    correction_theta = 0.0
+    if (vec[0] >= 0 and vec[1] > 0):
+        # Quadrant 1
+        correction_theta = -theta
+    elif (vec[0] < 0 and vec[1] >= 0):
+       # Quadrant 2
+       correction_theta = -theta
+    elif (vec[0] <= 0 and vec[1] < 0):
+       # Quadrant 3
+       correction_theta = theta
+    elif (vec[0] > 0 and vec[1] <= 0):
+       # Quadrant 4
+       correction_theta = theta
+    return correction_theta
+
+def _straighten(image, center, theta):
+    """
+    in:  - full sized top-down image img, 
+         - center point of image center, 
+         - angle to rotate CW theta
+    out: CW rotated image about center by angle theta (deg)
+    """
+    shape = (image.shape[1], image.shape[0])
+    matrix = cv2.getRotationMatrix2D(center=center, angle=theta, scale=1)
+    return cv2.warpAffine(src=image, M=matrix, dsize=shape)
+
+def _crop(img):
+    """
+    in:  full-sized straightened image using _straighten
+    out: tight cropped image using cv2.minAreaRect
+    """
+    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
+    x,y,w,h = cv2.boundingRect(contours_sorted[1])
+    return img[y:y+h,x:x+w]
+
+def _pad(img, desired_shape):
+    """
+    in:  - tight cropped image using _crop img,
+         - shape to pad to with white border desired_shape
+    out: padded image
+    """
+    out = None
+    if img.shape[0] < desired_shape[0] and img.shape[1] < desired_shape[1]:
+        equal_hpad = not (desired_shape[1] - img.shape[1]) % 2
+        equal_vpad = not (desired_shape[0] - img.shape[0]) % 2
+        if equal_hpad and equal_vpad:
+            dx = int((desired_shape[1] - img.shape[1]) / 2)
+            dy = int((desired_shape[0] - img.shape[0]) / 2)
+            out = cv2.copyMakeBorder(img, dy, dy, dx, dx,
+                                        cv2.BORDER_CONSTANT,
+                                        value=[255, 255, 255])
+        elif equal_hpad and not equal_vpad:
+            dx = int((desired_shape[1] - img.shape[1]) / 2)
+            dy = int((desired_shape[0] - img.shape[0]) // 2)
+            out = cv2.copyMakeBorder(img, dy, dy+1, dx,
+                                        dx, cv2.BORDER_CONSTANT,
+                                        value=[255, 255, 255])
+        elif not equal_hpad and equal_vpad:
+            dx = int((desired_shape[1] - img.shape[1]) // 2)
+            dy = int((desired_shape[0] - img.shape[0]) / 2)
+            out = cv2.copyMakeBorder(img, dy, dy, dx, dx+1, cv2.BORDER_CONSTANT,
+                                        value=[255, 255, 255])
+        elif not equal_hpad and not equal_vpad:
+            dx = int((desired_shape[1] - img.shape[1]) // 2)
+            dy = int((desired_shape[0] - img.shape[0]) // 2)
+            out = cv2.copyMakeBorder(img, dy, dy+1, dx, dx+1, 
+                                     cv2.BORDER_CONSTANT, value=[255, 255, 255])
+    else:
+       raise Exception("Bounding Box Error: size of subject exceeds 250x575")
+    return out
+
+################################################################################
+#                       P U B L I C  F U N C T I O N S                         #
+################################################################################
+
+def transform_image(read_fpath):
+    """
+    in:  path to raw image data to read read_fpath
+    out: straightened and cropped binary image of shape 250x575
+    """
+    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+    _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
+
+    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # get data necessary for determining pose (centroid and true center)
+    [vx,vy,x,y] = cv2.fitLine(contours_sorted[1], cv2.DIST_L2,0,0.01,0.01)
+    M = cv2.moments(contours_sorted[1])
+    x_centroid = int(M['m10']/M['m00'])
+    y_centroid = int(M['m01']/M['m00'])
+    x_center, y_center = _get_center(contours_sorted[1], x, y, vx, vy)
+
+    # produce a unit vector in the direction of the screw head
+    vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
+    correction_theta = _correction_angle(vec)
+
+    # correct the image so the head is facing to the right
+    img = _straighten(img, (x_center, y_center), correction_theta)
+    img = _crop(img)
+    img = _pad(img, [400, 800]) # 250 575
+
+    return img
+
+def transform_images(write_dpath, read_dpath):
+    """
+    in:  - path to directory to write processed data to
+         - path to directory upholding directory structure guidlines to read form
+    out: flat directory structure holding processed data
+    """
+    pass
