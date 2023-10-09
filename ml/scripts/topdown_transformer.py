@@ -239,8 +239,60 @@ def transform_image(read_fpath):
 
 def transform_images(write_dpath, read_dpath):
     """
-    in:  - path to directory to write processed data to
-         - path to directory upholding directory structure guidlines to read form
+    in:  - path to directory to write processed data to write_dpath
+         - path to directory upholding directory to read from read_dpath
     out: flat directory structure holding processed data
     """
-    pass
+    count = 0
+    home = os.getcwd()
+    os.chdir(read_dpath)
+    data_directories = [f for f in os.listdir(read_dpath) if os.path.isdir(f)]
+    for data_directory in data_directories:
+        os.chdir(data_directory)
+        
+        metadata_file = [f for f in os.listdir() if not os.path.isdir(f)][0]
+        label = {}
+
+        with open(metadata_file) as mf:
+            metadata = json.load(mf)
+            if re.match("M", metadata["thread_size"]):
+                label = _processMetric(metadata)
+            else:
+                label = _processImperial(metadata)
+
+        image_directories = [f for f in os.listdir() if os.path.isdir(f)]
+        for image_directory in image_directories:
+
+            os.chdir(image_directory)
+            image_files = os.listdir()
+            for image_file in image_files:
+                if re.match(".*_top", image_file):
+                    # create directory
+                    name = "{d}_screw_{w}_{l}_{p}_{n}".format(d=image_directory\
+                                                                .split('_')[0] ,
+                                                              w=label["width"] , 
+                                                              l=label["length"], 
+                                                              p=label["pitch"] ,
+                                                              n=image_directory\
+                                                                .split('_')[-1])
+                    os.mkdir(write_dpath + name)
+                    img = transform_image(image_file)
+                    # write the transformed image
+                    cv2.imwrite(write_dpath + \
+                                name        + \
+                                "/"         + \
+                                name        + \
+                                ".png"         , img)
+                    # copy over the json label
+                    with open(write_dpath + \
+                              name        + \
+                              "/"         + \
+                              name        + \
+                              ".json", "w"   ) as f:
+                        json.dump(label, f)
+
+                    count += 1
+                    print(f"Processed Image{count}")
+            os.chdir(read_dpath + data_directory)
+        os.chdir(read_dpath)
+    os.chdir(home)
