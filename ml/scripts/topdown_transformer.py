@@ -2,14 +2,13 @@
 #                                I M P O R T S                                 #
 ################################################################################
 
-from matplotlib import pyplot as plt
-import math
 import os
 import cv2
 import numpy  as np
 import json
 import re
 import sys
+from uuid import uuid1
 
 ################################################################################
 #                              C O N S T A N T S                               #
@@ -55,7 +54,8 @@ def _processMetric(label):
     w = float(label["thread_size"].split("M")[-1])
     l = float(label["length"].split("mm")[0])
     p = float(label["thread_pitch"].split("mm")[0])
-    return {"width": w, "length": l, "pitch": p, "metric": True}
+    # return {"width": w, "length": l, "pitch": p, "metric": True}
+    return {"length": l, "pitch": p, "metric": True}
 
 def _processImperial(label):
     """
@@ -63,10 +63,11 @@ def _processImperial(label):
     out: unified metric label dict
     """
     thread_size = label["thread_size"].split("-")
-    w = num2inchwidth[int(thread_size[0])]*INCH_TO_MM
+    # w = num2inchwidth[int(thread_size[0])]*INCH_TO_MM
     l = _sfrac2float(label["length"].split('"')[0])*INCH_TO_MM
     p = 1.0/int(thread_size[1])*INCH_TO_MM
-    return {"width": w, "length": l, "pitch": p, "metric": False}
+    # return {"width": w, "length": l, "pitch": p, "metric": False}
+    return {"length": l, "pitch": p, "metric": True}
 
 # helpers for pose estimation and screw normalization
 def _get_center(contours, x, y, vx, vy):
@@ -268,13 +269,15 @@ def transform_images(write_dpath, read_dpath):
             for image_file in image_files:
                 if re.match(".*_top", image_file):
                     # create directory
-                    name = "{d}_screw_{w}_{l}_{p}_{n}".format(d=image_directory\
-                                                                .split('_')[0] ,
-                                                              w=label["width"] , 
-                                                              l=label["length"], 
-                                                              p=label["pitch"] ,
-                                                              n=image_directory\
-                                                                .split('_')[-1])
+                    label["id"] = str(uuid1())
+                    name = "{d}_screw_{l}_{p}_{u}_{n}"\
+                           .format(d=image_directory.split('_')[0],
+                                #    w=label["width"], 
+                                   l=round(label["length"], 3)    , 
+                                   p=round(label["pitch"], 3)     ,
+                                   u=label["metric"]              ,
+                                   n=label["id"])
+
                     os.mkdir(write_dpath + name)
                     img = transform_image(image_file)
                     # write the transformed image
