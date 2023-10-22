@@ -2,3 +2,5 @@
 *.pt
 *.swp
 *__pycache__*
+
+/data_interface/data
