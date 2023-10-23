@@ -56,8 +56,10 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
     fastener.select_set(True)
     apply_texture(C, fastener)
 
-    x = random.randint(-2000, 2000) / 1000.0
-    y = random.randint(-2000, 2000) / 1000.0
+    #x = random.randint(-2000, 2000) / 1000.0
+    #y = random.randint(-2000, 2000) / 1000.0
+    x = 0
+    y = 0
 
     x_angle = math.radians(random.randint(0, 360))
     
@@ -67,7 +69,8 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
         y_angle = math.radians(random.randint(150, 210))
     z_angle = math.radians(random.randint(0, 359))
 
-    fastener.location = (x, y, 60)
+    #fastener.location = (x, y, 60)
+    fastener.location = (x, y, 10)
     fastener.rotation_euler = (x_angle, y_angle, z_angle)
 
     bpy.ops.rigidbody.objects_add(type='ACTIVE')
@@ -78,7 +81,7 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
     post_rotation = fastener.matrix_world.to_euler()
     return post_rotation[-1]
 
-def play_scene(C, until_frame=230):
+def play_scene(C, until_frame=50):
     frame = 0
     for _ in range(until_frame):
         C.scene.frame_set(frame)
@@ -104,6 +107,7 @@ def rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=No
         take_image(C, rotate_image_path)
 
 def run_sim(model_path, output_path, copies, label):
+    copies = 1
     output_path.mkdir(exist_ok=True)
     model_name = model_path.stem
 
@@ -111,8 +115,12 @@ def run_sim(model_path, output_path, copies, label):
     with open(label_path, 'w') as f:
         json.dump(label, f)
 
-    for copy in range(copies):
-        copy = copy + 1
+    camera = bpy.data.objects.get('top-down-cam')
+    increment = 0.5
+    increments = 41
+    start_z = 310
+    
+    for i in range(increments):
         C = bpy.context
         scenes = {scene.name: scene for scene in bpy.data.scenes}
         bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X', axis_forward="-Y")
@@ -120,10 +128,13 @@ def run_sim(model_path, output_path, copies, label):
 
         z_angle_of_fastener = init_and_sim_fastener(C, fastener, scenes)
 
-        output_model_path = output_path / f"{model_name}_{copy}"
+
+        z_height = start_z + increment*i
+        camera.location = (0, 0, z_height)
+        output_model_path = output_path / f"{model_name}"
         output_model_path.mkdir(exist_ok=True)
 
-        top_down_image_path = output_model_path / f"{model_name}_top.jpg"
+        top_down_image_path = output_model_path / f"{model_name}_{z_height:.1f}.jpg"
 
         C.window.scene = scenes[TOPDOWN_SCENE]
         play_scene(C)
@@ -136,7 +147,6 @@ def run_sim(model_path, output_path, copies, label):
         #z_angle_of_fastener += math.radians(random.randint(-15, 15))
         #rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
 
-        print("Finished")
         bpy.data.objects.remove(fastener, do_unlink=True)
 
 def main():
