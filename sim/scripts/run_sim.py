@@ -6,6 +6,7 @@ import os
 import random
 import sys
 import time
+import uuid
 
 from pathlib import Path
 
@@ -103,13 +104,29 @@ def rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=No
         rotate_image_path = output_model_path / f"{model_name}_{i * 45}.jpg"
         take_image(C, rotate_image_path)
 
-def run_sim(model_path, output_path, copies, label):
+def create_label(attributes):
+    label = {
+        "uuid": str(uuid.uuid1()),
+        "world": "sim",
+        "platform_version": "1.0",
+        "platform_configuration": "0",
+        "time": str(int(time.time())),
+        "fastener_type": "screw",
+        "measurement_system": attributes["system_of_measurement"],
+        "topdown_included": True,
+        "sideon_included": False,
+        "number_sideon": 0,
+        "attributes": attributes,
+    }
+    return label
+
+def run_sim(model_path, output_path, copies, attributes):
     output_path.mkdir(exist_ok=True)
     model_name = model_path.stem
 
     label_path = output_path / f"{model_name}.json"
     with open(label_path, 'w') as f:
-        json.dump(label, f)
+        json.dump(create_label(attributes), f)
 
     for copy in range(copies):
         copy = copy + 1
@@ -174,8 +191,8 @@ def main():
 
     for model_path, label_path, output_path in input_label_output_tuples:
         with open(label_path, 'r') as f:
-            label = json.load(f)
-        run_sim(model_path, output_path, int(copies), label)
+            attributes = json.load(f)
+        run_sim(model_path, output_path, int(copies), attributes)
 
     bpy.ops.wm.quit_blender()
 

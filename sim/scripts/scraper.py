@@ -17,18 +17,41 @@ from selenium.webdriver.common.by import By
 from utils import convert_step_to_stl, McmasterSearcher, URL
 from typing import Optional
 
+gauge_to_inch = {
+    '1': '1/16"',
+    '2': '5/64"',
+    '3': '3/32"',
+    '4': '7/64"',
+    '5': '1/8"',
+    '6': '9/64"',
+    '8': '5/32"',
+    '9': '11/64"',
+    '10': '3/16"',
+    '11': '13/64"',
+    '12': '7/32"',
+    '13': '15/64"',
+    '14': '1/4"',
+    '16': '17/64"',
+    '18': '19/64"',
+    '20': '5/16"',
+    '24': '3/8"',
+}
+
 
 properties = {
     "Length": 'length', 
     "Thread Size": 'thread_size',
-    "Thread Pitch": 'thread_pitch',
+    "Thread Pitch": 'pitch',
+    "_diameter": "diameter",
     "System of Measurement": "system_of_measurement",
-    "Head Type": "head_type",
-    "Drive Style": "drive_style",
+    "Head Type": "head",
+    "Drive Style": "drive",
     "Head Diameter": "head_diameter",
+    "Material": "finish",
+    "Thread Direction": "direction",
 }
 
-def create_browser(delay: int, download_folder_path: Optional[Path] = None):
+def create_browser(delay: int, version_main: Optional[int] = None, download_folder_path: Optional[Path] = None):
     backoff_times = [2, 4, 8, 16, 32]
     driver = None
     logging.getLogger().setLevel(logging.WARNING)
@@ -42,12 +65,19 @@ def create_browser(delay: int, download_folder_path: Optional[Path] = None):
                 prefs = {'download.default_directory' : str(download_folder_path)}
                 options.add_experimental_option('prefs', prefs)
 
-            driver = uc.Chrome(
-                options = options,
-            )
+            if version_main:
+                driver = uc.Chrome(
+                    version_main = version_main,
+                    options = options,
+                )
+            else:
+                driver = uc.Chrome(
+                    options = options,
+                )
             driver.implicitly_wait(delay)
             break
-        except Exception:
+        except Exception as e:
+            logging.error(e)
             time.sleep(backoff_time)
 
     logging.getLogger().setLevel(logging.INFO)
@@ -109,8 +139,15 @@ def generate_label(driver, label_path: Path):
         elif property == "Diameter " or property == "Diameter":
             label["head_diameter"] = value
 
-    if "thread_pitch" not in label:
-        threads_per_inch = label["thread_size"].split("-")[-1]
+    # Correct thread_pitch for imperial
+    if label["system_of_measurement"] == "Metric":
+        label["diameter"] = label["thread_size"].replace("M", "")
+    else:
+        imperial_thread = label["thread_size"].split("-")
+
+        label["diameter"] = gauge_to_inch[imperial_thread[0]]
+
+        threads_per_inch = imperial_thread[1]
         label["thread_pitch"] = f"1/{threads_per_inch}\""
 
     #logging.info(f"Creating label at: {label_path}")
@@ -129,7 +166,7 @@ def login(driver, auth):
     time.sleep(1)
     driver.refresh()
 
-def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
+def fetch_cads(output_path, url, version_main=None, cads=[], delay=20, auth=None):
     failed = []
     for i, cad in enumerate(cads):
         logging.info(f"Downloading {i}/{len(cads)}")
@@ -139,7 +176,7 @@ def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
             download_folder_path = output_path / mcmaster_id
             if download_folder_path.exists():
                 shutil.rmtree(download_folder_path)
-            driver = create_browser(delay, download_folder_path=download_folder_path)
+            driver = create_browser(delay, download_folder_path=download_folder_path, version_main=version_main)
             driver.get(url + mcmaster_id)
 
             if auth:
@@ -162,7 +199,7 @@ def fetch_cads(output_path, url, cads=[], delay=20, auth=None):
     with open(output_path / "failed.json", "w") as f:
         json.dump(failed, f)
 
-def search_for(search_params_file_path: Path, search_limit: int, output_path: Path, delay=20):
+def search_for(search_params_file_path: Path, search_limit: int, output_path: Path, delay=20, version_main=None):
     with open(search_params_file_path) as f:
         search_params = json.load(f)
 
@@ -171,7 +208,7 @@ def search_for(search_params_file_path: Path, search_limit: int, output_path: Pa
     while not searcher.is_done():
         for i in range(search_limit):
             url = searcher.next()
-            driver = create_browser(delay)
+            driver = create_browser(delay, version_main=version_main)
             driver.get(url)
 
             # Pretty dumb, mcmaster carr search query params are kinda bugged, so actually 
@@ -212,17 +249,19 @@ def search_for(search_params_file_path: Path, search_limit: int, output_path: Pa
 @click.option("--search_limit", default=1, help="Limit of cad models to pull for each category")
 @click.option("--login", is_flag=True, help="Choose to login")
 @click.option("--output_path", "output_path", required=True, help="Output folder to download cad models to")
-def main(cads_json, search_params, search_limit, output_path, login):
+@click.option("--version_main", default=None, help="Your version of chromedriver, if default is not compatible")
+def main(cads_json, search_params, search_limit, output_path, version_main, login):
     logging.basicConfig(level=logging.INFO)
     assert not (search_params and cads_json), f"'search_params' and 'cads_json' flags can't both be specified, as they are different methods of pulling models."
 
     output_path = Path(output_path)
     assert output_path.exists(), f"{output_path} does not exist"
 
+    version_main = int(version_main)
     if search_params:
         search_params_file_path = Path(search_params)
         assert search_params_file_path.exists(), f"{search_params_file_path} does not exist"
-        cads_json = search_for(search_params_file_path, search_limit, output_path)
+        cads_json = search_for(search_params_file_path, search_limit, output_path, version_main=version_main)
     
     cads_json_path = Path(cads_json)
     assert cads_json_path.exists(), f"{cads_json_path} does not exist"
@@ -236,7 +275,7 @@ def main(cads_json, search_params, search_limit, output_path, login):
         password = getpass.getpass("McMaster Login Password: ")
         auth = (email, password)
 
-    fetch_cads(output_path, f"{URL}/", cads=cads, auth=auth)
+    fetch_cads(output_path, f"{URL}/", cads=cads, auth=auth, version_main=version_main)
 
     # Convert cads functionality
 
