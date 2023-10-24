@@ -71,7 +71,8 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
 
     #fastener.location = (x, y, 60)
     fastener.location = (x, y, 10)
-    fastener.rotation_euler = (x_angle, y_angle, z_angle)
+    fastener.rotation_euler = (0, 0, 0)
+    #fastener.rotation_euler = (x_angle, y_angle, z_angle)
 
     bpy.ops.rigidbody.objects_add(type='ACTIVE')
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
@@ -81,7 +82,7 @@ def init_and_sim_fastener(C, fastener, scenes, height=60):
     post_rotation = fastener.matrix_world.to_euler()
     return post_rotation[-1]
 
-def play_scene(C, until_frame=50):
+def play_scene(C, until_frame=230):
     frame = 0
     for _ in range(until_frame):
         C.scene.frame_set(frame)
@@ -116,9 +117,9 @@ def run_sim(model_path, output_path, copies, label):
         json.dump(label, f)
 
     camera = bpy.data.objects.get('top-down-cam')
-    increment = 0.5
-    increments = 41
-    start_z = 310
+    increments = 75 
+    increment = 2
+    start_z = 260 
     
     for i in range(increments):
         C = bpy.context
