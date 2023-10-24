@@ -17,16 +17,38 @@ from selenium.webdriver.common.by import By
 from utils import convert_step_to_stl, McmasterSearcher, URL
 from typing import Optional
 
+gauge_to_inch = {
+    '1': '1/16"',
+    '2': '5/64"',
+    '3': '3/32"',
+    '4': '7/64"',
+    '5': '1/8"',
+    '6': '9/64"',
+    '8': '5/32"',
+    '9': '11/64"',
+    '10': '3/16"',
+    '11': '13/64"',
+    '12': '7/32"',
+    '13': '15/64"',
+    '14': '1/4"',
+    '16': '17/64"',
+    '18': '19/64"',
+    '20': '5/16"',
+    '24': '3/8"',
+}
+
 
 properties = {
     "Length": 'length', 
     "Thread Size": 'thread_size',
-    "Thread Pitch": 'thread_pitch',
+    "Thread Pitch": 'pitch',
+    "_diameter": "diameter",
     "System of Measurement": "system_of_measurement",
-    "Head Type": "head_type",
-    "Drive Style": "drive_style",
+    "Head Type": "head",
+    "Drive Style": "drive",
     "Head Diameter": "head_diameter",
-    "Material": "material",
+    "Material": "finish",
+    "Thread Direction": "direction",
 }
 
 def create_browser(delay: int, version_main: Optional[int] = None, download_folder_path: Optional[Path] = None):
@@ -117,8 +139,15 @@ def generate_label(driver, label_path: Path):
         elif property == "Diameter " or property == "Diameter":
             label["head_diameter"] = value
 
-    if "thread_pitch" not in label:
-        threads_per_inch = label["thread_size"].split("-")[-1]
+    # Correct thread_pitch for imperial
+    if label["system_of_measurement"] == "Metric":
+        label["diameter"] = label["thread_size"].replace("M", "")
+    else:
+        imperial_thread = label["thread_size"].split("-")
+
+        label["diameter"] = gauge_to_inch[imperial_thread[0]]
+
+        threads_per_inch = imperial_thread[1]
         label["thread_pitch"] = f"1/{threads_per_inch}\""
 
     #logging.info(f"Creating label at: {label_path}")
