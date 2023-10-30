@@ -12,7 +12,7 @@ class Fastener(ABC):
     platform_configuration = {'real': [0], 'sim': [0]}
     measurement_system = ['metric', 'imperial']
     fastener_type = ['screw', 'nut', 'washer']
-    processing = ['binary_1', 'dft_1']
+    processing = ['', 'binary_1', 'dft_1']
 
     path: str
     uuid: str
@@ -66,7 +66,7 @@ class Screw(Fastener):
     drive = ['hex', 'torx', 'phillips']
     direction = ['right', 'left']
     finish = ['galvanized', 'steel']
-    
+
     length: str
     diameter: str
     pitch: str
