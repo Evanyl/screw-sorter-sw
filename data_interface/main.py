@@ -1,6 +1,4 @@
-from data_interface import DataInterface, ScrewQuery
-from imaging_session import ImagingSession
-from fastener import Fastener, Screw
+from data_interface import DataInterface, ScrewQuery, ImagingSession, Fastener, Screw
 
 
 def main():
