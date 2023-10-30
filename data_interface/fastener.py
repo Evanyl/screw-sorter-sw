@@ -6,6 +6,14 @@ from abc import ABC, abstractmethod
 
 class Fastener(ABC):
 
+    status = ['ok', 'stale']
+    world = ['real', 'sim']
+    platform_version = {'real': [1.0], 'sim': [1.0]}
+    platform_configuration = {'real': [0], 'sim': [0]}
+    measurement_system = ['metric', 'imperial']
+    fastener_type = ['screw', 'nut', 'washer']
+    processing = ['binary_1', 'dft_1']
+
     path: str
     uuid: str
     status: str
@@ -16,6 +24,7 @@ class Fastener(ABC):
     time: str
     measurement_system: str
     fastener_type: str
+    processing: str
 
     def __init__(self, path:str):
         assert os.path.isdir(path)
@@ -34,17 +43,36 @@ class Fastener(ABC):
             self.time = metadata['time']
             self.measurement_system = metadata['measurement_system']
             self.fastener_type = metadata['fastener_type']
-            self.populate_attributes(metadata)
+            self.processing = metadata['processing'] if 'processing' in metadata else ''
+            self._populate_attributes(metadata)
+    
+    def __str__(self):
+
+        return str(vars(self))
 
     @abstractmethod
-    def populate_attributes(self, metadata):
+    def _populate_attributes(self, metadata):
         pass
         
 class Screw(Fastener):
 
+    length = {'metric': ['1', '2'], 'imperial': ['1', '2']}
+    diameter = {'metric': ['1', '2'], 'imperial': ['1', '2']}
+    pitch = {'metric': ['1', '2'], 'imperial': ['1', '2']}
+    length_n = (0.0001, 100)
+    pitch_n = (0.0001, 100)
+    diameter_n = (0.0001, 100)
+    head = ['socket']
+    drive = ['hex', 'torx', 'phillips']
+    direction = ['right', 'left']
+    finish = ['galvanized', 'steel']
+    
     length: str
     diameter: str
     pitch: str
+    length_n: float
+    diameter_n: float
+    pitch_n: float
     head: str
     drive: str
     direction: str
@@ -53,14 +81,20 @@ class Screw(Fastener):
     def __init__(self, path:str):
         super().__init__(path)
 
-    def populate_attributes(self, metadata):
-        self.length = metadata['attributes']['length']
-        self.diameter = metadata['attributes']['diameter']
-        self.pitch = metadata['attributes']['pitch']
+    def _populate_attributes(self, metadata):
         self.head = metadata['attributes']['head']
         self.drive = metadata['attributes']['drive']
         self.direction = metadata['attributes']['direction']
         self.finish = metadata['attributes']['finish']
+        self.length = metadata['attributes']['length']
+        self.diameter = metadata['attributes']['diameter']
+        self.pitch = metadata['attributes']['pitch']
+        if self.measurement_system == 'metric':
+            self.length_n = float(metadata['attributes']['length'])
+            self.diameter_n = float(metadata['attributes']['diameter'])
+            self.pitch_n = float(metadata['attributes']['pitch'])
+        elif self.measurement_system == 'imperial':
+            pass
 
 class Nut(Fastener):
 
@@ -72,7 +106,7 @@ class Nut(Fastener):
     def __init__(self, path:str):
         super().__init__(path)
 
-    def populate_attributes(self, metadata):
+    def _populate_attributes(self, metadata):
         self.diameter = metadata['attributes']['diameter']
         self.pitch = metadata['attributes']['pitch']
         self.direction = metadata['attributes']['direction']
@@ -88,7 +122,7 @@ class Washer(Fastener):
     def __init__(self, path:str):
         super().__init__(path)
 
-    def populate_attributes(self, metadata):
+    def _populate_attributes(self, metadata):
         self.inner_diameter = metadata['attributes']['inner_diameter']
         self.outer_diameter = metadata['attributes']['outer_diameter']
         self.thickness = metadata['attributes']['thickness']
