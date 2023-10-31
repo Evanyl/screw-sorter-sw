@@ -2,11 +2,9 @@ import bpy
 import datetime
 import json
 import math
-import os
 import random
 import sys
 import time
-import uuid
 
 from pathlib import Path
 
@@ -104,9 +102,9 @@ def rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=No
         rotate_image_path = output_model_path / f"{model_name}_{i * 45}.jpg"
         take_image(C, rotate_image_path)
 
-def create_label(attributes):
+def create_label(attributes, uuid):
     label = {
-        "uuid": str(uuid.uuid1()),
+        "uuid": uuid,
         "world": "sim",
         "platform_version": "1.0",
         "platform_configuration": "0",
@@ -120,79 +118,59 @@ def create_label(attributes):
     }
     return label
 
-def run_sim(model_path, output_path, copies, attributes):
+def run_sim(model_path, output_path, attributes, uuid):
     output_path.mkdir(exist_ok=True)
     model_name = model_path.stem
 
-    label_path = output_path / f"{model_name}.json"
+    label_path = output_path / f"{uuid}.json"
     with open(label_path, 'w') as f:
-        json.dump(create_label(attributes), f)
+        json.dump(create_label(attributes, uuid), f)
 
-    for copy in range(copies):
-        copy = copy + 1
-        C = bpy.context
-        scenes = {scene.name: scene for scene in bpy.data.scenes}
-        bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X', axis_forward="-Y")
-        fastener = bpy.data.objects[model_name]
+    C = bpy.context
+    scenes = {scene.name: scene for scene in bpy.data.scenes}
+    bpy.ops.import_mesh.stl(filepath=str(model_path), axis_up='X', axis_forward="-Y")
+    fastener = bpy.data.objects[model_name]
 
-        z_angle_of_fastener = init_and_sim_fastener(C, fastener, scenes)
+    z_angle_of_fastener = init_and_sim_fastener(C, fastener, scenes)
 
-        output_model_path = output_path / f"{model_name}_{copy}"
-        output_model_path.mkdir(exist_ok=True)
+    top_down_image_path = output_path / f"0__{uuid}_.jpg"
 
-        top_down_image_path = output_model_path / f"{model_name}_top.jpg"
+    C.window.scene = scenes[TOPDOWN_SCENE]
+    play_scene(C)
+    take_image(C, top_down_image_path)
 
-        C.window.scene = scenes[TOPDOWN_SCENE]
-        play_scene(C)
-        take_image(C, top_down_image_path)
+    
+    C.window.scene = scenes[SIDEON_SCENE]
+    play_scene(C)
 
-        
-        C.window.scene = scenes[SIDEON_SCENE]
-        play_scene(C)
+    #z_angle_of_fastener += math.radians(random.randint(-15, 15))
+    #rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
 
-        #z_angle_of_fastener += math.radians(random.randint(-15, 15))
-        #rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
-
-        print("Finished")
-        bpy.data.objects.remove(fastener, do_unlink=True)
+    print("Finished")
+    bpy.data.objects.remove(fastener, do_unlink=True)
 
 def main():
     """ 
-        Run simulation in blender. Arguments are 'INPUT_FOLDER OUTPUT_FOLDER COPIES'
+        Run simulation in blender. Arguments are 'CAD_MODEL_PATH OUTPUT_FOLDER UUID'
     """
     argv = sys.argv
     argv = argv[argv.index("--") + 1:]  # get all args after "--"
-    input_folder, output_folder, to_convert, copies = argv
+    cad_model, output_folder, uuid = argv
 
-    input_folder_path = Path(input_folder)
-    assert input_folder_path.exists(), f"{input_folder_path} does not exist"
+    cad_model_path = Path(cad_model)
+    assert cad_model_path.exists(), f"{cad_model_path} does not exist"
 
     output_folder_path = Path(output_folder)
     assert output_folder_path.exists(), f"{output_folder_path} does not exist"
 
-    to_convert_path = Path(to_convert)
-    assert to_convert_path.exists(), f"{to_convert_path} does not exist"
+    print(f"Imaging {cad_model_path} with {uuid=}")
+    
+    label_path = cad_model_path.parent / f"{cad_model_path.stem}.json"
+    output_path = output_folder_path / uuid
 
-    with open(to_convert_path) as f:
-        cad_models = json.load(f)["to_convert"]
-
-    #cad_models = [d for d in os.listdir(input_folder_path) if os.path.isdir(input_folder_path / d)]
-    print(f"Taking {copies=} of following models: {cad_models}")
-
-    input_label_output_tuples = []
-    for cad_model in cad_models:
-        model_path = input_folder_path / cad_model / f"{cad_model}.stl"
-        assert model_path.exists(), f"{model_path} does not exist. Should be formatted like output from 'scraper.py'"
-
-        label_path = input_folder_path / cad_model / f"{cad_model}.json"
-        assert label_path.exists(), f"{label_path} does not exist. Should be formatted like output from 'scraper.py'"
-        output_path = output_folder_path / cad_model
-        input_label_output_tuples.append((model_path, label_path, output_path))
-
-    for model_path, label_path, output_path in input_label_output_tuples:
-        with open(label_path, 'r') as f:
-            attributes = json.load(f)
-        run_sim(model_path, output_path, int(copies), attributes)
+    with open(label_path, 'r') as f:
+        attributes = json.load(f)
+    run_sim(cad_model_path, output_path, attributes, uuid)
 
     bpy.ops.wm.quit_blender()
 
