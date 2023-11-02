@@ -133,7 +133,7 @@ def run_sim(model_path, output_path, attributes, uuid):
 
     z_angle_of_fastener = init_and_sim_fastener(C, fastener, scenes)
 
-    top_down_image_path = output_path / f"0__{uuid}_.jpg"
+    top_down_image_path = output_path / f"0_{uuid}.jpg"
 
     C.window.scene = scenes[TOPDOWN_SCENE]
     play_scene(C)
