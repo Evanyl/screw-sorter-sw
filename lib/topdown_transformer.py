@@ -75,8 +75,25 @@ def _processMetric_real(label):
     in:  metric label from the imaging station
     out: unified metric label dict
     """
-    # no metric imaging station data yet...
-    pass
+    w = float(label["attributes"]["diameter"].split(" ")[0][1:])
+    l = float(label["attributes"]["length"].split(" ")[0])
+    p = float(label["attributes"]["pitch"].split(" ")[0])
+    h = label["attributes"]["head"].lower()
+    d = label["attributes"]["drive"].lower()
+    system = label["measurement_system"].lower()
+    world = label["world"].lower()
+    id = label["uuid"]
+    return {
+        "length": l,
+        "width":  w,
+        "pitch":  p,
+        "head":   h,
+        "drive":  d,
+        "system": system,
+        "world":  world,
+        "id":     id
+    }
+    
 
 def _processMetric_sim(label):
     """
@@ -108,7 +125,7 @@ def _processImperial_real(label):
     out: unified metric label dict
     """
     w = num2inchwidth[int(label["attributes"]["diameter"].split(" ")[0])]*INCH_TO_MM
-    l = _sfrac2float(label["attributes"]["length"].split(" ")[0])
+    l = _sfrac2float(label["attributes"]["length"].split(" ")[0])*INCH_TO_MM
     p = 1.0/int(label["attributes"]["pitch"].split(" ")[0])*INCH_TO_MM
     h = label["attributes"]["head"].lower()
     d = label["attributes"]["drive"].lower()
@@ -329,10 +346,10 @@ def transform_images(write_dpath, read_dpath):
     count = 0
     home = os.getcwd()
     os.chdir(read_dpath)
-    data_directories = [f for f in os.listdir(read_dpath) if os.path.isdir(f)]
+    data_directories = [f for f in os.listdir(read_dpath) \
+                        if os.path.isdir(f) and not f.startswith(".")]
     for data_directory in data_directories:
         os.chdir(data_directory)
-        
         metadata_file = [f for f in os.listdir() if f.endswith(".json")][0]
         label = {}
 
@@ -340,7 +357,6 @@ def transform_images(write_dpath, read_dpath):
             metadata = json.load(mf)
             if re.match("real", metadata["world"]):
                 if re.match("inch", metadata["measurement_system"].lower()):
-                    # real imperial screw
                     label = _processImperial_real(metadata)
                 else:
                     label = _processMetric_real(metadata)
@@ -381,6 +397,5 @@ def transform_images(write_dpath, read_dpath):
 
                 count += 1
                 print(f"Processed Image{count}")
- 
         os.chdir(read_dpath)
     os.chdir(home)
