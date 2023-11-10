@@ -24,6 +24,7 @@ num2inchwidth = [
     0.099, # No.3
     0.112, # No.4
     0.125, # No.5 
+    0.138, # No.6
 ]
 
 # image processing constants
@@ -68,6 +69,88 @@ def _processImperial(label):
     p = 1.0/int(thread_size[1])*INCH_TO_MM
     # return {"width": w, "length": l, "pitch": p, "metric": False}
     return {"length": l, "pitch": p, "metric": True}
+
+# temporary private functions to handle differences between sim and real labels
+def _processMetric_real(label):
+    """
+    in:  metric label from the imaging station
+    out: unified metric label dict
+    """
+    # no metric imaging station data yet...
+    pass
+
+def _processMetric_sim(label):
+    """
+    in:  metric label from the simulation
+    out: unified metric label dict
+    """
+    w = float(label["attributes"]["diameter"])
+    l = float(label["attributes"]["length"].split("mm")[0])
+    p = float(label["attributes"]["pitch"].split("mm")[0])
+    h = label["attributes"]["head"].lower()
+    d = label["attributes"]["drive"].lower()
+    system = label["measurement_system"].lower()
+    world = label["world"].lower()
+    id = label["uuid"]
+    return {
+        "length": l,
+        "width":  w,
+        "pitch":  p,
+        "head":   h,
+        "drive":  d,
+        "system": system,
+        "world":  world,
+        "id":     id
+    }
+
+def _processImperial_real(label):
+    """
+    in:  imperial label from the imaging station
+    out: unified metric label dict
+    """
+    w = num2inchwidth[int(label["attributes"]["diameter"].split(" ")[0])]*INCH_TO_MM
+    l = _sfrac2float(label["attributes"]["length"].split(" ")[0])
+    p = 1.0/int(label["attributes"]["pitch"].split(" ")[0])*INCH_TO_MM
+    h = label["attributes"]["head"].lower()
+    d = label["attributes"]["drive"].lower()
+    system = label["measurement_system"].lower()
+    world = label["world"].lower()
+    id = label["uuid"]
+    return {
+        "length": l,
+        "width":  w,
+        "pitch":  p,
+        "head":   h,
+        "drive":  d,
+        "system": system,
+        "world":  world,
+        "id":     id
+    }
+
+def _processImperial_sim(label):
+    """
+    in:  imperial label from the simulation
+    out: unified metric label dict
+    """
+    thread_size = label["attributes"]["thread_size"].split("-")
+    w = num2inchwidth[int(thread_size[0])]*INCH_TO_MM
+    l = _sfrac2float(label["attributes"]["length"].split('"')[0])*INCH_TO_MM
+    p = 1.0/int(thread_size[-1])*INCH_TO_MM
+    h = label["attributes"]["head"].lower()
+    d = label["attributes"]["drive"].lower()
+    system = label["measurement_system"].lower()
+    world = label["world"].lower()
+    id = label["uuid"]
+    return {
+        "length": l,
+        "width":  w,
+        "pitch":  p,
+        "head":   h,
+        "drive":  d,
+        "system": system,
+        "world":  world,
+        "id":     id
+    }
 
 # helpers for pose estimation and screw normalization
 def _get_center(contours, x, y, vx, vy):
@@ -251,51 +334,60 @@ def transform_images(write_dpath, read_dpath):
     for data_directory in data_directories:
         os.chdir(data_directory)
         
-        metadata_file = [f for f in os.listdir() if not os.path.isdir(f)][0]
+        metadata_file = [f for f in os.listdir() if f.endswith(".json")][0]
         label = {}
 
         with open(metadata_file) as mf:
             metadata = json.load(mf)
-            if re.match("M", metadata["thread_size"]):
-                label = _processMetric(metadata)
+            if re.match("real", metadata["world"]):
+                if re.match("inch", metadata["measurement_system"].lower()):
+                    # real imperial screw
+                    label = _processImperial_real(metadata)
+                else:
+                    label = _processMetric_real(metadata)
             else:
-                label = _processImperial(metadata)
+                if re.match("inch", metadata["measurement_system"].lower()):
+                    label = _processImperial_sim(metadata)
+                else:
+                    label = _processMetric_sim(metadata)
 
-        image_directories = [f for f in os.listdir() if os.path.isdir(f)]
-        for image_directory in image_directories:
+        
 
-            os.chdir(image_directory)
-            image_files = os.listdir()
-            for image_file in image_files:
-                if re.match(".*_top", image_file):
-                    # create directory
-                    label["id"] = str(uuid1())
-                    name = "{d}_screw_{l}_{p}_{u}_{n}"\
-                           .format(d=image_directory.split('_')[0],
-                                #    w=label["width"], 
-                                   l=round(label["length"], 3)    , 
-                                   p=round(label["pitch"], 3)     ,
-                                   u=label["metric"]              ,
-                                   n=label["id"])
+        # image_directories = [f for f in os.listdir() if os.path.isdir(f)]
+        # for image_directory in image_directories:
 
-                    os.mkdir(write_dpath + name)
-                    img = transform_image(image_file)
-                    # write the transformed image
-                    cv2.imwrite(write_dpath + \
-                                name        + \
-                                "/"         + \
-                                name        + \
-                                ".png"         , img)
-                    # copy over the json label
-                    with open(write_dpath + \
-                              name        + \
-                              "/"         + \
-                              name        + \
-                              ".json", "w"   ) as f:
-                        json.dump(label, f)
+        #     os.chdir(image_directory)
+        image_files = [f for f in os.listdir() if not f.endswith(".json")]
+        for image_file in image_files:
+            if re.match("0", image_file.split("_")[0]):
+                name = "screw_{s}_{u}_{w}_{l}_{p}_{d}_{h}_{n}"\
+                        .format(s=label["world"]           ,
+                                u=label["system"]          ,
+                                w=round(label["width"],  3),
+                                l=round(label["length"], 3), 
+                                p=round(label["pitch"],  3),
+                                d=label["drive"]           ,
+                                h=label["head"]            ,
+                                n=label["id"])
 
-                    count += 1
-                    print(f"Processed Image{count}")
-            os.chdir(read_dpath + data_directory)
+                os.mkdir(write_dpath + name)
+                img = transform_image(image_file)
+                # write the transformed image
+                cv2.imwrite(write_dpath + \
+                            name        + \
+                            "/"         + \
+                            name        + \
+                            ".png"         , img)
+                # copy over the json label
+                with open(write_dpath + \
+                            name        + \
+                            "/"         + \
+                            name        + \
+                            ".json", "w"   ) as f:
+                    json.dump(label, f)
+
+                count += 1
+                print(f"Processed Image{count}")
+            # os.chdir(read_dpath + data_directory)
         os.chdir(read_dpath)
     os.chdir(home)
