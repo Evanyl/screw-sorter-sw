@@ -1,19 +1,11 @@
-################################################################################
-#                                I M P O R T S                                 #
-################################################################################
-
 import os
 import cv2
 import numpy  as np
 import json
+from pathlib import Path
 import re
 import sys
 
-################################################################################
-#                              C O N S T A N T S                               #
-################################################################################
-
-# label processing constants
 INCH_TO_MM = 25.4
 
 num2inchwidth = [
@@ -26,18 +18,23 @@ num2inchwidth = [
     0.138, # No.6
 ]
 
-# image processing constants
 THRESH = 150
 
-################################################################################
-#                              V A R I A B L E S                               #
-################################################################################
-
-################################################################################
-#                      P R I V A T E  F U N C T I O N S                        #
-################################################################################
-
 # helpers for label generation
+
+def _imp_to_metric(s):
+    """
+    in: imperial string
+    out: float
+    """
+
+    s = s.split('"')[0]
+
+    if "/" in s:
+        return _sfrac2float(s) * INCH_TO_MM
+    else:
+        return float(s) * INCH_TO_MM
+
 def _sfrac2float(s):
     """
     in:  str fraction "{num}/{denom}"
@@ -70,22 +67,15 @@ def _processImperial(label):
     return {"length": l, "pitch": p, "metric": True}
 
 # temporary private functions to handle difference between real and sim labels
+# TODO: Rectify this
 def _processMetric_real(label):
     """
     in:  metric label from the imaging station
     out: unified metric label dict
     """
-    # no metric imaging station data yet...
-    pass
-
-def _processMetric_sim(label):
-    """
-    in:  metric label from the simulation
-    out: unified metric label dict
-    """
-    w = float(label["attributes"]["diameter"])
-    l = float(label["attributes"]["length"].split("mm")[0])
-    p = float(label["attributes"]["pitch"].split("mm")[0])
+    w = float(label["attributes"]["diameter"].split(" ")[0][1:])
+    l = float(label["attributes"]["length"].split(" ")[0])
+    p = float(label["attributes"]["pitch"].split(" ")[0])
     h = label["attributes"]["head"].lower()
     d = label["attributes"]["drive"].lower()
     system = label["measurement_system"].lower()
@@ -101,6 +91,35 @@ def _processMetric_sim(label):
         "world":  world,
         "id":     id
     }
+    
+
+def _processMetric_sim(label):
+    """
+    in:  metric label from the simulation
+    out: unified metric label dict
+    """
+    w = float(label["attributes"]["diameter"])
+    l = float(label["attributes"]["length"].split("mm")[0])
+    p = float(label["attributes"]["pitch"].split("mm")[0])
+    h = label["attributes"]["head"].lower()
+    d = label["attributes"]["drive"].lower()
+    finish = label["attributes"]["finish"].lower()
+    head_diameter = float(label["attributes"]["head_diameter"].split("mm")[0])
+    system = label["measurement_system"].lower()
+    world = label["world"].lower()
+    id = label["uuid"]
+    return {
+        "length": l,
+        "width":  w,
+        "pitch":  p,
+        "head":   h,
+        "drive":  d,
+        "finish": finish,
+        "head_diameter": head_diameter,
+        "system": system,
+        "world":  world,
+        "id":     id
+    }
 
 def _processImperial_real(label):
     """
@@ -108,7 +127,7 @@ def _processImperial_real(label):
     out: unified metric label dict
     """
     w = num2inchwidth[int(label["attributes"]["diameter"].split(" ")[0])]*INCH_TO_MM
-    l = _sfrac2float(label["attributes"]["length"].split(" ")[0])
+    l = _sfrac2float(label["attributes"]["length"].split(" ")[0])*INCH_TO_MM
     p = 1.0/int(label["attributes"]["pitch"].split(" ")[0])*INCH_TO_MM
     h = label["attributes"]["head"].lower()
     d = label["attributes"]["drive"].lower()
@@ -137,6 +156,8 @@ def _processImperial_sim(label):
     p = 1.0/int(thread_size[-1])*INCH_TO_MM
     h = label["attributes"]["head"].lower()
     d = label["attributes"]["drive"].lower()
+    finish = label["attributes"]["finish"].lower()
+    head_diameter = _imp_to_metric(label["attributes"]["head_diameter"])
     system = label["measurement_system"].lower()
     world = label["world"].lower()
     id = label["uuid"]
@@ -146,6 +167,8 @@ def _processImperial_sim(label):
         "pitch":  p,
         "head":   h,
         "drive":  d,
+        "finish": finish,
+        "head_diameter": head_diameter,
         "system": system,
         "world":  world,
         "id":     id
@@ -286,11 +309,7 @@ def _pad(img, desired_shape):
        raise Exception("Bounding Box Error: size of subject exceeds 250x575")
     return out
 
-################################################################################
-#                       P U B L I C  F U N C T I O N S                         #
-################################################################################
-
-def transform_image(read_fpath):
+def transform_top_image(read_fpath):
     """
     in:  path to raw image data to read read_fpath
     out: straightened and cropped binary image of shape 250x575
@@ -320,19 +339,46 @@ def transform_image(read_fpath):
 
     return img
 
+def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=1400, bot_plane_y=3050):
+    """
+    in:  path to raw image data to read read_fpath
+    out: cropped image of shape 800x800
+    """
+
+    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = img[top_plane_y:bot_plane_y, :]
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+
+    blur = cv2.GaussianBlur(img,(9,9),0)
+    _, img = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    main_contour = sorted(contours, key=cv2.contourArea, reverse=True)[1]
+
+    M = cv2.moments(main_contour)
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"]) + top_plane_y
+
+    img = cv2.imread(read_fpath, cv2.IMREAD_COLOR)
+    img = img[int(cY-crop_h):int(cY+crop_h), int(cX-crop_w):int(cX+crop_w)]
+
+    return img
+
 def transform_images(write_dpath, read_dpath):
     """
     in:  - path to directory to write processed data to write_dpath
          - path to directory upholding directory to read from read_dpath
     out: flat directory structure holding processed data
     """
+    write_dpath = Path(write_dpath)
+    read_dpath = Path(read_dpath)
     count = 0
     home = os.getcwd()
     os.chdir(read_dpath)
-    data_directories = [f for f in os.listdir(read_dpath) if os.path.isdir(f)]
+    data_directories = [f for f in os.listdir(read_dpath) \
+                        if os.path.isdir(f) and not f.startswith(".")]
     for data_directory in data_directories:
         os.chdir(data_directory)
-        
         metadata_file = [f for f in os.listdir() if f.endswith(".json")][0]
         label = {}
 
@@ -340,7 +386,6 @@ def transform_images(write_dpath, read_dpath):
             metadata = json.load(mf)
             if re.match("real", metadata["world"]):
                 if re.match("inch", metadata["measurement_system"].lower()):
-                    # real imperial screw
                     label = _processImperial_real(metadata)
                 else:
                     label = _processMetric_real(metadata)
@@ -351,36 +396,36 @@ def transform_images(write_dpath, read_dpath):
                     label = _processMetric_sim(metadata)
 
         image_files = [f for f in os.listdir() if not f.endswith(".json")]
+        top_img = None
+        side_img = None
+        name = None
         for image_file in image_files:
-            if re.match("0", image_file.split("_")[0]):
-                name = "screw_{s}_{u}_{w}_{l}_{p}_{d}_{h}_{n}"\
-                        .format(s=label["world"]           ,
-                                u=label["system"]          ,
-                                w=round(label["width"],  3),
-                                l=round(label["length"], 3), 
-                                p=round(label["pitch"],  3),
-                                d=label["drive"]           ,
-                                h=label["head"]            ,
-                                n=label["id"])
+            image_num = image_file.split("_")[0]
+            name = "screw_{s}_{u}_{w}_{l}_{p}_{d}_{h}_{n}"\
+                    .format(s=label["world"]           ,
+                            u=label["system"]          ,
+                            w=round(label["width"],  3),
+                            l=round(label["length"], 3), 
+                            p=round(label["pitch"],  3),
+                            d=label["drive"]           ,
+                            h=label["head"]            ,
+                            n=label["id"])
 
-                os.mkdir(write_dpath + name)
-                img = transform_image(image_file)
-                # write the transformed image
-                cv2.imwrite(write_dpath + \
-                            name        + \
-                            "/"         + \
-                            name        + \
-                            ".png"         , img)
-                # copy over the json label
-                with open(write_dpath + \
-                            name        + \
-                            "/"         + \
-                            name        + \
-                            ".json", "w"   ) as f:
-                    json.dump(label, f)
+            if image_num == "0":
+                top_img = transform_top_image(image_file)
+            elif image_num == "1":
+                side_img = transform_side_image(image_file)
 
-                count += 1
-                print(f"Processed Image{count}")
- 
+        top_img = np.stack((top_img,)*3, axis=-1)
+        img_concat = np.concatenate([top_img, side_img], axis=0)
+        curr_write_dir = write_dpath / name
+        os.makedirs(curr_write_dir, exist_ok=True)
+
+        cv2.imwrite(str(curr_write_dir / f"{name}.png"), img_concat)
+        with open(curr_write_dir / f"{name}.json", "w") as f:
+            json.dump(label, f)
+
+        count += 1
+        print(f"Processed Image{count}")
         os.chdir(read_dpath)
     os.chdir(home)
