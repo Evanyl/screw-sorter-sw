@@ -8,7 +8,6 @@ import numpy  as np
 import json
 import re
 import sys
-from uuid import uuid1
 
 ################################################################################
 #                              C O N S T A N T S                               #
@@ -70,7 +69,7 @@ def _processImperial(label):
     # return {"width": w, "length": l, "pitch": p, "metric": False}
     return {"length": l, "pitch": p, "metric": True}
 
-# temporary private functions to handle differences between sim and real labels
+# temporary private functions to handle difference between real and sim labels
 def _processMetric_real(label):
     """
     in:  metric label from the imaging station
@@ -351,12 +350,6 @@ def transform_images(write_dpath, read_dpath):
                 else:
                     label = _processMetric_sim(metadata)
 
-        
-
-        # image_directories = [f for f in os.listdir() if os.path.isdir(f)]
-        # for image_directory in image_directories:
-
-        #     os.chdir(image_directory)
         image_files = [f for f in os.listdir() if not f.endswith(".json")]
         for image_file in image_files:
             if re.match("0", image_file.split("_")[0]):
@@ -388,6 +381,6 @@ def transform_images(write_dpath, read_dpath):
 
                 count += 1
                 print(f"Processed Image{count}")
-            # os.chdir(read_dpath + data_directory)
+ 
         os.chdir(read_dpath)
     os.chdir(home)
