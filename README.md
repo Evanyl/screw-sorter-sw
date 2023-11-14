@@ -67,3 +67,15 @@ rclone lsd gdrive:2306\ Screw\ Sorter
 ```
 
 It should list the top-level directories in our screw sorter folder.
+
+# `screw-sorter-sw/fw/`
+
+## Re-Flashing Mirco
+
+To reflash the micro without blowing the LEDs:
+
+1. Put the dome-light PWM signal (`PA1`) on `3.3V` pin,
+2. Put the LED back-light on PWM signal (`PA0`) on `GND` pin,
+3. Move the jumpers on the BP so that hitting the reset button kicks off the bootloader
+4. Flash new firmware with PlatformIO IDE,
+5. Move the jumpers and PWM lines back to their previous locations.

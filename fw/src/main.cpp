@@ -29,7 +29,6 @@ void setup()
     // A1 dome light (OFF Duty Cycle 100%)
     // 57482us
 
-
     // pinMode(PB1, OUTPUT);
     // pwm_start(PB_1, 50, 12, TimerCompareFormat_t::PERCENT_COMPARE_FORMAT); // 2 -> 12 rotates arm down (range 2-13)
 }
@@ -130,6 +129,11 @@ void loop()
                             // reset arm to top position
                             state = WAIT_ON_RPI;
                         }
+                        // Added to skip all side-on images for top-down data
+                        //  collection purposes.
+                        state = WAIT_ON_RPI;
+                        light_update(BACK, BACK_OFF);
+                        serial_send(RPI, "finished-imaging");
                     }
                 }
             }           
