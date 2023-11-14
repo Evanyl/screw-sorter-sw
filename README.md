@@ -1,4 +1,4 @@
-# screw-sorter-sw
+# `screw-sorter-sw/sim/`
 
 ## Setup
 To run blender simulation, need to install blender
@@ -19,10 +19,11 @@ To run blender simulation, need to install blender
 ### Using simulation
 Example command to run to generate sim images
 `blender side_profile_2.blend --background --python ./scripts/run_sim.py`
-# imaging-station
+
+# `screw-sorter-sw/ui/`
 Codebase for a fastener imaging station.
 
-# How to run the UI
+## How to run the UI
 Go to this directory
 ```
 cd sw
@@ -33,7 +34,7 @@ Run the UI python script
 ```
 
 
-# How to refresh the rclone token
+## How to refresh the rclone token
 We use rclone to copy our imaging tests to google drive.
 It uses a token to upload to drive that expires pretty often (like daily?)
 
