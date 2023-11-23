@@ -61,21 +61,17 @@ static void scheduler_ISR(void)
         {
             scheduler_data.task_500us_flag = true;
         }
-        else if (scheduler_data.counter % COUNT_1ms == 0)
+        if (scheduler_data.counter % COUNT_1ms == 0)
         {
             scheduler_data.task_1ms_flag = true;
         }
-        else if (scheduler_data.counter % COUNT_10ms == 0)
+        if (scheduler_data.counter % COUNT_10ms == 0)
         {
             scheduler_data.task_10ms_flag = true;
         }
-        else if (scheduler_data.counter % COUNT_100ms == 0)
+        if (scheduler_data.counter % COUNT_100ms == 0)
         {
             scheduler_data.task_100ms_flag = true;
-        }
-        else
-        {
-            // do nothing
         }
     }
     else
@@ -91,24 +87,21 @@ static PT_THREAD(run500us(struct pt* thread))
     // scheduling code here
     if (scheduler_data.task_1ms_flag)
     {
-        // copying the flags from volatile data to normal data ensures that all
-        //     tasks of the same period will execute in a single loop
-        // without the scheduler synchronizing, there is a chance that a volatile
-        //     flag is changed during the execution of the main loop and certain
-        //     tasks of a particular period execute while others do not.
-        // this is not a problem for the scheduler task because there is only 1
         scheduler_data.task_1ms_flag = false;
-        (void) memset(&scheduler_data.mutexes_1ms, 1, sizeof(scheduler_data.mutexes_1ms));
+        (void) memset(&scheduler_data.mutexes_1ms, 1, 
+                      sizeof(scheduler_data.mutexes_1ms));
     }
     else if (scheduler_data.task_10ms_flag)
     {
         scheduler_data.task_10ms_flag = false;
-        (void) memset(&scheduler_data.mutexes_10ms, 1, sizeof(scheduler_data.mutexes_10ms));
+        (void) memset(&scheduler_data.mutexes_10ms, 1, 
+                      sizeof(scheduler_data.mutexes_10ms));
     }
     else if (scheduler_data.task_100ms_flag)
     {
         scheduler_data.task_100ms_flag = false;
-        (void) memset(&scheduler_data.mutexes_100ms, 1, sizeof(scheduler_data.mutexes_100ms));
+        (void) memset(&scheduler_data.mutexes_100ms, 1, 
+                      sizeof(scheduler_data.mutexes_100ms));
     }
     else
     {
@@ -137,4 +130,29 @@ void scheduler_init(void)
 void scheduler_run500us(void)
 {
     run500us(&scheduler_data.thread);
+}
+
+bool scheduler_taskReleased(task_period_E period, uint8_t task_id)
+{
+    bool ret = false;
+    if (period == PERIOD_1ms)
+    {
+        ret = scheduler_data.mutexes_1ms[task_id];
+        scheduler_data.mutexes_1ms[task_id] = false;
+    }
+    else if (period == PERIOD_10ms)
+    {
+        ret = scheduler_data.mutexes_10ms[task_id];
+        scheduler_data.mutexes_10ms[task_id] = false;
+    }
+    else if (period == PERIOD_100ms)
+    {
+        ret = scheduler_data.mutexes_100ms[task_id];
+        scheduler_data.mutexes_100ms[task_id] = false;
+    }
+    else
+    {
+        // invalid period, do nothing
+    }
+    return ret;
 }
