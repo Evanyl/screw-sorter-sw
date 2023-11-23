@@ -3,6 +3,10 @@
 #include "core/stepper.h"
 #include "core/servo.h"
 #include "core/light.h"
+#include <pt.h>
+#include <pt-sem.h>
+
+#include "app/scheduler.h"
 
 void setup() 
 {
@@ -32,6 +36,18 @@ void setup()
 
     // pinMode(PB1, OUTPUT);
     // pwm_start(PB_1, 50, 12, TimerCompareFormat_t::PERCENT_COMPARE_FORMAT); // 2 -> 12 rotates arm down (range 2-13)
+
+    // NOTES FOR MULTI-THREADING
+    // to enforce task timing we can do PT_SEM_WAIT(timer_flag)
+    // create a task timer thread to run constantly updating flags for different periods?
+    // use timers with set periods to set semiphores in their ISR
+    //      how do we ensure that tasks aren't executing out of turn
+    //      use last val + current val comparison (last val stored in var in timer task)
+    //      (1) have a static volatile counter variable that maintains how many times the timer has ticked
+    //      (2) update the flags in a timing task that runs as fast as possible
+    //      (3) how do we make sure that the counter change before timing task can read it?
+    //              make the timing task run at least 2x the speed of the timer?
+    //              to make this happen, we've got to ensure in the worst case that the timing task can do this
 }
 
 typedef enum
@@ -47,11 +63,12 @@ static state_t state = WAIT_ON_RPI;
 
 static char picMessage[] = "picture";
 
-// #define DEBUG
-
 #ifdef DEBUG
 void loop()
 {
+    scheduler_run500us();
+
+
     // wait until there is serial data
     if (serial_available(COMPUTER))
     {
