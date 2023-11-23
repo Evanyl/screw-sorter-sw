@@ -1,0 +1,13 @@
+name: screw-sorter
+dependencies:
+  - python=3.10
+  - click
+  - pip
+  - pip:
+    # This is requried as undetected-chromedriver hasn't updated api yet.
+    # Hopefully will be patched soon
+    - selenium < 4.13.0
+    - undetected-chromedriver
+    - webdriver-manager
+    - bpy
+    - cadquery

@@ -1,1 +1,5 @@
+*.DS_Store
+*.pt
+*.swp
+*__pycache__*
 .vscode
