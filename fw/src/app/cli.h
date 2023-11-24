@@ -9,6 +9,7 @@
 #include <Arduino.h>
 
 #include "scheduler.h"
+#include "dev/serial.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -22,7 +23,7 @@
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void serial_init(void);
-void serial_run100ms(void);
+void cli_init(void);
+void cli_run100ms(void);
 
 #endif // APP_CLI

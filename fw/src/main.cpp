@@ -5,7 +5,7 @@
 void setup() 
 {
     scheduler_init();
-    serial_init();
+    cli_init();
 }
 
 void loop()
@@ -18,5 +18,5 @@ void loop()
     // 10ms tasks
 
     // 100ms tasks
-    serial_run100ms();
+    cli_run100ms();
 }

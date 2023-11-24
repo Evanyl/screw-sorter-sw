@@ -1,53 +1,39 @@
-#ifndef APP_SCHEDULER
-#define APP_SCHEDULER
+
+#ifndef DEV_SERIAL
+#define DEV_SERIAL
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
-#include <pt.h>
 #include <Arduino.h>
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
+#define SERIAL_MESSAGE_SIZE (100)
+
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/
 
-typedef enum
-{
-    PERIOD_1ms,
-    PERIOD_10ms,
-    PERIOD_100ms,
-} task_period_E;
-
-typedef enum
-{
-    DEPOSITOR,
-    IMAGING_PLANE,
-    TASK_1ms_COUNT
-} tasks_1ms_E;
-
-typedef enum
-{
-    LIGHTS,
-    TASK_10ms_COUNT
-} tasks_10ms_E;
-
-typedef enum
-{
-    CLI,
-    TASK_100ms_COUNT
-} tasks_100ms_E;
+typedef enum {
+    PORT_COMPUTER,
+    PORT_RPI,
+    PORT_COUNT
+} serial_port_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/ 
+*******************************************************************************/
 
-void scheduler_init(void);
-void scheduler_run500us(void);
-bool scheduler_taskReleased(task_period_E period, uint8_t task_id);
+void serial_init(serial_port_E port);
+bool serial_available(serial_port_E port);
+char serial_readByte(serial_port_E port);
+bool serial_handleByte(serial_port_E port, char byte);
+void serial_send(serial_port_E port, char* line);
+void serial_echo(serial_port_E port);
+void serial_getLine(serial_port_E port, char* lineBuffer);
 
-#endif // APP_SCHEDULER
+#endif // DEV_SERIAL 
