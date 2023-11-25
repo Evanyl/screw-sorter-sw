@@ -1,11 +1,16 @@
 
 #include "app/scheduler.h"
 #include "app/cli.h"
+#include "dev/motor_runner.h"
 
 void setup() 
 {
+    // initialization of applications
     scheduler_init();
     cli_init();
+
+    // begin motor control
+    motor_runner_init();
 }
 
 void loop()
