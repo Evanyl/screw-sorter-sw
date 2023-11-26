@@ -4,6 +4,7 @@
 *******************************************************************************/ 
 
 #include "cli.h"
+#include "dev/servo.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -47,13 +48,15 @@ static char run100ms(struct pt* thread);
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
 *******************************************************************************/ 
 
+// char line[SERIAL_MESSAGE_SIZE] = {' '};
+
 static cli_data_s cli_data = 
 {
     .cmds = 
     {
         // add commands with macros defined in respective headers like:
         // STEPPER_COMMANDS,
-        // SERVO_COMMANDS,
+        SERVO_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };
@@ -67,7 +70,7 @@ void cli_parseLine(char* message)
     // Tokenize the line with spaces as the delimiter
     char* tok = (char*) strtok(message, " ");
     uint8_t i = 0;
-    while (tok != NULL && i < SERIAL_MESSAGE_SIZE)
+    while (tok != NULL && i < (CLI_MAX_ARGS + 1))
     {
         cli_data.tokLine[i] = tok;
         tok = strtok(NULL, " ");
@@ -123,18 +126,22 @@ static PT_THREAD(run100ms(struct pt* thread))
 {
     PT_BEGIN(thread);
     PT_WAIT_UNTIL(thread, scheduler_taskReleased(PERIOD_100ms, (uint8_t) CLI));
-    
+
     // wait until there is serial data
-    if (serial_available(PORT_COMPUTER))
+    while (serial_available(PORT_COMPUTER))
     {
         if (serial_handleByte(PORT_COMPUTER, serial_readByte(PORT_COMPUTER)))
         {
             serial_echo(PORT_COMPUTER);
+            // char* line = (char*) malloc(SERIAL_MESSAGE_SIZE);
+            // Serial.println(line);
             serial_getLine(PORT_COMPUTER, cli_data.line);
             cli_parseLine(cli_data.line);
+            // free(line);
             serial_send(PORT_COMPUTER, CLI_PROMPT);
+            break;
         }
-    }    
+    }
 
     PT_END(thread);
 }

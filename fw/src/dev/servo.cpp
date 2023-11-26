@@ -4,6 +4,7 @@
 *******************************************************************************/ 
 
 #include "servo.h"
+#include "serial.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -25,11 +26,9 @@
 typedef struct
 {
     uint8_t pin;
-    int16_t curr_angle;
+    volatile int16_t curr_angle;
     int16_t des_angle;
     int16_t delta;
-    uint8_t curr_steps;
-    uint8_t des_steps;
 } servo_s;
 
 typedef struct
@@ -52,7 +51,7 @@ servo_data_s servo_data =
     {
         [SERVO_DEPOSITOR] = 
         {
-            .pin = PB1,
+            .pin = PA_3,
             .curr_angle = 0,
             .des_angle = 0,
             .delta = 0
@@ -76,7 +75,7 @@ void servo_init(servo_id_E servo, int16_t angle)
     s->curr_angle = angle;
     pinMode(s->pin, OUTPUT);
     pwm_start((PinName) s->pin, 
-              1/SERVO_PWM_PERIOD, 
+              1000000/SERVO_PWM_PERIOD, 
               MIN_PWM_DUTY_16BITS + 
                   (int) DELTA_PWM_DUTY_16BITS*(s->des_angle/DELTA_ANGLE),
               TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
@@ -91,7 +90,7 @@ bool servo_command(servo_id_E servo, int16_t angle, uint8_t steps)
         s->des_angle = angle;
         s->delta = (int16_t) (s->des_angle - s->curr_angle) / steps;
     }
-    else if (s->des_angle == s->curr_angle && s->des_steps == s->curr_steps)
+    else if (s->des_angle == s->curr_angle)
     {
         ret = true;
     }
@@ -109,8 +108,8 @@ void servo_update(servo_id_E servo)
         s->curr_angle != s->des_angle)
     {
         s->curr_angle = s->des_angle;
-        pwm_start((PinName) s->pin, 
-                  1/SERVO_PWM_PERIOD, 
+        pwm_start((PinName) s->pin,
+                  1000000/SERVO_PWM_PERIOD,
                   MIN_PWM_DUTY_16BITS + 
                     (int) DELTA_PWM_DUTY_16BITS*(s->des_angle/DELTA_ANGLE),
                   TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
@@ -118,8 +117,8 @@ void servo_update(servo_id_E servo)
     else if (abs(s->des_angle - s->curr_angle) > 0)
     {
         s->curr_angle += s->delta;
-        pwm_start((PinName) s->pin, 
-                  1/SERVO_PWM_PERIOD, 
+        pwm_start((PinName) s->pin,
+                  1000000/SERVO_PWM_PERIOD, 
                   MIN_PWM_DUTY_16BITS + 
                     (int) DELTA_PWM_DUTY_16BITS*(s->curr_angle/DELTA_ANGLE),
                   TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
@@ -127,5 +126,29 @@ void servo_update(servo_id_E servo)
     else
     {
         // do nothing, desired angle has been acheived
+    }
+}
+
+void servo_cli_move(uint8_t argNumber, char* args[])
+{
+    int16_t angle = atoi(args[0]);
+    uint8_t steps = atoi(args[1]);
+    servo_command(SERVO_DEPOSITOR, angle, steps);
+}
+
+void servo_cli_dump(uint8_t argNumber, char* args[])
+{
+    if (strcmp(args[0], "depositor") == 0)
+    {
+        servo_s* s = &servo_data.servos[SERVO_DEPOSITOR];
+        char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+        sprintf(st, "{\"des_angle\": %i, \"curr_angle\": %i}", 
+                s->des_angle, s->curr_angle);
+        serial_send(PORT_COMPUTER, st);
+        free(st);
+    }
+    else
+    {
+        serial_send(PORT_COMPUTER, "invalid servo");
     }
 }

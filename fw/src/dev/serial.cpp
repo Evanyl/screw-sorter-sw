@@ -116,6 +116,7 @@ void serial_echo(serial_port_E port)
 
 void serial_getLine(serial_port_E port, char* lineBuffer)
 {
-    memcpy(&serial_data.ports[port].port_buffer.line, lineBuffer, 
-           sizeof(serial_data.ports[port].port_buffer.line));
+    lineBuffer = (char*) memcpy(lineBuffer, 
+                                &serial_data.ports[port].port_buffer.line, 
+                                SERIAL_MESSAGE_SIZE);
 }

@@ -2,12 +2,15 @@
 #include "app/scheduler.h"
 #include "app/cli.h"
 #include "dev/motor_runner.h"
+#include "dev/servo.h"
 
 void setup() 
 {
     // initialization of applications
     scheduler_init();
     cli_init();
+
+    servo_init(SERVO_DEPOSITOR, 0); // should be in depositor init not here...
 
     // begin motor control
     motor_runner_init();
