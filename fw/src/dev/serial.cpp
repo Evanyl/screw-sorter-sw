@@ -97,9 +97,14 @@ bool serial_handleByte(serial_port_E port, char byte)
     return ret;
 }
 
-void serial_send(serial_port_E port, char* line)
+void serial_send_nl(serial_port_E port, char* line)
 {
     serial_data.ports[port].connection->println(line);
+}
+
+void serial_send(serial_port_E port, char* line)
+{
+    serial_data.ports[port].connection->print(line);
 }
 
 void serial_echo(serial_port_E port)

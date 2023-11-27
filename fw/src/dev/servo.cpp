@@ -10,14 +10,17 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define SERVO_PWM_PERIOD    (20000)
-#define SERVO_PWM_PULSE_MAX (2000)
-#define SERVO_PWM_PULSE_MIN (1000)
-#define MAX_PWM_DUTY_16BITS (int)(65535)*(SERVO_PWM_PULSE_MAX/SERVO_PWM_PERIOD)
-#define MIN_PWM_DUTY_16BITS (int)(65535)*(SERVO_PWM_PULSE_MIN/SERVO_PWM_PERIOD)
+#define SERVO_PWM_PERIOD_MICROSEC (20000)
+#define SERVO_PWM_FREQ_HZ         (1 / (SERVO_PWM_PERIOD_MICROSEC * pow(10,-6)))
+#define SERVO_PWM_PULSE_MAX       (2000)
+#define SERVO_PWM_PULSE_MIN       (1000)
+#define MAX_PWM_DUTY_16BITS       (int)(65535)* \
+                                  (SERVO_PWM_PULSE_MAX/SERVO_PWM_PERIOD_MICROSEC)
+#define MIN_PWM_DUTY_16BITS       (int)(65535)* \
+                                  (SERVO_PWM_PULSE_MIN/SERVO_PWM_PERIOD_MICROSEC)
 
-#define DELTA_PWM_DUTY_16BITS (MAX_PWM_DUTY_16BITS - MIN_PWM_DUTY_16BITS)
-#define DELTA_ANGLE           (180)
+#define DELTA_PWM_DUTY_16BITS     (MAX_PWM_DUTY_16BITS - MIN_PWM_DUTY_16BITS)
+#define DELTA_ANGLE               (180)
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -25,10 +28,12 @@
 
 typedef struct
 {
+    uint8_t pwm_pin;
+    uint8_t dig_pin;
     uint8_t pin;
-    volatile int16_t curr_angle;
-    int16_t des_angle;
-    int16_t delta;
+    volatile float curr_angle;
+    float des_angle;
+    float delta;
 } servo_s;
 
 typedef struct
@@ -51,10 +56,11 @@ servo_data_s servo_data =
     {
         [SERVO_DEPOSITOR] = 
         {
-            .pin = PA_3,
-            .curr_angle = 0,
-            .des_angle = 0,
-            .delta = 0
+            .pwm_pin = PA_3,
+            .dig_pin = PA3,
+            .curr_angle = 0.0,
+            .des_angle = 0.0,
+            .delta = 0.0
         }
     }
 };
@@ -67,28 +73,28 @@ servo_data_s servo_data =
 *                       P U B L I C    F U N C T I O N S                       *
 *******************************************************************************/ 
 
-void servo_init(servo_id_E servo, int16_t angle)
+void servo_init(servo_id_E servo, float angle)
 {
     // provide initial angle for servo
     servo_s* s = &servo_data.servos[servo];
     s->des_angle = angle;
     s->curr_angle = angle;
-    pinMode(s->pin, OUTPUT);
-    pwm_start((PinName) s->pin, 
-              1000000/SERVO_PWM_PERIOD, 
+    pinMode(s->dig_pin, OUTPUT);
+    pwm_start((PinName) s->pwm_pin, 
+              SERVO_PWM_FREQ_HZ, 
               MIN_PWM_DUTY_16BITS + 
                   (int) DELTA_PWM_DUTY_16BITS*(s->des_angle/DELTA_ANGLE),
               TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
 }
 
-bool servo_command(servo_id_E servo, int16_t angle, uint8_t steps)
+bool servo_command(servo_id_E servo, float angle, uint8_t steps)
 {
     bool ret = false;
     servo_s* s = &servo_data.servos[servo];
     if (s->des_angle != angle)
     {
         s->des_angle = angle;
-        s->delta = (int16_t) (s->des_angle - s->curr_angle) / steps;
+        s->delta = (float) (s->des_angle - s->curr_angle) / steps;
     }
     else if (s->des_angle == s->curr_angle)
     {
@@ -108,8 +114,8 @@ void servo_update(servo_id_E servo)
         s->curr_angle != s->des_angle)
     {
         s->curr_angle = s->des_angle;
-        pwm_start((PinName) s->pin,
-                  1000000/SERVO_PWM_PERIOD,
+        pwm_start((PinName) s->pwm_pin,
+                  SERVO_PWM_FREQ_HZ,
                   MIN_PWM_DUTY_16BITS + 
                     (int) DELTA_PWM_DUTY_16BITS*(s->des_angle/DELTA_ANGLE),
                   TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
@@ -117,8 +123,8 @@ void servo_update(servo_id_E servo)
     else if (abs(s->des_angle - s->curr_angle) > 0)
     {
         s->curr_angle += s->delta;
-        pwm_start((PinName) s->pin,
-                  1000000/SERVO_PWM_PERIOD, 
+        pwm_start((PinName) s->pwm_pin,
+                  SERVO_PWM_FREQ_HZ, 
                   MIN_PWM_DUTY_16BITS + 
                     (int) DELTA_PWM_DUTY_16BITS*(s->curr_angle/DELTA_ANGLE),
                   TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
@@ -131,9 +137,16 @@ void servo_update(servo_id_E servo)
 
 void servo_cli_move(uint8_t argNumber, char* args[])
 {
-    int16_t angle = atoi(args[0]);
-    uint8_t steps = atoi(args[1]);
-    servo_command(SERVO_DEPOSITOR, angle, steps);
+    if (strcmp(args[0], "depositor") == 0)
+    {   
+        float angle = atof(args[1]);
+        uint8_t steps = atoi(args[2]);
+        servo_command(SERVO_DEPOSITOR, angle, steps);
+    }
+    else
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid servo");
+    }
 }
 
 void servo_cli_dump(uint8_t argNumber, char* args[])
@@ -142,13 +155,13 @@ void servo_cli_dump(uint8_t argNumber, char* args[])
     {
         servo_s* s = &servo_data.servos[SERVO_DEPOSITOR];
         char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
-        sprintf(st, "{\"des_angle\": %i, \"curr_angle\": %i}", 
-                s->des_angle, s->curr_angle);
-        serial_send(PORT_COMPUTER, st);
+        sprintf(st, "{\"des_angle\": %.3f, \"curr_angle\": %.3f, \"delta\": %.3f}", 
+                s->des_angle, s->curr_angle, s->delta);
+        serial_send_nl(PORT_COMPUTER, st);
         free(st);
     }
     else
     {
-        serial_send(PORT_COMPUTER, "invalid servo");
+        serial_send_nl(PORT_COMPUTER, "invalid servo");
     }
 }

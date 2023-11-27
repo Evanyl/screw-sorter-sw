@@ -94,15 +94,15 @@ void cli_parseLine(char* message)
     {
         if (strcmp(cmds[j].command, CLI_CMD_LIST_TERMINATOR) == 0)
         {
-            serial_send(PORT_COMPUTER, "invalid command");
+            serial_send_nl(PORT_COMPUTER, "invalid command");
         }
         else if ((i - 1) > cmds[j].maxParam)
         {
-            serial_send(PORT_COMPUTER, "too many args");
+            serial_send_nl(PORT_COMPUTER, "too many args");
         }
         else if ((i - 1) < cmds[j].minParam)
         {
-            serial_send(PORT_COMPUTER, "too few args");
+            serial_send_nl(PORT_COMPUTER, "too few args");
         }
         else
         {

@@ -10,7 +10,7 @@ void setup()
     scheduler_init();
     cli_init();
 
-    servo_init(SERVO_DEPOSITOR, 0); // should be in depositor init not here...
+    servo_init(SERVO_DEPOSITOR, 0.0); // should be in application init not here
 
     // begin motor control
     motor_runner_init();
