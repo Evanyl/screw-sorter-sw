@@ -25,8 +25,7 @@ typedef enum
 
 typedef enum
 {
-    DEPOSITOR,
-    IMAGING_PLANE,
+    MOTOR_RUNNER,
     TASK_1ms_COUNT
 } tasks_1ms_E;
 

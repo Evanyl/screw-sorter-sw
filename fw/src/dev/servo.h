@@ -28,14 +28,14 @@ typedef void (*servo_update_f)(servo_id_E);
 *******************************************************************************/
 
 void servo_init(servo_id_E, float angle);
-bool servo_command(servo_id_E servo, float angle, uint8_t steps);
+bool servo_command(servo_id_E servo, float angle, uint8_t steps, uint16_t rate);
 void servo_update(servo_id_E servo);
 
 void servo_cli_move(uint8_t argNumber, char* args[]);
 void servo_cli_dump(uint8_t argNumber, char* args[]);
 
 #define SERVO_COMMANDS \
-{servo_cli_move, "servo-move", NULL, NULL, 3, 3},\
+{servo_cli_move, "servo-move", NULL, NULL, 4, 4},\
 {servo_cli_dump, "servo-dump", NULL, NULL, 1, 1}
 
 #endif // DEV_SERVO

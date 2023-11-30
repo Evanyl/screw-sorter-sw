@@ -4,13 +4,14 @@
 *******************************************************************************/ 
 
 #include "motor_runner.h"
-#include "servo.h"
+#include "scheduler.h"
+
+#include "dev/servo.h"
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
-
-#define MOTOR_PERIOD_MIROSEC (100000)
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -18,15 +19,16 @@
 
 typedef struct
 {
-    HardwareTimer* timer;
-    servo_update_f servo_data_func;
+    struct pt thread;
+    servo_update_f servo_update_func;
+    stepper_update_f stepper_update_func;
 } motor_runner_data_s;
 
 /*******************************************************************************
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/ 
 
-void motor_runner_ISR(void);
+void run1ms(void);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -34,20 +36,31 @@ void motor_runner_ISR(void);
 
 static motor_runner_data_s motor_runner_data = 
 {
-    .servo_data_func = &servo_update,
+    .servo_update_func = &servo_update,
+    .stepper_update_func = &stepper_update
 };
 
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
 
-void motor_runner_ISR(void)
+static PT_THREAD(run1ms(struct pt* thread))
 {
+    PT_BEGIN(thread);
+    PT_WAIT_UNTIL(thread, scheduler_taskReleased(PERIOD_1ms, (uint8_t) MOTOR_RUNNER));
+    
     // call all the update functions of all motors
     for (uint8_t servo = 0; servo < SERVO_COUNT; servo++)
     {
-        motor_runner_data.servo_data_func((servo_id_E) servo);
+        motor_runner_data.servo_update_func((servo_id_E) servo);
     }
+
+    for (uint8_t stepper = 0; stepper < STEPPER_COUNT; stepper++)
+    {
+        motor_runner_data.stepper_update_func((stepper_id_E) stepper);
+    }
+
+    PT_END(thread);
 }
 
 /*******************************************************************************
@@ -56,9 +69,10 @@ void motor_runner_ISR(void)
 
 void motor_runner_init(void)
 {
-    motor_runner_data.timer = new HardwareTimer(TIM3);
-    motor_runner_data.timer->setOverflow(MOTOR_PERIOD_MIROSEC, MICROSEC_FORMAT);
-    motor_runner_data.timer->refresh();
-    motor_runner_data.timer->attachInterrupt(motor_runner_ISR);
-    motor_runner_data.timer->resume();
+    PT_INIT(&motor_runner_data.thread);
+}
+
+void motor_runner_run1ms(void)
+{
+    run1ms(&motor_runner_data.thread);
 }
