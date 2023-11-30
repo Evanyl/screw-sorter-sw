@@ -1,0 +1,4 @@
+
+#define DEPOSITOR_ANGLE_OPEN   -90.0
+#define DEPOSITOR_ANGLE_CLOSED  62.0
+
