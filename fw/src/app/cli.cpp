@@ -5,6 +5,7 @@
 
 #include "cli.h"
 #include "dev/servo.h"
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -57,6 +58,7 @@ static cli_data_s cli_data =
         // add commands with macros defined in respective headers like:
         // STEPPER_COMMANDS,
         SERVO_COMMANDS,
+        STEPPER_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };

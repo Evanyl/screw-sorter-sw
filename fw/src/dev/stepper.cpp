@@ -4,6 +4,7 @@
 *******************************************************************************/ 
 
 #include "stepper.h"
+#include "serial.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -19,7 +20,7 @@ typedef struct
 {
     uint8_t pin_dir;
     uint8_t pin_pul;
-    uint8_t pin_ena;
+    uint8_t pin_ena; // Enable:LOW, Disable:HIGH
     uint16_t des_steps;
     uint16_t curr_steps;
     uint8_t dir; // 1:CW 0:CCW
@@ -66,10 +67,10 @@ void stepper_init(stepper_id_E stepper)
     pinMode(stepper_data.steppers[stepper].pin_dir, OUTPUT);
     pinMode(stepper_data.steppers[stepper].pin_pul, OUTPUT);
     pinMode(stepper_data.steppers[stepper].pin_ena, OUTPUT);
-    digitalWrite(stepper_data.steppers[stepper].pin_ena, HIGH); // check this
+    digitalWrite(stepper_data.steppers[stepper].pin_ena, LOW);
     stepper_data.steppers[stepper].curr_steps = 0;
     stepper_data.steppers[stepper].des_steps = 0;
-    stepper_data.steppers[stepper].rate = 0;
+    stepper_data.steppers[stepper].rate = 1;
     stepper_data.steppers[stepper].dir = 1;
     stepper_data.steppers[stepper].counter = 0;
 }
@@ -103,13 +104,16 @@ void stepper_update(stepper_id_E stepper)
     {
         digitalWrite(s->pin_dir, s->dir);
         delayMicroseconds(10); // Ensure direction is registered
-        if (s->des_steps >= s->curr_steps)
+        if (s->des_steps > s->curr_steps)
         {
             digitalWrite(s->pin_pul, HIGH);
+            s->curr_steps++;
         }
         else
         {
-            // do nothing, desired angle has been acheived
+            // reset current and desired steps
+            s->curr_steps = 0;
+            s->des_steps = 0;
         }
         s->counter = 0;
     }
@@ -117,5 +121,38 @@ void stepper_update(stepper_id_E stepper)
     {
         digitalWrite(s->pin_pul, LOW);
         s->counter++;
+    }
+}
+
+void stepper_cli_move(uint8_t argNumber, char* args[])
+{
+    if (strcmp(args[0], "depositor") == 0)
+    {   
+        float steps = atoi(args[1]);
+        uint8_t dir = atoi(args[2]);
+        uint16_t rate = atoi(args[3]);
+        stepper_command(STEPPER_DEPOSITOR, steps, dir, rate);
+    }
+    else
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid servo");
+    }
+}
+
+void stepper_cli_dump(uint8_t argNumber, char* args[])
+{
+    if (strcmp(args[0], "depositor") == 0)
+    {
+        stepper_s* s = &stepper_data.steppers[STEPPER_DEPOSITOR];
+        char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+        sprintf(st, 
+                "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d}", 
+                s->des_steps, s->curr_steps, s->dir, s->rate);
+        serial_send_nl(PORT_COMPUTER, st);
+        free(st);
+    }
+    else
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid stepper");
     }
 }

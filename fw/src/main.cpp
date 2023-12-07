@@ -8,12 +8,11 @@
 
 void setup() 
 {
-    servo_init(SERVO_DEPOSITOR, DEPOSITOR_ANGLE_CLOSED); // should be in application init not here
-
     // initialization of applications
     scheduler_init();
+    depositor_init();
     cli_init();
-    motor_runner_init();
+    motor_runner_init(); // motors must be initialized first
 }
 
 void loop()
@@ -25,6 +24,7 @@ void loop()
     motor_runner_run1ms();
 
     // 10ms tasks
+    depositor_run10ms();
 
     // 100ms tasks
     cli_run100ms();
