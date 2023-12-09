@@ -6,6 +6,7 @@
 #include "cli.h"
 #include "dev/servo.h"
 #include "dev/stepper.h"
+#include "dev/switch.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -59,6 +60,7 @@ static cli_data_s cli_data =
         // STEPPER_COMMANDS,
         SERVO_COMMANDS,
         STEPPER_COMMANDS,
+        SWITCH_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };
