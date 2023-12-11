@@ -24,7 +24,7 @@ void loop()
     motor_runner_run1ms();
 
     // 10ms tasks
-    depositor_run10ms();
+    // depositor_run10ms();
 
     // 100ms tasks
     cli_run100ms();

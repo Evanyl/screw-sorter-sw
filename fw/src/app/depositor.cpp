@@ -17,7 +17,7 @@
 #define DEPOSITOR_STEPS_TO_SWEEP 150
 
 #define DEPOSITOR_ARM_CW 1
-#define DEPOSITOR_ARM_HOME_RATE 5
+#define DEPOSITOR_ARM_HOME_RATE 5 // Steps per second
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -60,7 +60,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
     switch (curr_state)
     {
         case DEPOSITOR_STATE_NAV_HOME:
-            
+
             if (stepper_commandUntil(STEPPER_DEPOSITOR, 
                                      depositor_atHome, 
                                      DEPOSITOR_ARM_CW, 
@@ -73,9 +73,15 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 next_state = DEPOSITOR_STATE_IDLE;
             }
             break;
+
         case DEPOSITOR_STATE_IDLE:
+            // wait until a screw is dropped in the depositor
+        case DEPOSITOR_STATE_NAV_CENTER:
+            // go to center by taking a known number of steps
         case DEPOSITOR_STATE_DROP:
+            // execute the drop sequence
         case DEPOSITOR_STATE_NAV_END:
+            // sweep the previous part off the imaging plane
         case DEPOSITOR_STATE_COUNT:
             break;
     }
@@ -102,4 +108,12 @@ void depositor_run10ms(void)
 depositor_state_E depositor_getState(void)
 {
     return DEPOSITOR_STATE_COUNT;
+}
+
+void depositor_cli_home(uint8_t argNumber, char* args[])
+{
+    stepper_commandUntil(STEPPER_DEPOSITOR, 
+                         depositor_atHome, 
+                         DEPOSITOR_ARM_CW, 
+                         DEPOSITOR_ARM_HOME_RATE);
 }

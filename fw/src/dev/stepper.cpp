@@ -122,6 +122,7 @@ bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond, uint8_t dir
     }
     else if (s->cond_met)
     {
+        s->condition = NULL;
         s->cond_met = false;
         ret = true;
     }
