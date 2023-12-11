@@ -23,9 +23,12 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-    DEPOSITOR_STATE_READY,
+    DEPOSITOR_STATE_NAV_HOME,
+    DEPOSITOR_STATE_IDLE,
+    DEPOSITOR_STATE_DROP,
+    DEPOSITOR_STATE_NAV_END,
     DEPOSITOR_STATE_COUNT
 } depositor_state_E;
 

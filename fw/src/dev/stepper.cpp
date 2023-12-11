@@ -20,12 +20,17 @@ typedef struct
 {
     uint8_t pin_dir;
     uint8_t pin_pul;
-    uint8_t pin_ena; // Enable:LOW, Disable:HIGH
+    uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
+    uint8_t dir;                   // 1:CW 0:CCW
+    uint8_t rate;                  // Steps per second
+    uint16_t counter;
+    // for step-based control
     uint16_t des_steps;
     uint16_t curr_steps;
-    uint8_t dir; // 1:CW 0:CCW
-    uint8_t rate;
-    uint16_t counter;
+    // for condition-based control
+    bool until;
+    stepper_cond_f condition;
+    bool cond_met;
 } stepper_s;
 
 typedef struct
@@ -35,7 +40,7 @@ typedef struct
 
 /*******************************************************************************
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/
+*******************************************************************************/ 
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -70,6 +75,9 @@ void stepper_init(stepper_id_E stepper)
     digitalWrite(stepper_data.steppers[stepper].pin_ena, LOW);
     stepper_data.steppers[stepper].curr_steps = 0;
     stepper_data.steppers[stepper].des_steps = 0;
+    stepper_data.steppers[stepper].condition = NULL;
+    stepper_data.steppers[stepper].cond_met = true;
+    stepper_data.steppers[stepper].until = false;
     stepper_data.steppers[stepper].rate = 1;
     stepper_data.steppers[stepper].dir = 1;
     stepper_data.steppers[stepper].counter = 0;
@@ -84,6 +92,9 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, uint16_t
         s->des_steps = steps;
         s->rate = rate;
         s->dir = dir;
+        s->until = false;
+        s->condition = NULL;
+        s->cond_met = true;
     }
     else if (s->curr_steps == s->des_steps)
     {
@@ -97,30 +108,82 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, uint16_t
     return ret;
 }
 
-void stepper_update(stepper_id_E stepper)
+bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond, uint8_t dir, uint16_t rate)
 {
+    bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
-    if (s->counter >= MILLI_SEC_TO_SEC/s->rate)
+    if (cond() == false)
     {
-        digitalWrite(s->pin_dir, s->dir);
-        delayMicroseconds(10); // Ensure direction is registered
-        if (s->des_steps > s->curr_steps)
-        {
-            digitalWrite(s->pin_pul, HIGH);
-            s->curr_steps++;
-        }
-        else
-        {
-            // reset current and desired steps
-            s->curr_steps = 0;
-            s->des_steps = 0;
-        }
-        s->counter = 0;
+        s->rate = rate;
+        s->dir = dir;
+        s->until = true;
+        s->condition = cond;
+        s->cond_met = false;
+    }
+    else if (s->cond_met)
+    {
+        s->cond_met = false;
+        ret = true;
     }
     else
     {
-        digitalWrite(s->pin_pul, LOW);
-        s->counter++;
+        // do nothing
+    }
+
+    return ret;
+}
+
+void stepper_update(stepper_id_E stepper)
+{
+    stepper_s* s = &stepper_data.steppers[stepper];
+
+    if (s->until == false)
+    {
+        if (s->counter >= MILLI_SEC_TO_SEC/s->rate)
+        {
+            digitalWrite(s->pin_dir, s->dir);
+            delayMicroseconds(10); // Ensure direction is registered
+            if (s->des_steps > s->curr_steps)
+            {
+                digitalWrite(s->pin_pul, HIGH);
+                s->curr_steps++;
+            }
+            else
+            {
+                // reset current and desired steps
+                s->curr_steps = 0;
+                s->des_steps = 0;
+            }
+            s->counter = 0;
+        }
+        else
+        {
+            digitalWrite(s->pin_pul, LOW);
+            s->counter++;
+        }
+    }
+    else
+    {
+        if (s->counter >= MILLI_SEC_TO_SEC/s->rate)
+        {
+            digitalWrite(s->pin_dir, s->dir);
+            delayMicroseconds(10); // Ensure direction is registered
+            if (s->condition() == false)
+            {
+                digitalWrite(s->pin_pul, HIGH);
+            }
+            else
+            {
+                // set flag indicating condition was met
+                s->cond_met = true;
+            }
+            s->counter = 0;
+        }
+        else
+        {
+            digitalWrite(s->pin_pul, LOW);
+            s->counter++;
+        }
     }
 }
 

@@ -16,6 +16,8 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
+typedef bool (*stepper_cond_f) (void);
+
 typedef enum
 {
     STEPPER_DEPOSITOR,
@@ -30,6 +32,7 @@ typedef void (*stepper_update_f)(stepper_id_E);
 
 void stepper_init(stepper_id_E stepper);
 bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, uint16_t rate);
+bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond, uint8_t dir, uint16_t rate);
 void stepper_update(stepper_id_E);
 
 void stepper_cli_move(uint8_t argNumber, char* args[]);

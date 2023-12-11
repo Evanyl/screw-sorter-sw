@@ -70,6 +70,14 @@ void switch_init(switch_id_E switch_id)
 {
     switch_S* sw = &switch_data.switches[switch_id];
     pinMode(sw->pin, INPUT_PULLUP);
+    if (digitalRead(sw->pin) == HIGH)
+    {
+        sw->activated = true;
+    }
+    else
+    {
+        sw->activated = false;
+    }
     attachInterrupt(digitalPinToInterrupt(sw->pin), sw->ISR, CHANGE);
 }
 
