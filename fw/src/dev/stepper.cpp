@@ -124,13 +124,13 @@ bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond, uint8_t dir
     {
         s->condition = NULL;
         s->cond_met = false;
+        s->until = false;
         ret = true;
     }
     else
     {
         // do nothing
     }
-
     return ret;
 }
 
@@ -177,6 +177,9 @@ void stepper_update(stepper_id_E stepper)
             {
                 // set flag indicating condition was met
                 s->cond_met = true;
+                s->until = false;
+                s->condition = NULL;
+
             }
             s->counter = 0;
         }

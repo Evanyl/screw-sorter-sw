@@ -72,11 +72,11 @@ void switch_init(switch_id_E switch_id)
     pinMode(sw->pin, INPUT_PULLUP);
     if (digitalRead(sw->pin) == HIGH)
     {
-        sw->activated = true;
+        sw->activated = false; // active low?
     }
     else
     {
-        sw->activated = false;
+        sw->activated = true;
     }
     attachInterrupt(digitalPinToInterrupt(sw->pin), sw->ISR, CHANGE);
 }

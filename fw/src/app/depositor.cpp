@@ -17,7 +17,7 @@
 #define DEPOSITOR_STEPS_TO_SWEEP 150
 
 #define DEPOSITOR_ARM_CW 1
-#define DEPOSITOR_ARM_HOME_RATE 5 // Steps per second
+#define DEPOSITOR_ARM_HOME_RATE 60 // Steps per second
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
