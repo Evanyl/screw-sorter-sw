@@ -13,6 +13,7 @@
 #define DEPOSITOR_ANGLE_OPEN   -90.0
 #define DEPOSITOR_ANGLE_CLOSED  62.0
 
+// keep these as angle to center, and angle to sweep, get angles from CAD
 #define DEPOSITOR_STEPS_TO_CENTER 100
 #define DEPOSITOR_STEPS_TO_SWEEP 150
 
@@ -25,6 +26,7 @@
 
 typedef struct
 {
+    // some tracking of angle... concern of depositor not stepper 
     depositor_state_E state;
 } depositor_data_S;
 
@@ -75,11 +77,11 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             break;
 
         case DEPOSITOR_STATE_IDLE:
-            // wait until a screw is dropped in the depositor
+            // wait on serial message from RPi
         case DEPOSITOR_STATE_NAV_CENTER:
             // go to center by taking a known number of steps
         case DEPOSITOR_STATE_DROP:
-            // execute the drop sequence
+            // execute the drop sequence with servo
         case DEPOSITOR_STATE_NAV_END:
             // sweep the previous part off the imaging plane
         case DEPOSITOR_STATE_COUNT:
