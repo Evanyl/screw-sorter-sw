@@ -45,8 +45,8 @@ switch_data_S switch_data =
     {
         [SWITCH_DEPOSITOR] =
         {
-            .activated = false,
-            .pin = PA4,
+            .activated = false, 
+            .pin = PB12, // ACTIVE LOW switch
             .ISR = switch_depositor_ISR
         }
     }
@@ -72,7 +72,7 @@ void switch_init(switch_id_E switch_id)
     pinMode(sw->pin, INPUT_PULLUP);
     if (digitalRead(sw->pin) == HIGH)
     {
-        sw->activated = false; // active low?
+        sw->activated = false;
     }
     else
     {

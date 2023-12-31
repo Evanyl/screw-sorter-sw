@@ -60,8 +60,8 @@ servo_data_s servo_data =
     {
         [SERVO_DEPOSITOR] = 
         {
-            .pwm_pin = PA_3,
-            .dig_pin = PA3,
+            .pwm_pin = PA_7,
+            .dig_pin = PA7,
             .curr_angle = 0.0,
             .des_angle = 0.0,
             .delta = 0.0,
@@ -86,6 +86,7 @@ void servo_init(servo_id_E servo, float angle)
     s->des_angle = angle;
     s->curr_angle = angle;
     pinMode(s->dig_pin, OUTPUT);
+
     pwm_start((PinName) s->pwm_pin, 
               SERVO_PWM_FREQ_HZ, 
               MIN_PWM_DUTY_16BITS + 

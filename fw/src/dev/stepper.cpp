@@ -28,7 +28,7 @@ typedef struct
     uint8_t pin_dir;
     uint8_t pin_pul;
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
-    uint8_t dir;                   // 1:CW 0:CCW
+    uint8_t dir;                   // 1:CW 0:CCW (imaging plane to the left)
     uint8_t rate;                  // Steps per second
     uint16_t counter;
     stepper_mode_E mode;
@@ -62,9 +62,9 @@ stepper_data_s stepper_data =
     {
         [STEPPER_DEPOSITOR] =
         {
-            .pin_dir = PA5,
-            .pin_pul = PA6,
-            .pin_ena = PA7
+            .pin_dir = PB7,
+            .pin_pul = PB8,
+            .pin_ena = PB6
         }
     },
 };
@@ -94,7 +94,7 @@ void stepper_init(stepper_id_E stepper)
 }
 
 bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, 
-                     uint16_t rate, uint16_t ramp)
+                     uint16_t rate, uint16_t ramp) // add starting rate
 {
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
