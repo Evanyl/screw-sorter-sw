@@ -36,6 +36,7 @@ typedef struct
     uint16_t des_steps;
     uint16_t curr_steps;
     uint16_t ramp_steps;
+    uint16_t ramp_start;
     uint8_t curr_rate;
     // for condition-based control
     bool until;
@@ -94,7 +95,7 @@ void stepper_init(stepper_id_E stepper)
 }
 
 bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, 
-                     uint16_t rate, uint16_t ramp) // add starting rate
+                     uint16_t rate, uint16_t ramp, uint8_t ramp_start)
 {
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
@@ -102,13 +103,14 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
     {
         s->des_steps = steps;
         s->rate = rate;
+        s->ramp_start = ramp_start;
         if (ramp == 0)
         {
             s->curr_rate = rate;
         }
         else
         {
-            s->curr_rate = 1;
+            s->curr_rate = ramp_start;
         }
         s->dir = dir;
         s->mode = STEPPER_MODE_STEPS;
@@ -188,9 +190,9 @@ void stepper_update(stepper_id_E stepper)
                     else if (s->des_steps - s->ramp_steps < s->curr_steps && 
                              delta_rate > 0)
                     {
-                        if (s->curr_rate - 1 < delta_rate)
+                        if (s->curr_rate - s->ramp_start < delta_rate)
                         {
-                            s->curr_rate = 1;
+                            s->curr_rate = s->ramp_start;
                         }
                         else
                         {
@@ -259,7 +261,8 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
         uint8_t dir = atoi(args[2]);
         uint16_t rate = atoi(args[3]);
         uint16_t ramp = atoi(args[4]);
-        stepper_command(STEPPER_DEPOSITOR, steps, dir, rate, ramp);
+        uint8_t ramp_start = atoi(args[5]);
+        stepper_command(STEPPER_DEPOSITOR, steps, dir, rate, ramp, ramp_start);
     }
     else
     {
