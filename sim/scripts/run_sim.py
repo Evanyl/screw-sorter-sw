@@ -1,7 +1,9 @@
 import bpy
+import cv2
 import datetime
 import json
 import math
+import numpy as np
 import random
 import sys
 import time
@@ -10,6 +12,109 @@ from pathlib import Path
 
 SIDEON_SCENE = "side-on"
 TOPDOWN_SCENE = "top-down"
+THRESH = 150
+
+# Forgive my copy paste @gking, python 
+# in blender paths are weird and these 
+# are pretty lightweight
+def _make_vector(vx, vy, x_center, y_center, x_centroid, y_centroid):
+    """
+    in:  - slope components from cv2.fitLine LS fit of contours vx and vy,
+         - true midpoint coordinates of the contour x_center and y_center,
+         - centroid coordinates of the contour x_centroid, y_centroid
+    out: cartesian unit vector pointing in the direction of the screw head
+    """
+    vec = None
+    m = -vy/vx
+
+    if  ((m >= 1/2 and m >= 0) and (y_center >= y_centroid)) or \
+        ((m < 1/2 and m >= 0) and (x_center <= x_centroid)):
+        # Quadrant 1
+        vec = (abs(vx), abs(vy))
+    elif ((m <= -1/2 and m <= 0) and (y_center >= y_centroid)) or \
+         ((m > -1/2 and m <= 0) and (x_center >= x_centroid)):
+        # Quadrant 2
+        vec = (-abs(vx), abs(vy))
+    elif ((m <= 1/2 and m >= 0) and (x_center >= x_centroid)) or \
+         ((m > 1/2 and m >= 0) and (y_center <= y_centroid)):
+        # Quadrant 3
+        vec = (-abs(vx), -abs(vy))
+    elif ((m <= -1/2 and m <= 0) and (y_center <= y_centroid)) or \
+         ((m > -1/2 and m <= 0) and (x_center <= x_centroid)):
+        # Quadrant 4
+        vec = (abs(vx), -abs(vy))
+    return vec
+
+def _correction_angle(vec):
+    """
+    in:  unit vector in the direction of screw head
+    out: angle to rotate CW s/t unit vector is || to <1,0>
+    """
+    theta = np.arccos(np.dot([vec[0],vec[1]], [1,0]))*180/np.pi
+    correction_theta = 0.0
+    if (vec[0] >= 0 and vec[1] > 0):
+        # Quadrant 1
+        correction_theta = -theta
+    elif (vec[0] < 0 and vec[1] >= 0):
+       # Quadrant 2
+       correction_theta = -theta
+    elif (vec[0] <= 0 and vec[1] < 0):
+       # Quadrant 3
+       correction_theta = theta
+    elif (vec[0] > 0 and vec[1] <= 0):
+       # Quadrant 4
+       correction_theta = theta
+    return correction_theta
+
+def _get_center(contours, x, y, vx, vy):
+    """
+    in:  - contour of screw from binarized image contours,
+         - point on the fit line through the contour x and y,
+         - slope components from cv2.fitLine LS fit of countour
+    out: coordinates of the true mid-point of the contour (x,y)
+    """
+    err1 = sys.float_info.max
+    err2 = sys.float_info.max
+    p1 = (0,0)
+    p2 = (0,0)
+    m = -vy[0]/vx[0]
+    p0_x = x[0]
+    p0_y = y[0]
+
+    for c in contours:
+        p_x = c[0][0]
+        p_y = c[0][1]
+        if abs(-(p0_y-p_y)/(p0_x-p_x) - m) < err1 and p_x < p0_x:
+            err1 = abs(-(p0_y-p_y)/(p0_x-p_x) - m)
+            p1 = (p_x,p_y)
+        if abs(-(p_y-p0_y)/(p_x-p0_x) - m) < err2 and p_x > p0_x:
+            err2 = abs(-(p_y-p0_y)/(p_x-p0_x) - m)
+            p2 = (p_x,p_y)
+
+    return (int((p2[0] + p1[0])/2), int((p2[1] + p1[1])/2))
+
+def get_correction_angle(read_fpath):
+    """
+    in:  path to raw image data to read read_fpath
+    out: straightened and cropped binary image of shape 250x575
+    """
+    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+    _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
+
+    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # get data necessary for determining pose (centroid and true center)
+    [vx,vy,x,y] = cv2.fitLine(contours_sorted[1], cv2.DIST_L2,0,0.01,0.01)
+    M = cv2.moments(contours_sorted[1])
+    x_centroid = int(M['m10']/M['m00'])
+    y_centroid = int(M['m01']/M['m00'])
+    x_center, y_center = _get_center(contours_sorted[1], x, y, vx, vy)
+
+    # produce a unit vector in the direction of the screw head
+    vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
+    return _correction_angle(vec)
 
 def take_image(C, path):
     C.scene.render.filepath = str(path)
@@ -85,22 +190,9 @@ def play_scene(C, until_frame=230):
         frame += 1
 
 
-def rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=None):
+def rotate_camera(C, fastener, z_angle):
     rotate = bpy.data.objects.get('side-on-rotation')
-    if z_angle:
-        rotate.rotation_euler = (0, 0, z_angle)
-
-        rotate_image_path = output_model_path / f"{model_name}_side.jpg"
-        take_image(C, rotate_image_path)
-
-        return
-    full_rotation = 6.2831
-    for i in range(9):
-        angle = i * full_rotation / 9.0
-        rotate.rotation_euler = (0, 0, angle)
-
-        rotate_image_path = output_model_path / f"{model_name}_{i * 45}.jpg"
-        take_image(C, rotate_image_path)
+    rotate.rotation_euler = (0, 0, z_angle)
 
 def create_label(attributes, uuid):
     label = {
@@ -133,18 +225,24 @@ def run_sim(model_path, output_path, attributes, uuid):
 
     z_angle_of_fastener = init_and_sim_fastener(C, fastener, scenes)
 
-    top_down_image_path = output_path / f"0_{uuid}.jpg"
+    # Top down
+    top_down_image_path = output_path / f"0_{uuid}.png"
 
     C.window.scene = scenes[TOPDOWN_SCENE]
     play_scene(C)
     take_image(C, top_down_image_path)
 
+    # Side
+    correction_angle = get_correction_angle(str(top_down_image_path)) / -180 * np.pi
+    #print(correction_angle)
+    #input()
+    side_image_path = output_path / f"1_{uuid}.png"
     
     C.window.scene = scenes[SIDEON_SCENE]
     play_scene(C)
+    rotate_camera(C, fastener, correction_angle)
 
-    #z_angle_of_fastener += math.radians(random.randint(-15, 15))
-    #rotate_and_take_image(C, fastener, output_model_path, model_name, z_angle=z_angle_of_fastener)
+    take_image(C, side_image_path)
 
     print("Finished")
     bpy.data.objects.remove(fastener, do_unlink=True)
