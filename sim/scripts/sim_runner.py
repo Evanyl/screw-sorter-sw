@@ -2,6 +2,7 @@ import click
 import json
 import logging
 import os
+import random
 from subprocess import CalledProcessError, run, TimeoutExpired, PIPE, STDOUT
 import uuid
 
@@ -21,18 +22,27 @@ def main(input_folder_path, output_folder_path, copies, timeout):
     output_folder_path = Path(output_folder_path)
     assert output_folder_path.exists(), f"{output_folder_path} does not exist"
 
+    copies = int(copies)
+    timeout = int(timeout)
+
     logging.basicConfig(
         level=logging.INFO,
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
         handlers=[
             logging.FileHandler(output_folder_path / "debug.log"),
             logging.StreamHandler(),
         ]
     )
     cad_models = [d for d in os.listdir(input_folder_path) if os.path.isdir(input_folder_path / d)]
-    logging.info(f"{len(cad_models)} total")
+    random.shuffle(cad_models)
+
+    remaining = len(cad_models) * int(copies)
 
     for model in cad_models:
-        for copy in copies:
+        for copy in range(copies):
+            logging.info(f"{remaining} left")
+            remaining -= 1
             # Retries
             for attempt in range(RETRIES):
                 curr_uuid = str(uuid.uuid1())
@@ -50,12 +60,15 @@ def main(input_folder_path, output_folder_path, copies, timeout):
 
                 try:
                     logging.debug(" ".join(shell_args))
-                    res = run(shell_args, stdout=PIPE, stderr=STDOUT)
+                    res = run(shell_args, stdout=PIPE, stderr=STDOUT, timeout=timeout)
+                    for line in res.stdout.splitlines():
+                        logging.info(line)
                     break
                 except TimeoutExpired:
                     logging.warning(f"Timeout {attempt=} with {model=} on {copy=} using {curr_uuid=}")
                 except CalledProcessError as e:
                     logging.warning(f"Failed {attempt=} with {model=} on {copy=} using {curr_uuid=}: {e.output}")
+    logging.info("I'm done!")
 
 if __name__ == "__main__":
     main()
