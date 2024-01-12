@@ -72,3 +72,19 @@ void cli_stepperRotate(uint8_t argNumber,char* args[])
         delay(1000);
     }
 }
+
+// rotate the servo to a specific angle
+void cli_stepperRotateTo(uint8_t argNumber, char* args[])
+{
+    uint16_t desired_angle = (uint8_t) strtol((const char*) args[0], NULL, 0);
+    uint16_t curr_angle = stepper_getAngle(PLANE);
+
+    if (angle > 360 || angle < 0)
+    {
+        serial_send(COMPUTER, "invalid angle");
+    }
+    else
+    {
+        stepper_rotate(PLANE, (desired_angle - curr_angle) / 360.0 * 1440);
+    }
+}
