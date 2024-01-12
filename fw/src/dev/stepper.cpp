@@ -28,7 +28,7 @@ typedef struct
     uint8_t pin_dir;
     uint8_t pin_pul;
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
-    uint8_t dir;                   // 1:CW 0:CCW (imaging plane to the left)
+    uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left)
     uint8_t rate;                  // Steps per second
     uint16_t counter;
     stepper_mode_E mode;
@@ -66,6 +66,18 @@ stepper_data_s stepper_data =
             .pin_dir = PB7,
             .pin_pul = PB8,
             .pin_ena = PB6
+        },
+        [STEPPER_PLANE] =
+        {
+            .pin_dir = PB5,
+            .pin_pul = PB4,
+            .pin_ena = PB3
+        },
+        [STEPPER_ARM] = 
+        {
+            .pin_dir = PA11,
+            .pin_pul = PA12,
+            .pin_ena = PA15
         }
     },
 };
