@@ -21,6 +21,8 @@ typedef bool (*stepper_cond_f) (void);
 typedef enum
 {
     STEPPER_DEPOSITOR,
+    STEPPER_PLANE,
+    STEPPER_ARM,
     STEPPER_COUNT
 } stepper_id_E;
 

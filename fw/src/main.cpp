@@ -25,6 +25,8 @@ void loop()
 
     // 10ms tasks
     // depositor_run10ms();
+    // plane_run10ms();
+    // arm_run10ms();
 
     // 100ms tasks
     cli_run100ms();

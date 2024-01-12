@@ -28,7 +28,7 @@ typedef struct
     uint8_t pin_dir;
     uint8_t pin_pul;
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
-    uint8_t dir;                   // 1:CW 0:CCW (imaging plane to the left)
+    uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left)
     uint8_t rate;                  // Steps per second
     uint16_t counter;
     stepper_mode_E mode;
@@ -66,6 +66,18 @@ stepper_data_s stepper_data =
             .pin_dir = PB7,
             .pin_pul = PB8,
             .pin_ena = PB6
+        },
+        [STEPPER_PLANE] =
+        {
+            .pin_dir = PB4,
+            .pin_pul = PB5,
+            .pin_ena = PB3
+        },
+        [STEPPER_ARM] = 
+        {
+            .pin_dir = PA11,
+            .pin_pul = PA12,
+            .pin_ena = PA15
         }
     },
 };
@@ -264,6 +276,15 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
         uint8_t ramp_start = atoi(args[5]);
         stepper_command(STEPPER_DEPOSITOR, steps, dir, rate, ramp, ramp_start);
     }
+    else if (strcmp(args[0], "plane") == 0)
+    {
+        float steps = atoi(args[1]);
+        uint8_t dir = atoi(args[2]);
+        uint16_t rate = atoi(args[3]);
+        uint16_t ramp = atoi(args[4]);
+        uint8_t ramp_start = atoi(args[5]);
+        stepper_command(STEPPER_PLANE, steps, dir, rate, ramp, ramp_start);
+    }
     else
     {
         serial_send_nl(PORT_COMPUTER, "invalid servo");
@@ -275,6 +296,17 @@ void stepper_cli_dump(uint8_t argNumber, char* args[])
     if (strcmp(args[0], "depositor") == 0)
     {
         stepper_s* s = &stepper_data.steppers[STEPPER_DEPOSITOR];
+        char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+        sprintf(st, 
+                "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d,\ 
+                  \"ramp_steps\":%d}", 
+                s->des_steps, s->curr_steps, s->dir, s->rate, s->ramp_steps);
+        serial_send_nl(PORT_COMPUTER, st);
+        free(st);
+    }
+    else if (strcmp(args[0], "plane") == 0)
+    {
+        stepper_s* s = &stepper_data.steppers[STEPPER_PLANE];
         char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
         sprintf(st, 
                 "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d,\ 

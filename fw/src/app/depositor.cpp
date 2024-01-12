@@ -100,6 +100,7 @@ void depositor_init(void)
     servo_init(SERVO_DEPOSITOR, DEPOSITOR_ANGLE_CLOSED);
     switch_init(SWITCH_DEPOSITOR);
     stepper_init(STEPPER_DEPOSITOR);
+    stepper_init(STEPPER_PLANE);
 }
 
 void depositor_run10ms(void)
