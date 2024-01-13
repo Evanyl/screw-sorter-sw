@@ -2,7 +2,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from python_qt_binding import loadUi
-from fractional_spinbox import CustomDoubleSpinBox
+from .fractional_spinbox import CustomDoubleSpinBox
+
+from lib.topdown_transformer import *
 
 import cv2
 import sys
@@ -22,7 +24,8 @@ from rclone_python import rclone
 import numpy
 import torch
 import torchvision.transforms.transforms as T
-from utils import ModelHelper, DisplayHelper
+from .utils import ModelHelper, DisplayHelper
+from lib.topdown_transformer import _correction_angle, _make_vector, _get_center
 
 # TODO Figure out a better way to move these around ie not globals
 TOP_IMAGES_FOLDER = ""
@@ -171,13 +174,55 @@ class CameraWorker(QtCore.QObject):
         with open(label_json_path, "w") as file_obj:
             json.dump(label_json, file_obj)
         return fastener_directory
+    
+    def analyze_image_angle(self, img):
+        """
+        in:  path to raw image data to read read_fpath
+        out: straightened and cropped binary image of shape 250x575
+        """
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+        _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
 
-    def run(self):
+        contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
+
+        # get data necessary for determining pose (centroid and true center)
+        [vx,vy,x,y] = cv2.fitLine(contours_sorted[1], cv2.DIST_L2,0,0.01,0.01)
+        M = cv2.moments(contours_sorted[1])
+        x_centroid = int(M['m10']/M['m00'])
+        y_centroid = int(M['m01']/M['m00'])
+        x_center, y_center = _get_center(contours_sorted[1], x, y, vx, vy)
+
+        # produce a unit vector in the direction of the screw head
+        vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
+        return _correction_angle(vec)
+
+    def take_photo(self):
+        with Vimba.get_instance() as vimba:
+            with CAMERA as cam:
+                # set frame capture timeout at max exposure time
+                try:
+                    frame = cam.get_frame(timeout_ms=1000000)
+                except VimbaTimeout as e:
+                    print("Frame acquisition timed out: " + str(e))
+                    print("Retrying...")
+                    frame = cam.get_frame(timeout_ms=1000000)
+        frame_cv2 = frame.as_opencv_image()
+        # rotate 180 deg
+        frame_cv2 = cv2.flip(frame_cv2, -1)
+        return frame_cv2
+    
+    def save_image(self, n, frame_cv2):
+        final_filename = os.path.join(
+            self.fastener_directory, f"{n}_{self.fastener_uuid}.tiff")
+        print(final_filename)
+        cv2.imwrite(final_filename, frame_cv2)
+        return final_filename
+
+    def run(self, two_shot_screw:bool):
         # Calibrate camera before starting camera loop
-        print("before")
         self.change_camera_settings.emit(CAMERA, self.top_down_exposure_us, self.top_down_balance_red, self.top_down_balance_blue)
         side_view_exposure = False
-        print("Waiting for camera settings to finish")
         # Wait 2s for the setup to finish (.emit() is multithreaded)
         time.sleep(2)
 
@@ -187,19 +232,17 @@ class CameraWorker(QtCore.QObject):
         s = serial.Serial("/dev/ttyUSB0", 115200)
         # commence the imaging session with the "start" command
         time.sleep(1)
-        print(s.write(b"start\n"))
+        if two_shot_screw:
+            print(s.write(b"start-two-shot-screw\n"))
+        else:
+            print(s.write(b"start\n"))
         s.flush()
         while True:
             # Change camera settings AFTER taking top-down shot
             if n == 1 and not side_view_exposure:
-                print("sf")
-                time.sleep(2)
                 self.change_camera_settings.emit(CAMERA, 
                         self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
-                # Error occurred with repeatedly running this fcn
-                # So, we set this flag immediately after
                 side_view_exposure = True
-                # Wait 2s for the setup to finish (.emit() is multithreaded)
                 time.sleep(2)
             if n >= 10:
                 break
@@ -215,33 +258,18 @@ class CameraWorker(QtCore.QObject):
                 if message == "picture\r\n":
                     print("Obtaining Frame")
                     # requirement that Vimba instance is opened using "with"
-                    with Vimba.get_instance() as vimba:
-                        with CAMERA as cam:
-                            # set frame capture timeout at max exposure time
-                            try:
-                                frame = cam.get_frame(timeout_ms=1000000)
-                            except VimbaTimeout as e:
-                                print("Frame acquisition timed out: " + str(e))
-                                continue
-                            print("Got a frame")
-                            print("Frame saved to mem")
-                            
-                            frame_cv2 = frame.as_opencv_image()
-                            # flip image on both axes (i.e. rotate 180 deg)
-                            frame_cv2 = cv2.flip(frame_cv2, -1)
+                    frame_cv2 = self.take_photo()
+                    self.progress.emit(frame_cv2)
+                    image_filepath = self.save_image(n, frame_cv2)
+                    # if we just did a top-down photo, and we're a screw, then we should send a "finished" message with a new desired angle.
+                    if n == 0 and two_shot_screw:
+                        plane_angle = int(self.analyze_image_angle(frame_cv2))
+                        s.write(f"finished {plane_angle}\n".encode('ascii'))
+                    else:
+                        s.write(b"finished\n")
 
-                            # Draw directly
-                            print("Drawing")
-                            self.progress.emit(frame_cv2)
-                            print("Done Drawing")
-                            final_filename = os.path.join(
-                                self.fastener_directory, f"{n}_{self.fastener_uuid}.tiff")
-                            print(final_filename)
-                            cv2.imwrite(final_filename, frame_cv2)
-                            n += 1
-                            # send a message to indicate a picture was saved
-                            s.write(b"finished\n")
-                            s.flush()
+                    s.flush()
+                    n += 1
 
                 elif message == "finished-imaging\r\n":
                     # exit the control loop
@@ -285,7 +313,6 @@ class UploadWorker(QtCore.QObject):
             return
         print(f"Entire upload complete")
         self.finished.emit()
-
 
 
 class My_App(QtWidgets.QMainWindow):
