@@ -1,19 +1,11 @@
-################################################################################
-#                                I M P O R T S                                 #
-################################################################################
-
 import os
 import cv2
 import numpy  as np
 import json
+from pathlib import Path
 import re
 import sys
 
-################################################################################
-#                              C O N S T A N T S                               #
-################################################################################
-
-# label processing constants
 INCH_TO_MM = 25.4
 
 num2inchwidth = [
@@ -26,18 +18,23 @@ num2inchwidth = [
     0.138, # No.6
 ]
 
-# image processing constants
 THRESH = 150
 
-################################################################################
-#                              V A R I A B L E S                               #
-################################################################################
-
-################################################################################
-#                      P R I V A T E  F U N C T I O N S                        #
-################################################################################
-
 # helpers for label generation
+
+def _imp_to_metric(s):
+    """
+    in: imperial string
+    out: float
+    """
+
+    s = s.split('"')[0]
+
+    if "/" in s:
+        return _sfrac2float(s) * INCH_TO_MM
+    else:
+        return float(s) * INCH_TO_MM
+
 def _sfrac2float(s):
     """
     in:  str fraction "{num}/{denom}"
@@ -70,6 +67,7 @@ def _processImperial(label):
     return {"length": l, "pitch": p, "metric": True}
 
 # temporary private functions to handle difference between real and sim labels
+# TODO: Rectify this
 def _processMetric_real(label):
     """
     in:  metric label from the imaging station
@@ -105,6 +103,8 @@ def _processMetric_sim(label):
     p = float(label["attributes"]["pitch"].split("mm")[0])
     h = label["attributes"]["head"].lower()
     d = label["attributes"]["drive"].lower()
+    finish = label["attributes"]["finish"].lower()
+    head_diameter = float(label["attributes"]["head_diameter"].split("mm")[0])
     system = label["measurement_system"].lower()
     world = label["world"].lower()
     id = label["uuid"]
@@ -114,6 +114,8 @@ def _processMetric_sim(label):
         "pitch":  p,
         "head":   h,
         "drive":  d,
+        "finish": finish,
+        "head_diameter": head_diameter,
         "system": system,
         "world":  world,
         "id":     id
@@ -154,6 +156,8 @@ def _processImperial_sim(label):
     p = 1.0/int(thread_size[-1])*INCH_TO_MM
     h = label["attributes"]["head"].lower()
     d = label["attributes"]["drive"].lower()
+    finish = label["attributes"]["finish"].lower()
+    head_diameter = _imp_to_metric(label["attributes"]["head_diameter"])
     system = label["measurement_system"].lower()
     world = label["world"].lower()
     id = label["uuid"]
@@ -163,6 +167,8 @@ def _processImperial_sim(label):
         "pitch":  p,
         "head":   h,
         "drive":  d,
+        "finish": finish,
+        "head_diameter": head_diameter,
         "system": system,
         "world":  world,
         "id":     id
@@ -303,11 +309,7 @@ def _pad(img, desired_shape):
        raise Exception("Bounding Box Error: size of subject exceeds 250x575")
     return out
 
-################################################################################
-#                       P U B L I C  F U N C T I O N S                         #
-################################################################################
-
-def transform_image(read_fpath):
+def transform_top_image(read_fpath):
     """
     in:  path to raw image data to read read_fpath
     out: straightened and cropped binary image of shape 250x575
@@ -337,12 +339,29 @@ def transform_image(read_fpath):
 
     return img
 
+def transform_side_image(read_fpath, crop_w=1000/2, crop_h=1000/2):
+    """
+    in:  path to raw image data to read read_fpath
+    out: cropped image of shape 1000x1000
+    """
+
+    # Large crop by default as can be off-centered, also
+    # a bit harder to threshold and find contour of screw head
+    # if this crop is too large we can implement
+    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    h, w, c = img.shape
+    img = img[int(h/2-crop_h):int(h/2+crop_h), int(w/2-crop_w):int(w/2+crop_w)]
+
+    return img
+
 def transform_images(write_dpath, read_dpath):
     """
     in:  - path to directory to write processed data to write_dpath
          - path to directory upholding directory to read from read_dpath
     out: flat directory structure holding processed data
     """
+    write_dpath = Path(write_dpath)
+    read_dpath = Path(read_dpath)
     count = 0
     home = os.getcwd()
     os.chdir(read_dpath)
@@ -368,34 +387,30 @@ def transform_images(write_dpath, read_dpath):
 
         image_files = [f for f in os.listdir() if not f.endswith(".json")]
         for image_file in image_files:
-            if re.match("0", image_file.split("_")[0]):
-                name = "screw_{s}_{u}_{w}_{l}_{p}_{d}_{h}_{n}"\
-                        .format(s=label["world"]           ,
-                                u=label["system"]          ,
-                                w=round(label["width"],  3),
-                                l=round(label["length"], 3), 
-                                p=round(label["pitch"],  3),
-                                d=label["drive"]           ,
-                                h=label["head"]            ,
-                                n=label["id"])
+            image_num = image_file.split("_")[0]
+            name = "screw_{s}_{u}_{w}_{l}_{p}_{d}_{h}_{n}"\
+                    .format(s=label["world"]           ,
+                            u=label["system"]          ,
+                            w=round(label["width"],  3),
+                            l=round(label["length"], 3), 
+                            p=round(label["pitch"],  3),
+                            d=label["drive"]           ,
+                            h=label["head"]            ,
+                            n=label["id"])
 
-                os.mkdir(write_dpath + name)
-                img = transform_image(image_file)
-                # write the transformed image
-                cv2.imwrite(write_dpath + \
-                            name        + \
-                            "/"         + \
-                            name        + \
-                            ".png"         , img)
-                # copy over the json label
-                with open(write_dpath + \
-                            name        + \
-                            "/"         + \
-                            name        + \
-                            ".json", "w"   ) as f:
-                    json.dump(label, f)
+            curr_write_dir = write_dpath / image_num / name
+            os.makedirs(curr_write_dir, exist_ok=True)
+            img = None
+            if image_num == "0":
+                img = transform_top_image(image_file)
+            elif image_num == "1":
+                img = transform_side_image(image_file)
 
-                count += 1
-                print(f"Processed Image{count}")
+            cv2.imwrite(str(curr_write_dir / f"{name}.png"), img)
+            with open(curr_write_dir / f"{name}.json", "w") as f:
+                json.dump(label, f)
+
+            count += 1
+            print(f"Processed Image{count}")
         os.chdir(read_dpath)
     os.chdir(home)
