@@ -30,10 +30,10 @@ FULL_SESSION_PATH = ""
 REMOTE_IMAGE_FOLDER = "gdrive_more_storage:2357 Screw Sorter/data/raw/real"
 CURRENT_STAGED_IMAGE_FOLDER = ""
 IMAGING_STATION_VERSION="1.0"
-IMAGING_STATION_CONFIGURATION="A1"
+IMAGING_STATION_CONFIGURATION="A1_side_only"
 FIRST_TIME_SETUP=True
 # TODO Be able to toggle these flags in the GUI, communicate w/ bp
-TOPDOWN_INCLUDED=True
+TOPDOWN_INCLUDED=False
 SIDEON_INCLUDED=True
 NUMBER_SIDEON=9
 
@@ -175,43 +175,26 @@ class CameraWorker(QtCore.QObject):
     def run(self):
         # Calibrate camera before starting camera loop
         print("before")
-        self.change_camera_settings.emit(CAMERA, self.top_down_exposure_us, self.top_down_balance_red, self.top_down_balance_blue)
-        side_view_exposure = False
+        # Enter side-on mode
+        self.change_camera_settings.emit(CAMERA, self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
+        side_view_exposure = True
         print("Waiting for camera settings to finish")
         # Wait 2s for the setup to finish (.emit() is multithreaded)
         time.sleep(2)
 
         print("Starting Loop")
         n = 0
-        # establish serial communication with Bluepill
-        s = serial.Serial("/dev/ttyUSB0", 115200)
-        # commence the imaging session with the "start" command
-        time.sleep(1)
-        print(s.write(b"start\n"))
-        s.flush()
         while True:
             # Change camera settings AFTER taking top-down shot
-            if n == 1 and not side_view_exposure:
-                print("sf")
-                time.sleep(2)
-                self.change_camera_settings.emit(CAMERA, 
-                        self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
-                # Error occurred with repeatedly running this fcn
-                # So, we set this flag immediately after
-                side_view_exposure = True
-                # Wait 2s for the setup to finish (.emit() is multithreaded)
-                time.sleep(2)
-            if n >= 10:
+            if n >= 1:
                 break
 
             # wait on serial communication
             # to get around serial comms (ie test w/o bluepill), swap this if-statement with "if True"
             # and replace "message" with "picture\r\n"
             # if True:
-            if s.in_waiting > 0:
-                time.sleep(1)
-                # message = "picture\r\n"
-                message = s.readline().decode("ascii")
+            if True:
+                message = "picture\r\n"
                 if message == "picture\r\n":
                     print("Obtaining Frame")
                     # requirement that Vimba instance is opened using "with"
@@ -239,9 +222,6 @@ class CameraWorker(QtCore.QObject):
                             print(final_filename)
                             cv2.imwrite(final_filename, frame_cv2)
                             n += 1
-                            # send a message to indicate a picture was saved
-                            s.write(b"finished\n")
-                            s.flush()
 
                 elif message == "finished-imaging\r\n":
                     # exit the control loop
@@ -570,13 +550,14 @@ class My_App(QtWidgets.QMainWindow):
             end_time_string = "still_in_progress"
         report_string = f"""# Imaging Session Report
 # ===
-# Imaging Station Version: 1.0
+# Imaging Station Version: 1.0_sideon_images
 # Imaging Station Configuration: 0
 # Date: {self.session_date.isoformat(sep=" ", timespec="milliseconds")}
 # Start Time: {self.session_date.isoformat(sep=" ", timespec="milliseconds")}
 # End Time: {end_time_string}
 # Operator: {self.operator_name}
 # Operator Notes:
+Note that Only 1 side-on image was taken
 {session_notes}
 # Fasteners Imaged This Session:
 {self.fastener_record}
