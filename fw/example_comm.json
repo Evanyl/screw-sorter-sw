@@ -1,0 +1,65 @@
+{
+    "state_machines": {
+        "conveyor_system": {
+            "state": "separating_screws",
+            "status": "in_progress",
+            "components": {
+                "top_conveyor": {
+                    "position": 12,
+                    "desired_position": 20,
+                    "status": "in_progress"
+                },
+                "bottom_conveyor": {
+                    "position": 30,
+                    "desired_position": 30,
+                    "status": "OK"
+                }
+            }
+        },
+        "imaging_station": {
+            "state": "top_down",
+            "status": "OK",
+            "components": {
+                "camera_arm": {
+                    "position": 16,
+                    "desired_position": 0,
+                    "status": "in_progress"
+                },
+                "imaging_plane": {
+                    "position": 30,
+                    "desired_position": 30,
+                    "status": "OK"
+                },
+                "backlight": {
+                    "state": "ON",
+                    "status": "OK"
+                },
+                "domelight": {
+                    "state": "ON",
+                    "status": "OK"
+                },
+                "light_motor": {
+                    "position": 12,
+                    "desired_position": 16,
+                    "status": "OK"
+                }
+            }
+        },
+        "depositor": {
+            "state": "at_home",
+            "status": "OK",
+            "components": {
+                "arm_stepper": {
+                    "position": 12,
+                    "desired_position": 20,
+                    "status": "in_progress"
+                },
+                "bucket_stepper": {
+                    "position": 30,
+                    "desired_position": 30,
+                    "status": "OK"
+                }
+            }
+        }
+    }
+}

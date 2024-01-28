@@ -1,17 +1,18 @@
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
-*******************************************************************************/ 
+*******************************************************************************/
 
 #include "cli.h"
 #include "dev/servo.h"
 #include "dev/stepper.h"
 #include "dev/switch.h"
 #include "app/depositor.h"
+#include "app/meta_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
-*******************************************************************************/ 
+*******************************************************************************/
 
 #define CLI_MAX_ARGS            7
 #define CLI_CMD_LIST_TERMINATOR "END OF LIST"
@@ -19,11 +20,12 @@
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
-*******************************************************************************/ 
+*******************************************************************************/
 
-typedef void (*cli_f)(uint8_t argNumber, char* args[]);
+typedef void (*cli_f)(uint8_t argNumber, char *args[]);
 
-typedef struct {
+typedef struct
+{
     cli_f       function;
     const char* command;
     const char* parameters;
@@ -34,45 +36,44 @@ typedef struct {
 
 typedef struct
 {
-    struct pt  thread;
-    char       line[SERIAL_MESSAGE_SIZE];
-    char*      args[CLI_MAX_ARGS];
-    char*      tokLine[(SERIAL_MESSAGE_SIZE + 1)];
-    cli_cmd_s  cmds[];
+    struct pt   thread;
+    char        line[SERIAL_MESSAGE_SIZE];
+    char*       args[CLI_MAX_ARGS];
+    char*       tokLine[(SERIAL_MESSAGE_SIZE + 1)];
+    cli_cmd_s   cmds[];
 } cli_data_s;
 
 /*******************************************************************************
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/ 
+*******************************************************************************/
 
-static char run100ms(struct pt* thread);
+static char run100ms(struct pt *thread);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
-*******************************************************************************/ 
+*******************************************************************************/
 
 // char line[SERIAL_MESSAGE_SIZE] = {' '};
 
-static cli_data_s cli_data = 
-{
-    .cmds = 
+static cli_data_s cli_data =
     {
-        SERVO_COMMANDS,
-        STEPPER_COMMANDS,
-        SWITCH_COMMANDS,
-        DEPOSITOR_COMMANDS,
-        {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
-    }
-};
+        .cmds =
+            {
+                SERVO_COMMANDS,
+                STEPPER_COMMANDS,
+                SWITCH_COMMANDS,
+                DEPOSITOR_COMMANDS,
+                META_STATE_COMMANDS,
+                {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}}};
 
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
-*******************************************************************************/ 
+*******************************************************************************/
 
-void cli_parseLine(char* message)
+void cli_parseLine(char *message)
 {
     // Tokenize the line with spaces as the delimiter
-    char* tok = (char*) strtok(message, " ");
+    char* tok = (char *)strtok(message, " ");
     uint8_t i = 0;
     while (tok != NULL && i < (CLI_MAX_ARGS + 1))
     {
@@ -152,7 +153,7 @@ static PT_THREAD(run100ms(struct pt* thread))
 
 /*******************************************************************************
 *                       P U B L I C    F U N C T I O N S                       *
-*******************************************************************************/ 
+*******************************************************************************/
 
 void cli_init(void)
 {
