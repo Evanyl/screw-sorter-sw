@@ -25,6 +25,7 @@ typedef enum
 /*******************************************************************************
  *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
  *******************************************************************************/
+std::string get_internal_meta_state(void);
 void get_meta_state(uint8_t argNumber, char **args);
 
 #define META_STATE_COMMANDS                                \

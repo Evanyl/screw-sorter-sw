@@ -9,6 +9,8 @@
 /*******************************************************************************
  *                               C O N S T A N T S                              *
  *******************************************************************************/
+#define TOP_DOWN_ANGLE   50
+#define SIDE_ON_ANGLE 50
 
 /*******************************************************************************
  *                      D A T A    D E C L A R A T I O N S                      *
@@ -34,7 +36,6 @@ static imaging_state_E imaging_update_state(imaging_state_E curr_state);
 
 void imaging_init(void)
 {
-    // servo_init(SERVO_DEPOSITOR, DEPOSITOR_ANGLE_CLOSED);
     // switch_init(SWITCH_DEPOSITOR);
     // stepper_init(STEPPER_DEPOSITOR);
 }

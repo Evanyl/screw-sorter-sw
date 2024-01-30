@@ -120,6 +120,13 @@ void cli_parseLine(char *message)
             // Call the function corresponding to the comannd with args
             cli_f func = cmds[j].function;
             func(i, cli_data.args);
+
+            // after function successfully runs, print the state of the system to console
+            std::string state_json = get_internal_meta_state();
+            char *state_cstr = new char[state_json.length() + 1];
+            std::strcpy(state_cstr, state_json.c_str());
+            serial_send_nl(PORT_COMPUTER, state_cstr);
+            delete state_cstr;
         }
     }
     // reset the args and command arrays
