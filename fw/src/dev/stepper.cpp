@@ -75,9 +75,9 @@ stepper_data_s stepper_data =
         },
         [STEPPER_ARM] = 
         {
-            .pin_dir = PA11,
-            .pin_pul = PA12,
-            .pin_ena = PA15
+            .pin_dir = PA12,
+            .pin_pul = PA15,
+            .pin_ena = PA11
         }
     },
 };
@@ -147,6 +147,7 @@ bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond,
 {
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
+    Serial.println(cond());
     if (cond() == false)
     {
         s->rate = rate;
@@ -267,27 +268,33 @@ void stepper_update(stepper_id_E stepper)
 
 void stepper_cli_move(uint8_t argNumber, char* args[])
 {
+
+    stepper_id_E s = STEPPER_COUNT;
     if (strcmp(args[0], "depositor") == 0)
-    {   
-        float steps = atoi(args[1]);
-        uint8_t dir = atoi(args[2]);
-        uint16_t rate = atoi(args[3]);
-        uint16_t ramp = atoi(args[4]);
-        uint8_t ramp_start = atoi(args[5]);
-        stepper_command(STEPPER_DEPOSITOR, steps, dir, rate, ramp, ramp_start);
+    {
+        s = STEPPER_DEPOSITOR;
     }
     else if (strcmp(args[0], "plane") == 0)
     {
+        s = STEPPER_PLANE;
+    }
+    else if (strcmp(args[0], "arm") == 0)
+    {
+        s = STEPPER_ARM;
+    }
+
+    if (s == STEPPER_COUNT)
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid servo");
+    }
+    else
+    {
         float steps = atoi(args[1]);
         uint8_t dir = atoi(args[2]);
         uint16_t rate = atoi(args[3]);
         uint16_t ramp = atoi(args[4]);
         uint8_t ramp_start = atoi(args[5]);
-        stepper_command(STEPPER_PLANE, steps, dir, rate, ramp, ramp_start);
-    }
-    else
-    {
-        serial_send_nl(PORT_COMPUTER, "invalid servo");
+        stepper_command(s, steps, dir, rate, ramp, ramp_start);
     }
 }
 
@@ -318,5 +325,34 @@ void stepper_cli_dump(uint8_t argNumber, char* args[])
     else
     {
         serial_send_nl(PORT_COMPUTER, "invalid stepper");
+    }
+
+    stepper_s* s = NULL;
+    if (strcmp(args[0], "depositor") == 0)
+    {
+        s = &stepper_data.steppers[STEPPER_DEPOSITOR];
+    }
+    else if (strcmp(args[0], "plane") == 0)
+    {
+        s = &stepper_data.steppers[STEPPER_PLANE];
+    }
+    else if (strcmp(args[0], "arm") == 0)
+    {
+        s = &stepper_data.steppers[STEPPER_ARM];
+    }
+
+    if (s == NULL)
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid stepper");
+    }
+    else
+    {
+        char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+        sprintf(st, 
+                "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d,\ 
+                    \"ramp_steps\":%d}", 
+                s->des_steps, s->curr_steps, s->dir, s->rate, s->ramp_steps);
+        serial_send_nl(PORT_COMPUTER, st);
+        free(st);
     }
 }

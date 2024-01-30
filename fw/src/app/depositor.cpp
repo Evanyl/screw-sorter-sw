@@ -35,6 +35,7 @@ typedef struct
 *******************************************************************************/
 
 static bool depositor_atHome(void);
+static bool arm_atHome(void);
 static depositor_state_E depositor_update_state(depositor_state_E curr_state);
 
 /*******************************************************************************
@@ -53,6 +54,11 @@ static depositor_data_S depositor_data =
 static bool depositor_atHome(void)
 {
     return switch_state(SWITCH_DEPOSITOR);
+}
+
+static bool arm_atHome(void)
+{
+    return switch_state(SWITCH_ARM);
 }
 
 static depositor_state_E depositor_update_state(depositor_state_E curr_state)
@@ -100,7 +106,10 @@ void depositor_init(void)
     servo_init(SERVO_DEPOSITOR, DEPOSITOR_ANGLE_CLOSED);
     switch_init(SWITCH_DEPOSITOR);
     stepper_init(STEPPER_DEPOSITOR);
+    // TODO: move these to a proper task module...
     stepper_init(STEPPER_PLANE);
+    stepper_init(STEPPER_ARM);
+    switch_init(SWITCH_ARM);
 }
 
 void depositor_run10ms(void)
@@ -115,8 +124,8 @@ depositor_state_E depositor_getState(void)
 
 void depositor_cli_home(uint8_t argNumber, char* args[])
 {
-    stepper_commandUntil(STEPPER_DEPOSITOR, 
-                         depositor_atHome, 
+    stepper_commandUntil(STEPPER_ARM, 
+                         arm_atHome, 
                          DEPOSITOR_ARM_CW, 
                          DEPOSITOR_ARM_HOME_RATE);
 }
