@@ -1,6 +1,6 @@
 
-#ifndef DEV_STEPPER
-#define DEV_STEPPER
+#ifndef DEV_LIGHT
+#define DEV_LIGHT
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
@@ -16,36 +16,31 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef bool (*stepper_cond_f) (void);
-
 typedef enum
 {
-    STEPPER_DEPOSITOR,
-    STEPPER_PLANE,
-    STEPPER_ARM,
-    STEPPER_COUNT
-} stepper_id_E;
+    LIGHT_BOTTOM,
+    LIGHT_DOME,
+    LIGHT_COUNT
+} light_id_E;
 
-typedef void (*stepper_update_f)(stepper_id_E);
+typedef enum {
+    BOTTOM_OFF = 0,
+    BOTTOM_ON = 5,
+    DOME_OFF = 100,
+    DOME_ON = 50
+} brightness_map_t;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void stepper_init(stepper_id_E stepper);
-bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, 
-                     uint16_t rate, uint16_t ramp, uint8_t ramp_start);
-bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond, 
-                          uint8_t dir, uint16_t rate);
-void stepper_update(stepper_id_E);
+void light_init(light_id_E light_id);
+int light_get_state(light_id_E light_id);
+void light_set_state(light_id_E light_id, int brightness);
 
-void stepper_cli_move(uint8_t argNumber, char* args[]);
-void stepper_cli_dump(uint8_t argNumber, char* args[]);
-int16_t angle_to_steps(int16_t angle);
+void light_cli_set_state(uint8_t argNumber, char* args[]);
 
+#define SWITCH_COMMANDS \
+{light_cli_set_state, "light-set", NULL, NULL, 2, 2} // provide the ID and its brightness in %
 
-#define STEPPER_COMMANDS \
-{stepper_cli_move, "stepper-move", NULL, NULL, 6, 6},\
-{stepper_cli_dump, "stepper-dump", NULL, NULL, 1, 1}
-
-#endif
+#endif // DEV_LIGHT

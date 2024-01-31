@@ -40,5 +40,5 @@ std::string get_internal_meta_state(void)
 
 void get_meta_state(uint8_t argNumber, char **args)
 {
-    // internal implementation is do-nothing, since every function call returns meta-state.
+    // internal implementation is do-nothing, since every successful function call returns meta-state.
 }

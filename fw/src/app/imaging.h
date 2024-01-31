@@ -9,7 +9,8 @@
 #include <Arduino.h>
 
 #include "dev/stepper.h"
-#include "dev/servo.h"
+#include "dev/light.h"
+#include "dev/switch.h"
 
 /*******************************************************************************
  *                               C O N S T A N T S                              *

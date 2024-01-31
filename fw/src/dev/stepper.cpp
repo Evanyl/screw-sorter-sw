@@ -28,7 +28,7 @@ typedef struct
     uint8_t pin_dir;
     uint8_t pin_pul;
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
-    uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left)
+    uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left) with the shaft side facing you
     uint8_t rate;                  // Steps per second
     uint16_t counter;
     stepper_mode_E mode;
@@ -85,7 +85,6 @@ stepper_data_s stepper_data =
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
-
 /*******************************************************************************
 *                       P U B L I C    F U N C T I O N S                       *
 *******************************************************************************/ 
@@ -263,6 +262,12 @@ void stepper_update(stepper_id_E stepper)
         default:
             break;
     }
+}
+
+int16_t angle_to_steps(int16_t angle_deg)
+{
+    // The stepper motor says 1.8deg/step
+    return (int16_t) angle_deg / 1.8;
 }
 
 void stepper_cli_move(uint8_t argNumber, char* args[])
