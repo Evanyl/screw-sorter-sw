@@ -16,13 +16,14 @@
 
 typedef struct
 {
-    int brightness;
     uint8_t pin;
+    PinName pwm_pin;
+    int brightness;
 } light_s;
 
 typedef struct
 {
-    light_data_s lights[LIGHT_COUNT];
+    light_s lights[LIGHT_COUNT];
 } light_data_s;
 
 /*******************************************************************************

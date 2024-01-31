@@ -5,7 +5,6 @@
 
 #include "imaging.h"
 #include "scheduler.h"
-#include "serial.h"
 
 /*******************************************************************************
  *                               C O N S T A N T S                              *
@@ -35,6 +34,8 @@ typedef struct
  *******************************************************************************/
 
 static imaging_state_E imaging_update_state(imaging_state_E curr_state);
+static bool imaging_at_top(void);
+static bool imaging_at_side(void);
 
 /*******************************************************************************
  *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -92,7 +93,7 @@ static bool imaging_at_top(void)
 
 static bool imaging_at_side(void)
 {
-    return switch_state(SWITCH_ARM_SIDE);
+    return switch_state(SWITCH_ARM_BOTTOM);
 
 }
 
@@ -120,16 +121,11 @@ imaging_state_E imaging_getState(void)
 
 void imaging_cli_top_down(uint8_t argNumber, char *args[])
 {
-    if (strcmp(args[0], "top-down-imaging") == 0)
-    {
-        stepper_commandUntil(STEPPER_ARM,
-                            imaging_at_top,
-                            IMAGING_ARM_CW,
-                            IMAGING_ARM_GO_TOP_RATE);
-        light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
-    } else {
-        serial_send_nl(PORT_COMPUTER, "invalid imaging command");
-    }
+    stepper_commandUntil(STEPPER_ARM,
+                        imaging_at_top,
+                        IMAGING_ARM_CW,
+                        IMAGING_ARM_GO_TOP_RATE);
+    light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
 }
 
 void imaging_cli_side_on(uint8_t argNumber, char *args[])
