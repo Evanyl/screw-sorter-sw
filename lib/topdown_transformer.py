@@ -339,18 +339,28 @@ def transform_top_image(read_fpath):
 
     return img
 
-def transform_side_image(read_fpath, crop_w=1000/2, crop_h=1000/2):
+def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=1400, bot_plane_y=3050):
     """
     in:  path to raw image data to read read_fpath
-    out: cropped image of shape 1000x1000
+    out: cropped image of shape 800x800
     """
 
-    # Large crop by default as can be off-centered, also
-    # a bit harder to threshold and find contour of screw head
-    # if this crop is too large we can implement
     img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
-    h, w, c = img.shape
-    img = img[int(h/2-crop_h):int(h/2+crop_h), int(w/2-crop_w):int(w/2+crop_w)]
+    img = img[top_plane_y:bot_plane_y, :]
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+
+    blur = cv2.GaussianBlur(img,(9,9),0)
+    _, img = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    main_contour = sorted(contours, key=cv2.contourArea, reverse=True)[1]
+
+    M = cv2.moments(main_contour)
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"]) + top_plane_y
+
+    img = cv2.imread(read_fpath, cv2.IMREAD_COLOR)
+    img = img[int(cY-crop_h):int(cY+crop_h), int(cX-crop_w):int(cX+crop_w)]
 
     return img
 
@@ -386,6 +396,9 @@ def transform_images(write_dpath, read_dpath):
                     label = _processMetric_sim(metadata)
 
         image_files = [f for f in os.listdir() if not f.endswith(".json")]
+        top_img = None
+        side_img = None
+        name = None
         for image_file in image_files:
             image_num = image_file.split("_")[0]
             name = "screw_{s}_{u}_{w}_{l}_{p}_{d}_{h}_{n}"\
@@ -398,19 +411,21 @@ def transform_images(write_dpath, read_dpath):
                             h=label["head"]            ,
                             n=label["id"])
 
-            curr_write_dir = write_dpath / image_num / name
-            os.makedirs(curr_write_dir, exist_ok=True)
-            img = None
             if image_num == "0":
-                img = transform_top_image(image_file)
+                top_img = transform_top_image(image_file)
             elif image_num == "1":
-                img = transform_side_image(image_file)
+                side_img = transform_side_image(image_file)
 
-            cv2.imwrite(str(curr_write_dir / f"{name}.png"), img)
-            with open(curr_write_dir / f"{name}.json", "w") as f:
-                json.dump(label, f)
+        top_img = np.stack((top_img,)*3, axis=-1)
+        img_concat = np.concatenate([top_img, side_img], axis=0)
+        curr_write_dir = write_dpath / name
+        os.makedirs(curr_write_dir, exist_ok=True)
 
-            count += 1
-            print(f"Processed Image{count}")
+        cv2.imwrite(str(curr_write_dir / f"{name}.png"), img_concat)
+        with open(curr_write_dir / f"{name}.json", "w") as f:
+            json.dump(label, f)
+
+        count += 1
+        print(f"Processed Image{count}")
         os.chdir(read_dpath)
     os.chdir(home)
