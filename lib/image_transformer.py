@@ -349,15 +349,17 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=140
     img = img[top_plane_y:bot_plane_y, :]
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 
-    blur = cv2.GaussianBlur(img,(9,9),0)
-    _, img = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    blur = cv2.blur(img,(5,5),0)
 
-    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-    main_contour = sorted(contours, key=cv2.contourArea, reverse=True)[1]
+    circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 100, param2=50, maxRadius=400)
 
-    M = cv2.moments(main_contour)
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"]) + top_plane_y
+    circles = np.round(circles[0, :]).astype("int")
+
+    if len(circles) > 1:
+        print(f"{read_fpath} has more than one circle?")
+    
+    cX = circles[0][0]
+    cY = circles[0][1] + top_plane_y
 
     img = cv2.imread(read_fpath, cv2.IMREAD_COLOR)
     img = img[int(cY-crop_h):int(cY+crop_h), int(cX-crop_w):int(cX+crop_w)]
@@ -416,10 +418,13 @@ def transform_images(write_dpath, read_dpath):
             elif image_num == "1":
                 side_img = transform_side_image(image_file)
 
-        top_img = np.stack((top_img,)*3, axis=-1)
-        img_concat = np.concatenate([top_img, side_img], axis=0)
+        print(data_directory)
         curr_write_dir = write_dpath / name
         os.makedirs(curr_write_dir, exist_ok=True)
+
+        cv2.imwrite(str(curr_write_dir / f"1_{name}.png"), side_img)
+        top_img = np.stack((top_img,)*3, axis=-1)
+        img_concat = np.concatenate([top_img, side_img], axis=0)
 
         cv2.imwrite(str(curr_write_dir / f"{name}.png"), img_concat)
         with open(curr_write_dir / f"{name}.json", "w") as f:
