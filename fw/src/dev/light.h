@@ -40,7 +40,7 @@ void light_set_state(light_id_E light_id, int brightness);
 
 void light_cli_set_state(uint8_t argNumber, char* args[]);
 
-#define SWITCH_COMMANDS \
+#define LIGHT_COMMANDS \
 {light_cli_set_state, "light-set", NULL, NULL, 2, 2} // provide the ID and its brightness in %
 
 #endif // DEV_LIGHT

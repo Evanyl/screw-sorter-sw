@@ -16,9 +16,13 @@
 #define IMAGING_ARM_GO_TOP_RATE 60 // Steps per second
 
 #define IMAGING_ARM_CCW 0 // 1 = go-home direction
-#define IMAGING_ARM_GO_BOT_RATE 45 // Steps per second
+#define IMAGING_ARM_GO_SIDE_RATE 45 // Steps per second
 
 #define IMAGING_PLANE_ROTATION_RATE 30 // Steps per second
+#define IMAGING_PLANE_CW 1
+#define IMAGING_PLANE_CCW 0
+#define IMAGING_PLANE_RAMP_RATE 15
+#define IMAGING_PLANE_RAMP_STEPS 10
 
 
 /*******************************************************************************
@@ -53,32 +57,60 @@ static imaging_state_E imaging_update_state(imaging_state_E curr_state)
 
     switch (curr_state)
     {
-        case IMAGING_STATE_TOP_DOWN:
+        case IMAGING_STATE_ENTERING_TOP_DOWN:
             if (stepper_commandUntil(STEPPER_ARM,
                          imaging_at_top,
                          IMAGING_ARM_CW,
                          IMAGING_ARM_GO_TOP_RATE) == false)
             {
-                light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
             }
             else
             {
-                next_state = IMAGING_STATE_IDLE;
+                // Set light once, after reaching top-down position.
+                light_set_state(LIGHT_DOME, DOME_OFF);
+                light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
+                next_state = IMAGING_STATE_TOP_DOWN;
             }
             break;
-
-        case IMAGING_STATE_SIDE_ON:
+        case IMAGING_STATE_TOP_DOWN:
+            break;
+        case IMAGING_STATE_ENTERING_SIDE_ON:
+        {
             // switch for side-on arm is not installed yet
-            // stepper_commandUntil(STEPPER_ARM,
-            //              imaging_at_side,
-            //              IMAGING_ARM_CCW,
-            //              IMAGING_ARM_GO_BOT_RATE) == false);
-            light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
-
-            // wait on serial message from RPi
-
+            uint16_t plane_angle = 20;
+            uint16_t plane_step_count = angle_to_steps(plane_angle);
+            uint8_t plane_direction = plane_step_count < 0 ? IMAGING_PLANE_CCW : IMAGING_PLANE_CW;
+            if (stepper_commandUntil(STEPPER_ARM,
+                                imaging_at_side,
+                                IMAGING_ARM_CCW,
+                                IMAGING_ARM_GO_SIDE_RATE) == false
+                ||
+                stepper_command(STEPPER_PLANE,
+                                plane_step_count,
+                                plane_direction,
+                                IMAGING_PLANE_ROTATION_RATE,
+                                IMAGING_PLANE_RAMP_RATE,
+                                IMAGING_PLANE_RAMP_STEPS
+                                ) == false)
+            {
+                // do nothing
+            }
+            else
+            {
+                // the steppers have completed motion.
+                // Set light once, after reaching side-on position.
+                light_set_state(LIGHT_BOTTOM, BOTTOM_OFF);
+                light_set_state(LIGHT_DOME, DOME_ON);
+                next_state = IMAGING_STATE_SIDE_ON;
+            }
+            break;
+        }
+        case IMAGING_STATE_SIDE_ON:
+            break;
         case IMAGING_STATE_IDLE:
             // waiting for commands
+            // perform checks for other states to prevent motion
+            break;
         case IMAGING_STATE_COUNT:
             break;
     }
@@ -93,6 +125,7 @@ static bool imaging_at_top(void)
 
 static bool imaging_at_side(void)
 {
+    return true;
     return switch_state(SWITCH_ARM_BOTTOM);
 
 }
@@ -116,16 +149,17 @@ void imaging_run10ms(void)
 
 imaging_state_E imaging_getState(void)
 {
-    return IMAGING_STATE_COUNT;
+    return imaging_data.state;
 }
 
 void imaging_cli_top_down(uint8_t argNumber, char *args[])
 {
-    stepper_commandUntil(STEPPER_ARM,
-                        imaging_at_top,
-                        IMAGING_ARM_CW,
-                        IMAGING_ARM_GO_TOP_RATE);
-    light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
+    // stepper_commandUntil(STEPPER_ARM,
+    //                     imaging_at_top,
+    //                     IMAGING_ARM_CW,
+    //                     IMAGING_ARM_GO_TOP_RATE);
+    // light_set_state(LIGHT_BOTTOM, BOTTOM_ON);
+    imaging_data.state = IMAGING_STATE_ENTERING_TOP_DOWN;
 }
 
 void imaging_cli_side_on(uint8_t argNumber, char *args[])
@@ -135,19 +169,20 @@ void imaging_cli_side_on(uint8_t argNumber, char *args[])
     //                      depositor_atHome,
     //                      DEPOSITOR_ARM_CW,
     //                      DEPOSITOR_ARM_HOME_RATE);
-    int angle = atoi(args[1]);
-    int16_t step_count = angle_to_steps(angle);
-    uint8_t dir = 0;
-    if (step_count < 0) {
-        dir = 1;
-    }
-    uint16_t ramp = 10; // 10 steps to ramp up
-    uint8_t ramp_start = 10;
+    // int angle = atoi(args[1]);
+    // int16_t step_count = angle_to_steps(angle);
+    // uint8_t dir = 0;
+    // if (step_count < 0) {
+    //     dir = 1;
+    // }
+    // uint16_t ramp = 10; // 10 steps to ramp up
+    // uint8_t ramp_start = 10;
 
-    stepper_command(STEPPER_PLANE,
-                    step_count, 
-                    dir,
-                    IMAGING_PLANE_ROTATION_RATE,
-                    ramp,
-                    (int) IMAGING_PLANE_ROTATION_RATE / 2);
+    // stepper_command(STEPPER_PLANE,
+    //                 step_count, 
+    //                 dir,
+    //                 IMAGING_PLANE_ROTATION_RATE,
+    //                 ramp,
+    //                 (int) IMAGING_PLANE_ROTATION_RATE / 2);
+    imaging_data.state = IMAGING_STATE_ENTERING_SIDE_ON;
 }

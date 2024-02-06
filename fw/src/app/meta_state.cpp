@@ -29,16 +29,26 @@
  *                       P U B L I C    F U N C T I O N S                       *
  *******************************************************************************/
 // todo: figure out how to send output in reponse to a CLI command
-std::string get_internal_meta_state(void)
+bool get_internal_meta_state(int* output, int length)
 {
-    nlohmann::json output_json = {
-        {"state_machines", {{"depositor", depositor_getState()}, {"imaging", imaging_getState()}}}};
-    // iterate through all state machines, running their getters
-    // their getters populate each portion of the JSON
-    return output_json.dump();
+    // TODO: Change this to proper serialization of structs.
+    // We get the integer enums returned from getState() store it into output.
+    imaging_state_E imaging_state = imaging_getState();
+    depositor_state_E depositing_state = depositor_getState();
+    // TODO add in isolation system once it is built
+    int version = 1;
+    if (length == 3) {
+        output[0] = version;
+        output[1] = imaging_state;
+        output[2] = depositing_state;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void get_meta_state(uint8_t argNumber, char **args)
 {
-    // internal implementation is do-nothing, since every successful function call returns meta-state.
+    // internal implementation is do-nothing, since every successful function call runs get_internal_meta_state()
+    // this is a workaround because CLI functions cannot have return values
 }

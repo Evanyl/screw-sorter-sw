@@ -108,6 +108,10 @@ void stepper_init(stepper_id_E stepper)
 bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir, 
                      uint16_t rate, uint16_t ramp, uint8_t ramp_start)
 {
+    // TODO: Determine a front-facing way to communicate that stepper movement has completed
+    // at the moment, this command returns true if run the second time. It sets parameters in a stepper object,
+    // whose movement is controlled by stepper_update()
+
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
     if (s->curr_steps == 0)

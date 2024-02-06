@@ -7,7 +7,8 @@
 
 #include "depositor.h"
 #include "imaging.h"
-#include <nlohmann/json.hpp>
+#include <string>
+// #include <nlohmann/json.hpp>
 
 /*******************************************************************************
  *                               C O N S T A N T S                              *
@@ -25,7 +26,7 @@ typedef enum
 /*******************************************************************************
  *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
  *******************************************************************************/
-std::string get_internal_meta_state(void);
+bool get_internal_meta_state(int* output, int length);
 void get_meta_state(uint8_t argNumber, char **args);
 
 #define META_STATE_COMMANDS                                \

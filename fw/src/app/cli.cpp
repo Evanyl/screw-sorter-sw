@@ -9,6 +9,7 @@
 #include "dev/switch.h"
 #include "app/depositor.h"
 #include "app/meta_state.h"
+#include <string>
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -64,6 +65,7 @@ static cli_data_s cli_data =
                 SWITCH_COMMANDS,
                 DEPOSITOR_COMMANDS,
                 META_STATE_COMMANDS,
+                LIGHT_COMMANDS,
                 {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}}};
 
 /*******************************************************************************
@@ -121,12 +123,33 @@ void cli_parseLine(char *message)
             cli_f func = cmds[j].function;
             func(i, cli_data.args);
 
-            // after function successfully runs, print the state of the system to console
-            std::string state_json = get_internal_meta_state();
-            char *state_cstr = new char[state_json.length() + 1];
-            std::strcpy(state_cstr, state_json.c_str());
-            serial_send_nl(PORT_COMPUTER, state_cstr);
-            delete state_cstr;
+            // after any function successfully runs, print the state of the system to console
+            // TODO: time this
+            int len_state_arr = 3;
+            int state_arr[len_state_arr];
+            if (get_internal_meta_state(state_arr, len_state_arr) == true)
+            {
+                // conv to char array
+                uint16_t max_digits = 1; // start at 1 because any number has a digit
+                for (int i = 0; i < len_state_arr; i++) {
+                    int num_digits = 1;
+                    int curr = state_arr[i];
+                    while (curr != 0) {
+                        num_digits += 1;
+                        curr /= 10;
+                    }
+                    if (num_digits > max_digits) {
+                        max_digits = num_digits;
+                    }
+                }
+                // don't expect to exceed the size of the string
+                char state_string[max_digits * (len_state_arr + 1) + 1];
+                state_string[0] = '\0';
+                for (int i = 0; i < len_state_arr; i++) {
+                    snprintf(state_string + strlen(state_string), max_digits + 1, "%d ", state_arr[i]);
+                }
+                serial_send_nl(PORT_COMPUTER, state_string);
+            }
         }
     }
     // reset the args and command arrays

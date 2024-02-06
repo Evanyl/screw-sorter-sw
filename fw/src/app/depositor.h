@@ -25,11 +25,14 @@
 
 typedef enum 
 {
-    DEPOSITOR_STATE_NAV_HOME,
-    DEPOSITOR_STATE_IDLE,
+    DEPOSITOR_STATE_ENTERING_HOME,
+    DEPOSITOR_STATE_HOME,
+    DEPOSITOR_STATE_ENTERING_CENTER,
+    DEPOSITOR_STATE_CENTER,
     DEPOSITOR_STATE_DROP,
-    DEPOSITOR_STATE_NAV_CENTER,
-    DEPOSITOR_STATE_NAV_END,
+    DEPOSITOR_STATE_ENTERING_END,
+    DEPOSITOR_STATE_END,
+    DEPOSITOR_STATE_IDLE,
     DEPOSITOR_STATE_COUNT
 } depositor_state_E;
 
@@ -42,8 +45,12 @@ void depositor_run10ms(void);
 depositor_state_E depositor_getState(void);
 
 void depositor_cli_home(uint8_t argNumber, char* args[]);
+void depositor_cli_center(uint8_t argNumber, char* args[]);
+
 
 #define DEPOSITOR_COMMANDS \
-{depositor_cli_home, "depositor-home", NULL, NULL, 0, 0}
+{depositor_cli_home, "depositor-home", NULL, NULL, 0, 0},\
+{depositor_cli_center, "depositor-center", NULL, NULL, 0, 0}
+
 
 #endif // APP_DEPOSITOR

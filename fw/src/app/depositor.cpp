@@ -18,6 +18,7 @@
 #define DEPOSITOR_STEPS_TO_SWEEP 150
 
 #define DEPOSITOR_ARM_CW 1
+#define DEPOSITOR_ARM_CCW 0
 #define DEPOSITOR_ARM_HOME_RATE 60 // Steps per second
 
 /*******************************************************************************
@@ -43,7 +44,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state);
 
 static depositor_data_S depositor_data = 
 {
-    .state = DEPOSITOR_STATE_NAV_HOME
+    .state = DEPOSITOR_STATE_HOME
 };
 
 /*******************************************************************************
@@ -61,8 +62,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
 
     switch (curr_state)
     {
-        case DEPOSITOR_STATE_NAV_HOME:
-
+        case DEPOSITOR_STATE_ENTERING_HOME:
             if (stepper_commandUntil(STEPPER_DEPOSITOR, 
                                      depositor_atHome, 
                                      DEPOSITOR_ARM_CW, 
@@ -72,18 +72,44 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             }
             else
             {
-                next_state = DEPOSITOR_STATE_IDLE;
+                next_state = DEPOSITOR_STATE_HOME;
             }
             break;
-
-        case DEPOSITOR_STATE_IDLE:
-            // wait on serial message from RPi
-        case DEPOSITOR_STATE_NAV_CENTER:
+        case DEPOSITOR_STATE_HOME:
+            break;
+            // at the home position
+        case DEPOSITOR_STATE_ENTERING_CENTER:
+        {
             // go to center by taking a known number of steps
+            uint16_t steps = 10;
+            uint16_t ramp_steps = 10;
+            // TODO: Implement absolute step relative to 0, so that you can return to center
+            // from any position, not just home.
+            if (stepper_command(STEPPER_DEPOSITOR, 
+                                     steps, 
+                                     DEPOSITOR_ARM_CCW, 
+                                     DEPOSITOR_ARM_HOME_RATE,
+                                     ramp_steps,
+                                     (int) DEPOSITOR_ARM_HOME_RATE / 2) == false)
+            {
+                // do nothing
+            }
+            else
+            {
+                next_state = DEPOSITOR_STATE_CENTER;
+            }
+            break;
+        }
+        case DEPOSITOR_STATE_CENTER:
+            // at the center position
         case DEPOSITOR_STATE_DROP:
             // execute the drop sequence with servo
-        case DEPOSITOR_STATE_NAV_END:
+        case DEPOSITOR_STATE_ENTERING_END:
             // sweep the previous part off the imaging plane
+        case DEPOSITOR_STATE_END:
+            // depositor arm is at the furthest possible position from post
+        case DEPOSITOR_STATE_IDLE:
+            // wait on serial message from RPi
         case DEPOSITOR_STATE_COUNT:
             break;
     }
@@ -109,13 +135,17 @@ void depositor_run10ms(void)
 
 depositor_state_E depositor_getState(void)
 {
-    return DEPOSITOR_STATE_COUNT;
+    return depositor_data.state;
 }
 
 void depositor_cli_home(uint8_t argNumber, char* args[])
 {
-    stepper_commandUntil(STEPPER_DEPOSITOR, 
-                         depositor_atHome, 
-                         DEPOSITOR_ARM_CW, 
-                         DEPOSITOR_ARM_HOME_RATE);
+    // completes operation when state becomes DEPOSITOR_STATE_HOME
+    depositor_data.state = DEPOSITOR_STATE_ENTERING_HOME;
+}
+
+void depositor_cli_center(uint8_t argNumber, char* args[])
+{
+    // completes operation when state becomes DEPOSITOR_STATE_HOME
+    depositor_data.state = DEPOSITOR_STATE_ENTERING_CENTER;
 }
