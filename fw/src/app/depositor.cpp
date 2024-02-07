@@ -63,9 +63,9 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
     switch (curr_state)
     {
         case DEPOSITOR_STATE_ENTERING_HOME:
-            if (stepper_commandUntil(STEPPER_DEPOSITOR, 
-                                     depositor_atHome, 
-                                     DEPOSITOR_ARM_CW, 
+            if (stepper_commandUntil(STEPPER_DEPOSITOR,
+                                     depositor_atHome,
+                                     DEPOSITOR_ARM_CW,
                                      DEPOSITOR_ARM_HOME_RATE) == false)
             {
                 // do nothing

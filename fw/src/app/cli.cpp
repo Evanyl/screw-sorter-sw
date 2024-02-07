@@ -57,16 +57,18 @@ static char run100ms(struct pt *thread);
 // char line[SERIAL_MESSAGE_SIZE] = {' '};
 
 static cli_data_s cli_data =
+{
+    .cmds =
     {
-        .cmds =
-            {
-                SERVO_COMMANDS,
-                STEPPER_COMMANDS,
-                SWITCH_COMMANDS,
-                DEPOSITOR_COMMANDS,
-                META_STATE_COMMANDS,
-                LIGHT_COMMANDS,
-                {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}}};
+        SERVO_COMMANDS,
+        STEPPER_COMMANDS,
+        SWITCH_COMMANDS,
+        DEPOSITOR_COMMANDS,
+        META_STATE_COMMANDS,
+        LIGHT_COMMANDS,
+        {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
+    }
+};
 
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
