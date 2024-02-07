@@ -74,10 +74,10 @@ static cli_data_s cli_data =
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/
 
-void cli_parseLine(char *message)
+void cli_parseLine(char* message)
 {
     // Tokenize the line with spaces as the delimiter
-    char* tok = (char *)strtok(message, " ");
+    char* tok = (char*)strtok(message, " ");
     uint8_t i = 0;
     while (tok != NULL && i < (CLI_MAX_ARGS + 1))
     {
