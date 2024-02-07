@@ -146,6 +146,6 @@ void depositor_cli_home(uint8_t argNumber, char* args[])
 
 void depositor_cli_center(uint8_t argNumber, char* args[])
 {
-    // completes operation when state becomes DEPOSITOR_STATE_HOME
+    // completes operation when state becomes DEPOSITOR_STATE_CENTER
     depositor_data.state = DEPOSITOR_STATE_ENTERING_CENTER;
 }
