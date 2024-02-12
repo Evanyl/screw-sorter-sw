@@ -163,6 +163,7 @@ void cli_init(void)
 {
     PT_INIT(&cli_data.thread);
     serial_init(PORT_COMPUTER);
+    serial_init(PORT_RPI);
 }
 
 void cli_run100ms(void)
