@@ -147,7 +147,29 @@ void imaging_run10ms(void)
     imaging_data.state = imaging_update_state(imaging_data.state);
 }
 
-imaging_state_E imaging_getState(void)
+const char* imaging_get_state_str(void)
+{
+    // must update this array when updating imaging_state_E
+    int num_states = 5;
+    char* imaging_state_names[num_states + 1] = {
+        "IMAGING_STATE_ENTERING_TOP_DOWN",
+        "IMAGING_STATE_TOP_DOWN",
+        "IMAGING_STATE_ENTERING_SIDE_ON",
+        "IMAGING_STATE_SIDE_ON",
+        "IMAGING_STATE_IDLE",
+        "IMAGING_STATE_COUNT"
+    };
+    if (num_states == IMAGING_STATE_COUNT)
+    {
+        return imaging_state_names[imaging_data.state];
+    }
+    else
+    {
+        return "ERROR: Imaging state array does not have the correct number of states";
+    }
+}
+
+imaging_state_E imaging_get_state_enum(void)
 {
     return imaging_data.state;
 }

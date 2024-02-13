@@ -133,7 +133,31 @@ void depositor_run10ms(void)
     depositor_data.state = depositor_update_state(depositor_data.state);
 }
 
-depositor_state_E depositor_getState(void)
+const char* depositor_get_state_str(void)
+{
+    // return the enum name instead of the integer value
+    int num_depositor_states = 8;
+    const char* depositor_state_names[num_depositor_states + 1] = {
+        "DEPOSITOR_STATE_ENTERING_HOME",
+        "DEPOSITOR_STATE_HOME",
+        "DEPOSITOR_STATE_ENTERING_CENTER",
+        "DEPOSITOR_STATE_CENTER",
+        "DEPOSITOR_STATE_DROP",
+        "DEPOSITOR_STATE_ENTERING_END",
+        "DEPOSITOR_STATE_END",
+        "DEPOSITOR_STATE_IDLE",
+        "DEPOSITOR_STATE_COUNT"};
+    if (num_depositor_states == DEPOSITOR_STATE_COUNT)
+    {
+        return depositor_state_names[depositor_data.state];
+    }
+    else
+    {
+        return "ERROR: Depositor state array does not have the correct number of states";
+    }
+}
+
+depositor_state_E depositor_get_state_enum(void)
 {
     return depositor_data.state;
 }

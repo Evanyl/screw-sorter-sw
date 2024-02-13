@@ -10,7 +10,6 @@
 void setup() 
 {
     // initialization of applications
-    pinMode(PC13, OUTPUT);
     scheduler_init();
     depositor_init();
     imaging_init();
@@ -32,8 +31,4 @@ void loop()
 
     // 100ms tasks
     cli_run100ms();
-    digitalWrite(PC13, LOW);
-    delay(1000);
-    digitalWrite(PC13, HIGH);
-    delay(1000);
 }

@@ -42,7 +42,8 @@ typedef enum
 
 void depositor_init(void);
 void depositor_run10ms(void);
-depositor_state_E depositor_getState(void);
+const char* depositor_get_state_str(void);
+depositor_state_E depositor_get_state_enum(void);
 
 void depositor_cli_home(uint8_t argNumber, char* args[]);
 void depositor_cli_center(uint8_t argNumber, char* args[]);

@@ -8,6 +8,7 @@
 #include "dev/stepper.h"
 #include "dev/switch.h"
 #include "app/depositor.h"
+#include "app/imaging.h"
 #include "app/meta_state.h"
 #include <string>
 
@@ -64,6 +65,7 @@ static cli_data_s cli_data =
         STEPPER_COMMANDS,
         SWITCH_COMMANDS,
         DEPOSITOR_COMMANDS,
+        IMAGING_COMMANDS,
         META_STATE_COMMANDS,
         LIGHT_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}

@@ -36,13 +36,14 @@ typedef enum
 
 void imaging_init(void);
 void imaging_run10ms(void);
-imaging_state_E imaging_getState(void);
+const char* imaging_get_state_str(void);
+imaging_state_E imaging_get_state_enum(void);
 
 void imaging_cli_top_down(uint8_t argNumber, char *args[]);
 void imaging_cli_side_on(uint8_t argNumber, char *args[]);
 
 #define IMAGING_COMMANDS \
-{imaging_cli_home, "imaging-top-down", NULL, NULL, 0, 0},\
+{imaging_cli_top_down, "imaging-top-down", NULL, NULL, 0, 0},\
 {imaging_cli_side_on, "imaging-side-on", NULL, NULL, 1, 1}
 
 #endif // APP_IMAGING
