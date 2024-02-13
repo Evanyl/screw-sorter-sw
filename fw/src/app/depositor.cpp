@@ -108,8 +108,6 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             // sweep the previous part off the imaging plane
         case DEPOSITOR_STATE_END:
             // depositor arm is at the furthest possible position from post
-        case DEPOSITOR_STATE_IDLE:
-            // wait on serial message from RPi
         case DEPOSITOR_STATE_COUNT:
             break;
     }
@@ -145,7 +143,6 @@ const char* depositor_get_state_str(void)
         "DEPOSITOR_STATE_DROP",
         "DEPOSITOR_STATE_ENTERING_END",
         "DEPOSITOR_STATE_END",
-        "DEPOSITOR_STATE_IDLE",
         "DEPOSITOR_STATE_COUNT"};
     if (num_depositor_states == DEPOSITOR_STATE_COUNT)
     {

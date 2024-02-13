@@ -171,81 +171,90 @@ class CameraWorker(QtCore.QObject):
         with open(label_json_path, "w") as file_obj:
             json.dump(label_json, file_obj)
         return fastener_directory
-
-    def run(self):
+    
+    def take_photo(self, n, top_down=True, changed_state=True):
         # Calibrate camera before starting camera loop
-        print("before")
-        self.change_camera_settings.emit(CAMERA, self.top_down_exposure_us, self.top_down_balance_red, self.top_down_balance_blue)
-        side_view_exposure = False
-        print("Waiting for camera settings to finish")
-        # Wait 2s for the setup to finish (.emit() is multithreaded)
+        if top_down and changed_state:
+            self.change_camera_settings.emit(CAMERA, self.top_down_exposure_us, self.top_down_balance_red, self.top_down_balance_blue)
+        elif not top_down and changed_state:
+            self.change_camera_settings.emit(CAMERA, self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
         time.sleep(2)
 
+        with Vimba.get_instance() as vimba:
+            with CAMERA as cam:
+                # set frame capture timeout at max exposure time
+                try:
+                    frame = cam.get_frame(timeout_ms=1000000)
+                except VimbaTimeout as e:
+                    print("Frame acquisition timed out: " + str(e))
+                print("Got a frame")
+                
+                frame_cv2 = frame.as_opencv_image()
+                # flip image on both axes (i.e. rotate 180 deg)
+                frame_cv2 = cv2.flip(frame_cv2, -1)
+
+                # Draw directly
+                print("Drawing to GUI")
+                self.progress.emit(frame_cv2)
+                final_filename = os.path.join(
+                    self.fastener_directory, f"{n}_{self.fastener_uuid}.tiff")
+                print(f"Saving File {final_filename}")
+                cv2.imwrite(final_filename, frame_cv2)
+        return frame_cv2
+
+    def analyze_angle(self, photo):
+        return 20 # degrees
+
+    def run(self):
+        """Control cycle for RPI and BP"""
         print("Starting Loop")
-        n = 0
         # establish serial communication with Bluepill
         s = serial.Serial("/dev/ttyUSB0", 115200)
         # commence the imaging session with the "start" command
         time.sleep(1)
-        print(s.write(b"start\n"))
+        print(s.write(b"imaging-top-down\n"))
         s.flush()
-        while True:
-            # Change camera settings AFTER taking top-down shot
-            if n == 1 and not side_view_exposure:
-                print("sf")
-                time.sleep(2)
-                self.change_camera_settings.emit(CAMERA, 
-                        self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
-                # Error occurred with repeatedly running this fcn
-                # So, we set this flag immediately after
-                side_view_exposure = True
-                # Wait 2s for the setup to finish (.emit() is multithreaded)
-                time.sleep(2)
-            if n >= 10:
-                break
 
-            # wait on serial communication
-            # to get around serial comms (ie test w/o bluepill), swap this if-statement with "if True"
-            # and replace "message" with "picture\r\n"
-            # if True:
-            if s.in_waiting > 0:
-                time.sleep(1)
-                # message = "picture\r\n"
-                message = s.readline().decode("ascii")
-                if message == "picture\r\n":
-                    print("Obtaining Frame")
-                    # requirement that Vimba instance is opened using "with"
-                    with Vimba.get_instance() as vimba:
-                        with CAMERA as cam:
-                            # set frame capture timeout at max exposure time
-                            try:
-                                frame = cam.get_frame(timeout_ms=1000000)
-                            except VimbaTimeout as e:
-                                print("Frame acquisition timed out: " + str(e))
-                                continue
-                            print("Got a frame")
-                            print("Frame saved to mem")
-                            
-                            frame_cv2 = frame.as_opencv_image()
-                            # flip image on both axes (i.e. rotate 180 deg)
-                            frame_cv2 = cv2.flip(frame_cv2, -1)
+        print(s.write(b"get-meta-state\n"))
+        s.flush()
+        message = s.readline().decode("ascii")
+        state_as_json = json.loads(message)
+        while (state_as_json["imaging"] != "IMAGING_STATE_HOME"):
+            time.sleep(1)
+            print(s.write(b"get-meta-state\n"))
+            s.flush()
+            message = s.readline().decode("ascii")
+            state_as_json = json.loads(message)
+        
+        # imaging station is in home config
+        print("Obtaining Frame")
+        n = 0
+        photo = self.take_photo(n,top_down=True, changed_state=True)
 
-                            # Draw directly
-                            print("Drawing")
-                            self.progress.emit(frame_cv2)
-                            print("Done Drawing")
-                            final_filename = os.path.join(
-                                self.fastener_directory, f"{n}_{self.fastener_uuid}.tiff")
-                            print(final_filename)
-                            cv2.imwrite(final_filename, frame_cv2)
-                            n += 1
-                            # send a message to indicate a picture was saved
-                            s.write(b"finished\n")
-                            s.flush()
+        # analyze for head angle
+        head_angle = self.analyze_angle(photo)
 
-                elif message == "finished-imaging\r\n":
-                    # exit the control loop
-                    break
+        side_command = f"imaging-side-on {head_angle}\n"
+
+        print(s.write(side_command.encode('utf-8')))
+        s.flush()
+
+        print(s.write(b"get-meta-state\n"))
+        s.flush()
+        while (state_as_json["imaging"] != "IMAGING_STATE_SIDE_ON"):
+            time.sleep(1)
+            print(s.write(b"get-meta-state\n"))
+            s.flush()
+            message = s.readline().decode("ascii")
+            state_as_json = json.loads(message)
+
+        # we're in side-on mode
+        n += 1
+        self.take_photo(n, top_down=False, changed_state=True)
+
+        # and we're done!
+        print(s.write(b"imaging-top-down\n"))
+        s.flush()
 
         self.upload.emit(self.fastener_directory)
         self.finished.emit()

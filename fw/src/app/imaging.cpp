@@ -33,6 +33,8 @@ typedef struct
     imaging_state_E state;
 } imaging_data_S;
 
+int16_t plane_angle = 0; // global for plane angle
+
 /*******************************************************************************
  *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
  *******************************************************************************/
@@ -77,8 +79,7 @@ static imaging_state_E imaging_update_state(imaging_state_E curr_state)
         case IMAGING_STATE_ENTERING_SIDE_ON:
         {
             // switch for side-on arm is not installed yet
-            uint16_t plane_angle = 20;
-            uint16_t plane_step_count = angle_to_steps(plane_angle);
+            int16_t plane_step_count = angle_to_steps(plane_angle);
             uint8_t plane_direction = plane_step_count < 0 ? IMAGING_PLANE_CCW : IMAGING_PLANE_CW;
             if (stepper_commandUntil(STEPPER_ARM,
                                 imaging_at_side,
@@ -107,10 +108,6 @@ static imaging_state_E imaging_update_state(imaging_state_E curr_state)
         }
         case IMAGING_STATE_SIDE_ON:
             break;
-        case IMAGING_STATE_IDLE:
-            // waiting for commands
-            // perform checks for other states to prevent motion
-            break;
         case IMAGING_STATE_COUNT:
             break;
     }
@@ -127,7 +124,6 @@ static bool imaging_at_side(void)
 {
     return true;
     return switch_state(SWITCH_ARM_BOTTOM);
-
 }
 
 /*******************************************************************************
@@ -156,7 +152,6 @@ const char* imaging_get_state_str(void)
         "IMAGING_STATE_TOP_DOWN",
         "IMAGING_STATE_ENTERING_SIDE_ON",
         "IMAGING_STATE_SIDE_ON",
-        "IMAGING_STATE_IDLE",
         "IMAGING_STATE_COUNT"
     };
     if (num_states == IMAGING_STATE_COUNT)
@@ -206,5 +201,6 @@ void imaging_cli_side_on(uint8_t argNumber, char *args[])
     //                 IMAGING_PLANE_ROTATION_RATE,
     //                 ramp,
     //                 (int) IMAGING_PLANE_ROTATION_RATE / 2);
+    plane_angle = atoi(args[0]);
     imaging_data.state = IMAGING_STATE_ENTERING_SIDE_ON;
 }
