@@ -54,7 +54,7 @@ static PT_THREAD(run1ms(struct pt* thread))
     {
         motor_runner_data.servo_update_func((servo_id_E) servo);
     }
-
+    
     for (uint8_t stepper = 0; stepper < STEPPER_COUNT; stepper++)
     {
         motor_runner_data.stepper_update_func((stepper_id_E) stepper);

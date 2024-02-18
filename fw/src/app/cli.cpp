@@ -5,6 +5,9 @@
 
 #include "cli.h"
 #include "dev/servo.h"
+#include "dev/stepper.h"
+#include "dev/switch.h"
+#include "app/depositor.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -54,9 +57,10 @@ static cli_data_s cli_data =
 {
     .cmds = 
     {
-        // add commands with macros defined in respective headers like:
-        // STEPPER_COMMANDS,
         SERVO_COMMANDS,
+        STEPPER_COMMANDS,
+        SWITCH_COMMANDS,
+        DEPOSITOR_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };
