@@ -63,7 +63,7 @@ static serial_data_s serial_data =
 
 /*******************************************************************************
 *                       P U B L I C    F U N C T I O N S                       *
-*******************************************************************************/
+*******************************************************************************/ 
 
 void serial_init(serial_port_E port)
 {
@@ -97,9 +97,14 @@ bool serial_handleByte(serial_port_E port, char byte)
     return ret;
 }
 
-void serial_send(serial_port_E port, char* line)
+void serial_send_nl(serial_port_E port, char* line)
 {
     serial_data.ports[port].connection->println(line);
+}
+
+void serial_send(serial_port_E port, char* line)
+{
+    serial_data.ports[port].connection->print(line);
 }
 
 void serial_echo(serial_port_E port)
@@ -116,6 +121,7 @@ void serial_echo(serial_port_E port)
 
 void serial_getLine(serial_port_E port, char* lineBuffer)
 {
-    memcpy(&serial_data.ports[port].port_buffer.line, lineBuffer, 
-           sizeof(serial_data.ports[port].port_buffer.line));
+    lineBuffer = (char*) memcpy(lineBuffer, 
+                                &serial_data.ports[port].port_buffer.line, 
+                                SERIAL_MESSAGE_SIZE);
 }

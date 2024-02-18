@@ -1,6 +1,5 @@
-
-#ifndef DEV_SERIAL
-#define DEV_SERIAL
+#ifndef DEV_SERVO
+#define DEV_SERVO
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
@@ -12,29 +11,31 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define SERIAL_MESSAGE_SIZE (100)
-
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
-*******************************************************************************/
+*******************************************************************************/ 
 
-typedef enum {
-    PORT_COMPUTER,
-    PORT_RPI,
-    PORT_COUNT
-} serial_port_E;
+typedef enum
+{
+    SERVO_DEPOSITOR,
+    SERVO_COUNT
+} servo_id_E;
+
+typedef void (*servo_update_f)(servo_id_E);
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void serial_init(serial_port_E port);
-bool serial_available(serial_port_E port);
-char serial_readByte(serial_port_E port);
-bool serial_handleByte(serial_port_E port, char byte);
-void serial_send_nl(serial_port_E port, char* line);
-void serial_send(serial_port_E port, char* line);
-void serial_echo(serial_port_E port);
-void serial_getLine(serial_port_E port, char* lineBuffer);
+void servo_init(servo_id_E, float angle);
+bool servo_command(servo_id_E servo, float angle, uint8_t steps, uint16_t rate);
+void servo_update(servo_id_E servo);
 
-#endif // DEV_SERIAL 
+void servo_cli_move(uint8_t argNumber, char* args[]);
+void servo_cli_dump(uint8_t argNumber, char* args[]);
+
+#define SERVO_COMMANDS \
+{servo_cli_move, "servo-move", NULL, NULL, 4, 4},\
+{servo_cli_dump, "servo-dump", NULL, NULL, 1, 1}
+
+#endif // DEV_SERVO
