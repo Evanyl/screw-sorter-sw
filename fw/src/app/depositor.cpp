@@ -68,7 +68,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
     switch (curr_state)
     {
         case DEPOSITOR_STATE_NAV_HOME:
-
+            // home the depositor
             if (stepper_commandUntil(STEPPER_DEPOSITOR, 
                                      depositor_atHome, 
                                      DEPOSITOR_ARM_CW, 
@@ -78,7 +78,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             }
             else
             {
-                next_state = DEPOSITOR_STATE_IDLE;
+                next_state = DEPOSITOR_STATE_NAV_CENTER;
             }
             break;
 
@@ -86,8 +86,33 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             // wait on serial message from RPi
         case DEPOSITOR_STATE_NAV_CENTER:
             // go to center by taking a known number of steps
+            if (stepper_command(STEPPER_DEPOSITOR,
+                                2000,
+                                0,
+                                250,
+                                200,
+                                25) == false)
+            {
+                // do nothing
+            }
+            else
+            {
+                next_state = DEPOSITOR_STATE_DROP;
+            }
+            break;
         case DEPOSITOR_STATE_DROP:
             // execute the drop sequence with servo
+            if (servo_command(SERVO_DEPOSITOR,
+                              -90,
+                              255,
+                              255) == false)
+            {
+                // do nothing
+            }
+            else
+            {
+                // do nothing
+            }
         case DEPOSITOR_STATE_NAV_END:
             // sweep the previous part off the imaging plane
         case DEPOSITOR_STATE_COUNT:
@@ -124,8 +149,8 @@ depositor_state_E depositor_getState(void)
 
 void depositor_cli_home(uint8_t argNumber, char* args[])
 {
-    stepper_commandUntil(STEPPER_ARM, 
-                         arm_atHome, 
+    stepper_commandUntil(STEPPER_DEPOSITOR, 
+                         depositor_atHome, 
                          DEPOSITOR_ARM_CW, 
                          DEPOSITOR_ARM_HOME_RATE);
 }

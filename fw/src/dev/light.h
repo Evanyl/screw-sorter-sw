@@ -1,6 +1,5 @@
-
-#ifndef DEV_SWITCH
-#define DEV_SWITCH
+#ifndef DEV_LIGHT
+#define DEV_LIGHT
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
@@ -18,22 +17,15 @@
 
 typedef enum
 {
-    SWITCH_DEPOSITOR,
-    SWITCH_ARM,
-    SWITCH_SIDELIGHT,
-    SWITCH_COUNT
-} switch_id_E;
+    LIGHT_BACK,
+    LIGHT_SIDE,
+    LIGHT_COUNT
+} light_id_E;
 
 /*******************************************************************************
-*            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/
+*                       P U B L I C    F U N C T I O N S                       *
+*******************************************************************************/ 
 
-void switch_init(switch_id_E switch_id);
-bool switch_state(switch_id_E switch_id);
+void light_init(light_id_E light);
 
-void switch_cli_state(uint8_t argNumber, char* args[]);
-
-#define SWITCH_COMMANDS \
-{switch_cli_state, "switch-state", NULL, NULL, 1, 1}
-
-#endif
+#endif // DEV_LIGHT

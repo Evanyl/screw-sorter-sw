@@ -78,6 +78,12 @@ stepper_data_s stepper_data =
             .pin_dir = PA12,
             .pin_pul = PA15,
             .pin_ena = PA11
+        },
+        [STEPPER_SIDELIGHT] =
+        {
+            .pin_dir = PA2,
+            .pin_pul = PA1,
+            .pin_ena = PA3
         }
     },
 };
@@ -281,6 +287,10 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
     else if (strcmp(args[0], "arm") == 0)
     {
         s = STEPPER_ARM;
+    }
+    else if (strcmp(args[0], "sidelight") == 0)
+    {
+        s = STEPPER_SIDELIGHT;
     }
 
     if (s == STEPPER_COUNT)

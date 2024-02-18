@@ -8,6 +8,7 @@
 #include "dev/stepper.h"
 #include "dev/switch.h"
 #include "app/depositor.h"
+#include "app/lighting.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -61,6 +62,7 @@ static cli_data_s cli_data =
         STEPPER_COMMANDS,
         SWITCH_COMMANDS,
         DEPOSITOR_COMMANDS,
+        LIGHTING_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };

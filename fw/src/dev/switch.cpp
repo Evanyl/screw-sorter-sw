@@ -34,6 +34,7 @@ void switch_depositor_ISR(void);
 void switch_arm_bottom_ISR(void);
 void switch_arm_ISR(void);
 void switch_lights_ISR(void);
+void switch_sidelight_ISR(void);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -46,14 +47,20 @@ switch_data_S switch_data =
         [SWITCH_DEPOSITOR] =
         {
             .activated = false, 
-            .pin = PB12, // active LOW switch
+            .pin = PC14, // active LOW switch
             .ISR = switch_depositor_ISR
         },
         [SWITCH_ARM] = 
         {
             .activated = false,
-            .pin = PB14, // active LOW switch
+            .pin = PC15, // active LOW switch
             .ISR = switch_arm_ISR
+        },
+        [SWITCH_SIDELIGHT] = 
+        {
+            .activated = false,
+            .pin = PC13,
+            .ISR = switch_sidelight_ISR
         }
     }
 };
@@ -71,6 +78,12 @@ void switch_depositor_ISR(void)
 void switch_arm_ISR(void)
 {
     switch_S* sw = &switch_data.switches[SWITCH_ARM];
+    sw->activated = true ^ sw->activated;
+}
+
+void switch_sidelight_ISR(void)
+{
+    switch_S* sw = &switch_data.switches[SWITCH_SIDELIGHT];
     sw->activated = true ^ sw->activated;
 }
 
@@ -109,6 +122,10 @@ void switch_cli_state(uint8_t argNumber, char* args[])
     else if (strcmp(args[0], "arm") == 0)
     {
         sw = &switch_data.switches[SWITCH_ARM];
+    }
+    else if (strcmp(args[0], "sidelight") == 0)
+    {
+        sw = &switch_data.switches[SWITCH_SIDELIGHT];
     }
 
     if (sw == NULL)

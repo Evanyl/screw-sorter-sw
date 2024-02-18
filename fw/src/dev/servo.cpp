@@ -60,8 +60,8 @@ servo_data_s servo_data =
     {
         [SERVO_DEPOSITOR] = 
         {
-            .pwm_pin = PA_7,
-            .dig_pin = PA7,
+            .pwm_pin = PB_0,
+            .dig_pin = PB0,
             .curr_angle = 0.0,
             .des_angle = 0.0,
             .delta = 0.0,
