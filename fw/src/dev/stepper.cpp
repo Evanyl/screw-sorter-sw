@@ -29,15 +29,26 @@ typedef struct
     uint8_t pin_pul;
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
     uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left)
-    uint8_t rate;                  // Steps per second
+    uint16_t rate;                  // Steps per second
     uint16_t counter;
     stepper_mode_E mode;
     // for step-based control
+    // new angle rep
+    float des_angle;
+    float curr_angle;
+    float ramp_angle;
+    uint16_t step_to_angle;
+    uint16_t rate_start;
+
+    // desired angle, 
+    // current angle,
+    // steps per-rev (initialize during init)
+    // ramp angle
     uint16_t des_steps;
     uint16_t curr_steps;
     uint16_t ramp_steps;
     uint16_t ramp_start;
-    uint8_t curr_rate;
+    uint16_t curr_rate;
     // for condition-based control
     bool until;
     stepper_cond_f condition;
@@ -138,7 +149,9 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
     }
     else if (s->curr_steps == s->des_steps)
     {
+        s->des_steps = 0;
         s->curr_steps = 0;
+        s->rate = rate;
         ret = true;
     }     
     else
@@ -153,14 +166,13 @@ bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond,
 {
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
-    Serial.println(cond());
     if (cond() == false)
     {
         s->rate = rate;
         s->dir = dir;
         s->mode = STEPPER_MODE_CONDITION;
-        s->condition = cond;
-        s->cond_met = false;
+        s->condition = cond; 
+        s->cond_met = false; 
     }
     else if (s->cond_met)
     {
@@ -229,8 +241,8 @@ void stepper_update(stepper_id_E stepper)
                 else
                 {
                     // reset current and desired steps
-                    s->curr_steps = 0;
-                    s->des_steps = 0;
+                    // s->curr_steps = 0;
+                    // s->des_steps = 0;
                     s->curr_rate = s->rate;
                 }
                 s->counter = 0;

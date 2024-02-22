@@ -56,7 +56,7 @@ static serial_data_s serial_data =
             {
                 .index = 0
             },
-            .connection = &Serial2
+            .connection = &Serial3
         }
     }
 };

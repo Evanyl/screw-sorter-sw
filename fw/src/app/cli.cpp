@@ -9,6 +9,8 @@
 #include "dev/switch.h"
 #include "app/depositor.h"
 #include "app/lighting.h"
+#include "app/arm.h"
+#include "app/system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -63,6 +65,8 @@ static cli_data_s cli_data =
         SWITCH_COMMANDS,
         DEPOSITOR_COMMANDS,
         LIGHTING_COMMANDS,
+        ARM_COMMANDS,
+        SYSTEM_STATE_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };
