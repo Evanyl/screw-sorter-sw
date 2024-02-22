@@ -1,11 +1,17 @@
-#ifndef DEV_LIGHT
-#define DEV_LIGHT
+
+#ifndef APP_CORE_COMMS
+#define APP_CORE_COMMS
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
+#include <pt.h>
 #include <Arduino.h>
+
+#include "scheduler.h"
+#include "dev/serial.h"
+#include "system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -15,18 +21,12 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef enum
-{
-    LIGHT_BACK,
-    LIGHT_SIDE,
-    LIGHT_COUNT
-} light_id_E;
-
 /*******************************************************************************
-*                       P U B L I C    F U N C T I O N S                       *
-*******************************************************************************/ 
+*            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
+*******************************************************************************/
 
-void light_init(light_id_E light, uint16_t brightness);
-void light_command(light_id_E light, uint16_t brightness);
+system_state_E core_comms_getDesiredState(void);
+void core_comms_init(void);
+void core_comms_run100ms(void);
 
-#endif // DEV_LIGHT
+#endif // APP_CORE_COMMS

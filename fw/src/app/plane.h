@@ -1,11 +1,14 @@
-#ifndef DEV_LIGHT
-#define DEV_LIGHT
+
+#ifndef APP_PLANE
+#define APP_PLANE
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
 #include <Arduino.h>
+
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -15,18 +18,19 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-    LIGHT_BACK,
-    LIGHT_SIDE,
-    LIGHT_COUNT
-} light_id_E;
+    PLANE_STATE_IDLE,
+    PLANE_STATE_ENTERING_ACTIVE,
+    PLANE_STATE_ACTIVE,
+} plane_state_E;
 
 /*******************************************************************************
-*                       P U B L I C    F U N C T I O N S                       *
-*******************************************************************************/ 
+*            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
+*******************************************************************************/
 
-void light_init(light_id_E light, uint16_t brightness);
-void light_command(light_id_E light, uint16_t brightness);
+void plane_init(void);
+void plane_run10ms(void);
+plane_state_E plane_getState(void);
 
-#endif // DEV_LIGHT
+#endif // APP_PLANE

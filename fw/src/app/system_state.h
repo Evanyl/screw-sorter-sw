@@ -1,5 +1,6 @@
-#ifndef DEV_LIGHT
-#define DEV_LIGHT
+
+#ifndef APP_SYSTEM_STATE
+#define APP_SYSTEM_STATE
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
@@ -15,18 +16,31 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-    LIGHT_BACK,
-    LIGHT_SIDE,
-    LIGHT_COUNT
-} light_id_E;
+    SYSTEM_STATE_STARTUP,
+    SYSTEM_STATE_IDLE,
+    SYSTEM_STATE_ENTERING_DEPOSITED,
+    SYSTEM_STATE_DEPOSITED,
+    SYSTEM_STATE_ENTERING_TOPDOWN,
+    SYSTEM_STATE_TOPDOWN,
+    SYSTEM_STATE_ENTERING_SIDEON,
+    SYSTEM_STATE_SIDEON,
+    SYSTEM_STATE_ENTERING_IDLE,
+    SYSTEM_STATE_COUNT
+} system_state_E;
 
 /*******************************************************************************
-*                       P U B L I C    F U N C T I O N S                       *
-*******************************************************************************/ 
+*            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
+*******************************************************************************/
 
-void light_init(light_id_E light, uint16_t brightness);
-void light_command(light_id_E light, uint16_t brightness);
+void system_state_init(void);
+void system_state_run100ms(void);
+system_state_E system_state_getState(void);
 
-#endif // DEV_LIGHT
+void system_state_cli_target(uint8_t argNumber, char* args[]);
+
+#define SYSTEM_STATE_COMMANDS \
+{system_state_cli_target, "system-state-target", NULL, NULL, 1, 1}
+
+#endif // APP_SYSTEM_STATE

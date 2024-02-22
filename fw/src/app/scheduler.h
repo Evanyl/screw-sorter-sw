@@ -31,13 +31,18 @@ typedef enum
 
 typedef enum
 {
-    LIGHTS,
+    LIGHTING,
+    DEPOSITOR,
+    ARM,
+    PLANE, 
     TASK_10ms_COUNT
 } tasks_10ms_E;
 
 typedef enum
 {
     CLI,
+    CORE_COMMS,
+    SYSTEM_STATE,
     TASK_100ms_COUNT
 } tasks_100ms_E;
 
