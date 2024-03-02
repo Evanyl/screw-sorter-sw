@@ -21,13 +21,17 @@
 #define DEPOSITOR_CLOSE_ANGLE  62.0
 
 // change these to angle to center, and angle to sweep. Get angles from CAD.
-#define DEPOSITOR_STEPS_TO_CENTER 2000
-#define DEPOSITOR_STEPS_TO_SWEEP 3200
+// #define DEPOSITOR_STEPS_TO_CENTER 2000
+// #define DEPOSITOR_STEPS_TO_SWEEP 3200
+
+#define DEPOSITOR_ARM_CENTER_ANGLE 75.0 // Degrees
+#define DEPOSITOR_ARM_SWEEP_ANGLE  110.0
 
 #define DEPOSITOR_ARM_CW 1
 #define DEPOSITOR_ARM_CCW 0
 #define DEPOSITOR_ARM_NAV_RATE 500
 #define DEPOSITOR_ARM_HOME_RATE 150 // Steps per second
+#define DEPOSITOR_ARM_STEPS_PER_REV 3200 // TODO: check this
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -38,8 +42,8 @@ typedef struct
     // some tracking of angle... concern of depositor not stepper?
     struct pt  thread;
     depositor_state_E state;
-    uint16_t curr_angle;
-    uint16_t des_angle;
+    float curr_angle;
+    float des_angle;
 } depositor_data_S;
 
 /*******************************************************************************
@@ -47,6 +51,7 @@ typedef struct
 *******************************************************************************/
 
 static char run10ms(struct pt* thread);
+static void depositor_angleToSteps(uint16_t* steps, uint8_t* dir, float angle);
 static bool depositor_atHome(void);
 static depositor_state_E depositor_update_state(depositor_state_E curr_state);
 
@@ -63,6 +68,21 @@ static depositor_data_S depositor_data =
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/
 
+static void depositor_angleToSteps(uint16_t* steps, uint8_t* dir, float angle)
+{
+    float s = angle * (DEPOSITOR_ARM_STEPS_PER_REV / 360.0);
+    if (s < 0.0)
+    {
+        *dir = DEPOSITOR_ARM_CW;
+        *steps = abs(s);
+    }
+    else
+    {
+        *dir = DEPOSITOR_ARM_CCW;
+        *steps = s;
+    }
+}
+
 static bool depositor_atHome(void)
 {
     return switch_state(SWITCH_DEPOSITOR);
@@ -72,6 +92,8 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
 {
     depositor_state_E next_state = curr_state;
     system_state_E system_state = system_state_getState();
+    uint8_t dir;
+    uint16_t steps;
 
     switch (curr_state)
     {
@@ -87,6 +109,9 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 }
                 else
                 {
+                    // home position, reset angles
+                    depositor_data.curr_angle = 0.0;
+                    depositor_data.des_angle = 0.0;
                     next_state = DEPOSITOR_STATE_IDLE;
                 }
             }
@@ -99,6 +124,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
         case DEPOSITOR_STATE_IDLE:
             if (system_state == SYSTEM_STATE_ENTERING_DEPOSITED)
             {
+                depositor_data.des_angle = DEPOSITOR_ARM_SWEEP_ANGLE;
                 next_state = DEPOSITOR_STATE_SWEEPING;
             }
             else
@@ -106,11 +132,14 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 // do nothing, stay in idle position
             }
             break;
-            
+
         case DEPOSITOR_STATE_SWEEPING:
+            depositor_angleToSteps(&steps, &dir,
+                                   depositor_data.des_angle - 
+                                   depositor_data.curr_angle);
             if (stepper_command(STEPPER_DEPOSITOR,
-                                DEPOSITOR_STEPS_TO_SWEEP,
-                                DEPOSITOR_ARM_CCW,
+                                steps,
+                                dir,
                                 DEPOSITOR_ARM_NAV_RATE,
                                 200,
                                 25) == false)
@@ -119,14 +148,18 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             }
             else
             {
+                depositor_data.curr_angle = depositor_data.des_angle;
+                depositor_data.des_angle = DEPOSITOR_ARM_CENTER_ANGLE;
                 next_state = DEPOSITOR_STATE_CENTERING;
             }
             break;
         case DEPOSITOR_STATE_CENTERING:
+            depositor_angleToSteps(&steps, &dir,
+                                   depositor_data.des_angle - 
+                                   depositor_data.curr_angle);
             if (stepper_command(STEPPER_DEPOSITOR,
-                                DEPOSITOR_STEPS_TO_SWEEP - 
-                                    DEPOSITOR_STEPS_TO_CENTER,
-                                DEPOSITOR_ARM_CW,
+                                steps,
+                                dir,
                                 DEPOSITOR_ARM_NAV_RATE,
                                 100,
                                 25) == false)
@@ -149,18 +182,30 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             }
             else
             {
+                depositor_data.des_angle = 0.0;
                 next_state = DEPOSITOR_STATE_ENTERING_IDLE;
             }
             break;
         case DEPOSITOR_STATE_ENTERING_IDLE:
-            if (stepper_command(STEPPER_DEPOSITOR,
-                                DEPOSITOR_STEPS_TO_CENTER,
-                                DEPOSITOR_ARM_CW,
-                                DEPOSITOR_ARM_NAV_RATE,
-                                100,
-                                25) == false )
+
+            if (depositor_data.curr_angle != depositor_data.des_angle)
             {
-                // do nothing, navigating back to idle position
+                depositor_angleToSteps(&steps, &dir,
+                                       depositor_data.des_angle - 
+                                       depositor_data.curr_angle);
+                if (stepper_command(STEPPER_DEPOSITOR,
+                                    steps,
+                                    dir,
+                                    DEPOSITOR_ARM_NAV_RATE,
+                                    100,
+                                    25) == false)
+                {
+                    // do nothing, depositor arm navigating to home position
+                }
+                else
+                {
+                    depositor_data.curr_angle = depositor_data.des_angle;
+                }
             }
             else
             {
@@ -176,6 +221,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                     next_state = DEPOSITOR_STATE_IDLE;
                 }
             }
+
             break;
         case DEPOSITOR_STATE_COUNT:
             break;

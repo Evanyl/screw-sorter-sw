@@ -32,5 +32,9 @@ typedef enum
 void plane_init(void);
 void plane_run10ms(void);
 plane_state_E plane_getState(void);
+void plane_core_comms_setCorrAngle(uint8_t argNumber, char* args[]);
+
+#define PLANE_CORE_COMMS_COMMANDS \
+{plane_core_comms_setCorrAngle, "corr-angle", 1}
 
 #endif // APP_PLANE

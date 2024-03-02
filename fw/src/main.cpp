@@ -34,9 +34,9 @@ void loop()
     lighting_run10ms();
     arm_run10ms();
     // plane_run10ms();
+    core_comms_run10ms();
 
     // 100ms tasks
     system_state_run100ms();
-    core_comms_run100ms();
     cli_run100ms();
 }

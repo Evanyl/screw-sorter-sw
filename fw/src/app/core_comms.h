@@ -25,8 +25,7 @@
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-system_state_E core_comms_getDesiredState(void);
 void core_comms_init(void);
-void core_comms_run100ms(void);
+void core_comms_run10ms(void);
 
 #endif // APP_CORE_COMMS
