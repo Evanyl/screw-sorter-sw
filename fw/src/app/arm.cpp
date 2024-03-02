@@ -4,6 +4,7 @@
 *******************************************************************************/ 
 
 #include "arm.h"
+#include "system_state.h"
 #include "scheduler.h"
 
 /*******************************************************************************
@@ -11,7 +12,12 @@
 *******************************************************************************/ 
 
 #define ARM_CW 1 
+#define ARM_CCW 0
 #define ARM_HOMING_RATE 100
+
+#define ARM_STEPS_TO_SIDEON 1000
+#define ARM_NAV_RATE 750
+
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -52,6 +58,7 @@ static bool arm_atHome(void)
 static arm_state_E arm_update_state(arm_state_E curr_state)
 {
     arm_state_E next_state = curr_state;
+    system_state_E system_state = system_state_getState();
 
     switch (curr_state)
     {
@@ -69,16 +76,55 @@ static arm_state_E arm_update_state(arm_state_E curr_state)
             }
             break;
         case ARM_STATE_IDLE:
-            break;
-        case ARM_STATE_ENTERING_TOPDOWN:
-            break;
-        case ARM_STATE_TOPDOWN:
+            if (system_state == SYSTEM_STATE_ENTERING_SIDEON)
+            {
+                next_state = ARM_STATE_ENTERING_SIDEON;
+            }
+            else
+            {
+                // do nothing, stay in top-down
+            }
             break;
         case ARM_STATE_ENTERING_SIDEON:
+            if (stepper_command(STEPPER_DEPOSITOR,
+                                ARM_STEPS_TO_SIDEON,
+                                ARM_CCW,
+                                ARM_NAV_RATE,
+                                200,
+                                25) == false)
+            {
+                // do nothing, navigating to side-on position
+            }   
+            else
+            {
+                next_state = ARM_STATE_SIDEON;
+            }
             break;
         case ARM_STATE_SIDEON:
+            if (system_state == SYSTEM_STATE_ENTERING_IDLE)
+            {
+                next_state = ARM_STATE_ENTERING_IDLE;
+            }
+            else
+            {
+                // do nothing, doig side-on imaging
+            }
             break;
         case ARM_STATE_ENTERING_IDLE:
+            if (stepper_command(STEPPER_DEPOSITOR,
+                                ARM_STEPS_TO_SIDEON,
+                                ARM_CW,
+                                ARM_NAV_RATE,
+                                200,
+                                25) == false)
+            {
+                // do nothinng
+            }
+            else
+            {
+                next_state = ARM_STATE_IDLE;
+            }
+            break;
         case ARM_STATE_COUNT:
             break;
     }

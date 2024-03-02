@@ -33,6 +33,7 @@ typedef struct
 *******************************************************************************/
 
 static system_state_E system_state_update_state(system_state_E curr_state);
+static system_state_E system_state_parseState(char* s);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -46,6 +47,29 @@ static system_state_data_S system_state_data =
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/
+
+static system_state_E system_state_parseState(char* s)
+{
+    system_state_E state = SYSTEM_STATE_COUNT;
+    if (strcmp(s, "idle") == 0)
+    {
+        state = SYSTEM_STATE_IDLE;
+    }
+    else if (strcmp(s, "top-down") == 0)
+    {
+        state = SYSTEM_STATE_TOPDOWN;
+    }
+    else if (strcmp(s, "side-on") == 0)
+    {
+        state = SYSTEM_STATE_SIDEON;
+    }
+    else
+    {
+        // do nothing
+    }
+
+    return state;
+}
 
 static system_state_E system_state_update_state(system_state_E curr_state)
 {
@@ -213,20 +237,10 @@ void system_state_setTarget(system_state_E target)
 
 void system_state_cli_target(uint8_t argNumber, char* args[])
 {
-    if (strcmp(args[0], "idle") == 0)
-    {
-        system_state_data.des_state = SYSTEM_STATE_IDLE;
-    }
-    else if (strcmp(args[0], "side-on") == 0)
-    {
-        system_state_data.des_state = SYSTEM_STATE_SIDEON;
-    }
-    else if (strcmp(args[0], "top-down") == 0)
-    {
-        system_state_data.des_state = SYSTEM_STATE_TOPDOWN;
-    }
-    else
-    {
-        serial_send_nl(PORT_COMPUTER, "invalid state");
-    }
+    system_state_data.des_state = system_state_parseState(args[0]);
+}
+
+void system_state_core_comms_setDesState(uint8_t argNumber, char* args[])
+{
+    system_state_data.des_state = system_state_parseState(args[0]);
 }
