@@ -327,7 +327,12 @@ def get_correction_angles(img, targets):
     in:  path to raw image data to read read_fpath
     out: straightened and cropped binary image of shape 250x575
     """
+    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+    _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
+
     contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
     contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
 
     # get data necessary for determining pose (centroid and true center)
