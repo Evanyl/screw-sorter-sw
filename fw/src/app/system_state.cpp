@@ -240,6 +240,17 @@ void system_state_cli_target(uint8_t argNumber, char* args[])
     system_state_data.des_state = system_state_parseState(args[0]);
 }
 
+void system_state_cli_dump(uint8_t argNumber, char* args[])
+{
+    char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+    sprintf(st, 
+            "{\"des_state\": %d, \"curr_state\": %d}", 
+            (uint8_t) system_state_data.des_state,
+            (uint8_t) system_state_data.curr_state);
+    serial_send_nl(PORT_COMPUTER, st);
+    free(st);
+}
+
 void system_state_core_comms_setDesState(uint8_t argNumber, char* args[])
 {
     system_state_data.des_state = system_state_parseState(args[0]);

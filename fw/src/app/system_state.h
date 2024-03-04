@@ -39,11 +39,13 @@ void system_state_run100ms(void);
 system_state_E system_state_getState(void);
 
 void system_state_cli_target(uint8_t argNumber, char* args[]);
+void system_state_cli_dump(uint8_t argNumer, char* args[]);
 
 void system_state_core_comms_setDesState(uint8_t argNumber, char* args[]);
 
 #define SYSTEM_STATE_COMMANDS \
-{system_state_cli_target, "system-state-target", NULL, NULL, 1, 1}
+{system_state_cli_target, "system-state-target", NULL, NULL, 1, 1}, \
+{system_state_cli_dump, "system-state-dump", NULL, NULL, 0, 0}
 
 #define SYSTEM_STATE_CORE_COMMS_COMMANDS \
 {system_state_core_comms_setDesState, "des-state", 1}

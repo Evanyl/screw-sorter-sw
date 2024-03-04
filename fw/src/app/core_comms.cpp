@@ -11,7 +11,7 @@
 *******************************************************************************/ 
 
 #define CORE_COMMS_CMD_LIST_TERMINATOR "END OF LIST"
-#define CORE_COMMS_MAX_ARGS 2
+#define CORE_COMMS_MAX_ARGS 10
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -76,7 +76,7 @@ static core_comms_s core_comms_data =
     {
         SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
-        {NULL, "END OF LIST", 0}
+        {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
 };
 
@@ -109,11 +109,13 @@ static void core_comms_parseLine(char* message)
                 for (uint8_t e=0; e<cmds[k].params; e++)
                 {
                     core_comms_data.args[e] = core_comms_data.tokLine[j+e+1];
-
-                    // Call the function corresponding to the command with args
-                    core_comms_f func = cmds[j].func;
-                    func(i, core_comms_data.args);
                 }
+
+                // Call the function corresponding to the command with args
+                core_comms_f func = cmds[k].func;
+                func(cmds[k].params, core_comms_data.args);
+                // Reset the args array
+                memset(core_comms_data.args, '\0', sizeof(core_comms_data.args));
                 j += cmds[k].params + 1;
                 break;
             }
@@ -121,9 +123,8 @@ static void core_comms_parseLine(char* message)
         }
     }
 
-    // reset the args and command arrays
+    // Reset the args and command arrays
     memset(core_comms_data.tokLine, '\0', sizeof(core_comms_data.tokLine));
-    memset(core_comms_data.args, '\0', sizeof(core_comms_data.args));
 }
 
 static PT_THREAD(run10ms(struct pt* thread))
@@ -137,11 +138,10 @@ static PT_THREAD(run10ms(struct pt* thread))
     {
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
-            serial_echo(PORT_RPI);
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"system_state\": %d}", system_state_getState());
+            sprintf(resp, "{\"system_state\": %d}\n", system_state_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);
