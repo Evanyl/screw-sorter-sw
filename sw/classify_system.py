@@ -16,6 +16,7 @@ class ClassifySystem:
             if line.rstrip() == "start":
                 self.des_station_state = "top-down"
                 next_state = "top-down"
+                print(self.curr_state)
             else:
                 pass # no prompt to start control loop
         return next_state
@@ -42,20 +43,16 @@ class ClassifySystem:
             # waiting for imaging and processing thread to finish
             pass          
 
-
-
-    def __side_on_state_func(self):
-        next_state = self.curr_state
+    def __side_on_state_func(self, curr_state):
+        next_state = curr_state
         if self.station_state == "side-on" and not self.thread.is_alive():
             # break off a new thread for side-on imaging
             pass
-    
-    def __inference_state_func(self):
-        pass
+        return next_state
 
-    ############################################################################
-    #                 P U B L I C    C L A S S    M E T H O D S                #
-    ############################################################################
+    def __inference_state_func(self, curr_state):
+        next_state = curr_state
+        return next_state
 
     def __init__(self, core_comms):
         self.switch_dict = \
@@ -75,6 +72,7 @@ class ClassifySystem:
         self.des_station_state = "idle"
 
         self.core_comms = core_comms
+        self.desired_state = "idle"
         self.station_state = ""
         self.thread = Thread()
         self.last_time = datetime.now()
@@ -83,9 +81,9 @@ class ClassifySystem:
         if scheduler.taskReleased("classify_system"):
 
             # get last station_state
-            self.station_state = self.core_comms.getData("classify_system")
+            self.station_state = self.core_comms.getInData()["curr_state"]
             # send next desired state
-            self.core_comms.sendData(self.des_station_state)
+            self.core_comms.updateOutData("des_state", self.des_station_state)
 
-            # execute the state machine
-            self.curr_state = self.switch_dict[self.curr_state]()
+            # execute the state machine TODO fix this call here, causing fault
+            self.curr_state = self.switch_dict[self.curr_state](self.curr_state)
