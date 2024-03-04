@@ -3,7 +3,8 @@ from datetime import datetime
 
 class IsolateSystem:
 
-    def __init__(self):
+    def __init__(self, core_comms):
+        self.core_comms = core_comms
         self.last_time = datetime.now()
 
     def run100ms(self, scheduler):

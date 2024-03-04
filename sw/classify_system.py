@@ -1,6 +1,5 @@
 
 from datetime import datetime
-# from serial import Serial
 import sys
 import threading
 
@@ -11,6 +10,7 @@ class ClassifySystem:
         for line in sys.stdin:
             if line.rstrip() == "start": # replace with input from isolate
                 next_state = "top-down"
+                print(self.curr_state)
             else:
                 pass # no prompt to start control loop
         return next_state
@@ -34,14 +34,17 @@ class ClassifySystem:
         if self.response == "side-on" and not self.thread.is_alive():
             # break off a new thread for side-on imaging
             pass
+        return next_state
+
+    def __inference_state_func(self, curr_state):
+        next_state = curr_state
+        return next_state
 
     def __init__(self, core_comms):
         self.switch_dict = \
         {
             "idle": self.__idle_state_func, # wait for a prompt from isolation
-            "entering-top-down": self.__entering_top_down_state_func, # prompt the fw to enter top-down, wait
             "top-down": self.__top_down_state_func, # take image, process it, store it
-            "entering-side-on": self.__entering_side_on_state_func, # prompt the fw to enter side-on,
             "side-on": self.__side_on_state_func, # take image, process it, store it
             "inference": self.__inference_state_func, # prompt fw to enter idle, combine the images and predict
         }
@@ -56,9 +59,9 @@ class ClassifySystem:
         if scheduler.taskReleased("classify_system"):
 
             # get last response
-            self.response = self.core_comms.getData("classify_system")
+            self.response = self.core_comms.getInData()["curr_state"]
             # send next desired state
-            self.core_comms.sendData(self.desired_state)
+            self.core_comms.updateOutData("des_state", self.curr_state)
 
             # execute the state machine
-            self.curr_state = self.switch_dict[self.curr_state]
+            self.curr_state = self.switch_dict[self.curr_state](self.curr_state)

@@ -58,3 +58,6 @@ class CoreComms:
         d = json.loads(s.strip("\n"))
         return {"curr_state": self.state_decode[d["system_state"]]}
 
+    def getInData(self):
+        return self.in_data
+
