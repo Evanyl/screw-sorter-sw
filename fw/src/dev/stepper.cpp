@@ -20,6 +20,7 @@ typedef enum
 {
     STEPPER_MODE_STEPS,
     STEPPER_MODE_CONDITION,
+    STEPPER_MODE_ANGLE,
     STEPPER_MODE_COUNT
 } stepper_mode_E;
 
@@ -29,27 +30,22 @@ typedef struct
     uint8_t pin_pul;
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
     uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left)
-    uint16_t rate;                  // Steps per second
+    uint16_t rate;                 // Steps per second
     uint16_t counter;
     stepper_mode_E mode;
-    // for step-based control
-    // new angle rep
+    // Angle based control
+    float last_des_angle;          
     float des_angle;
     float curr_angle;
     float ramp_angle;
-    uint16_t step_to_angle;
-    uint16_t rate_start;
-
-    // desired angle, 
-    // current angle,
-    // steps per-rev (initialize during init)
-    // ramp angle
+    float angle_per_step;
+    // Step based control
     uint16_t des_steps;
     uint16_t curr_steps;
     uint16_t ramp_steps;
     uint16_t ramp_start;
     uint16_t curr_rate;
-    // for condition-based control
+    // Condition-based control
     bool until;
     stepper_cond_f condition;
     bool cond_met;
@@ -76,7 +72,12 @@ stepper_data_s stepper_data =
         {
             .pin_dir = PB7,
             .pin_pul = PB8,
-            .pin_ena = PB6
+            .pin_ena = PB6,
+            .last_des_angle = 0.0,
+            .des_angle = 0.0,
+            .curr_angle = 0.0,
+            .angle_per_step = 1.0 / \
+                              ((3200.0 / 360.0)/*steps/rev*/*(72 / 24))/*ratio*/
         },
         [STEPPER_PLANE] =
         {
@@ -113,6 +114,7 @@ void stepper_init(stepper_id_E stepper)
     pinMode(stepper_data.steppers[stepper].pin_pul, OUTPUT);
     pinMode(stepper_data.steppers[stepper].pin_ena, OUTPUT);
     digitalWrite(stepper_data.steppers[stepper].pin_ena, LOW);
+    
     stepper_data.steppers[stepper].curr_steps = 0;
     stepper_data.steppers[stepper].des_steps = 0;
     stepper_data.steppers[stepper].condition = NULL;
@@ -186,6 +188,61 @@ bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond,
         // do nothing
     }
     return ret;
+}
+
+bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle, 
+                          uint16_t rate, uint16_t rate_start)
+{
+    bool ret = false;
+    stepper_s* s = &stepper_data.steppers[stepper];
+    if (s->curr_angle == angle)
+    {
+        // we've attained the desired angle
+        ret = true;
+    }
+    else if (s->des_angle == angle)
+    {
+        // moving to the des_angle, command has already registered
+        ret = false;
+    }
+    else
+    {
+        // only update rates if we are traversing to new des_angle
+        //     not for repeated calls to the same des_angle...
+        ret = false;
+        s->des_angle = angle;
+        s->ramp_angle = ramp_angle;
+        s->rate = rate;
+        s->ramp_start = rate_start;
+        s->ramp_steps = (uint16_t) ramp_angle / s->angle_per_step;
+        Serial.println(s->ramp_steps);
+        if (s->ramp_steps == 0)
+        {
+            s->curr_rate = rate;
+        }
+        else
+        {
+            s->curr_rate = s->ramp_start;
+        }
+
+        s->mode = STEPPER_MODE_ANGLE;
+        if (s->curr_angle < s-> des_angle)
+        {
+            // Step CCW (0)
+            s->dir = 0;
+        }
+        else
+        {
+            // Step CW (1)
+            s->dir = 1;
+        }
+    }
+    return ret;
+}
+
+void stepper_calibAngle(stepper_id_E stepper, float angle)
+{
+    stepper_data.steppers[stepper].curr_angle = angle;
 }
 
 void stepper_update(stepper_id_E stepper)
@@ -278,6 +335,91 @@ void stepper_update(stepper_id_E stepper)
                 s->counter++;
             }
             break;
+
+        case STEPPER_MODE_ANGLE:
+            if (s->counter >= MILLI_SEC_TO_SEC/s->curr_rate)
+            {
+                digitalWrite(s->pin_dir, s->dir);
+                delayMicroseconds(10); // Ensure direction is registered
+                if (abs(s->des_angle - s->curr_angle) > s->angle_per_step)
+                {   
+                    Serial.println(s->curr_rate);
+                    uint8_t delta_rate = 0;
+                    if (s->ramp_steps > 0)
+                    {
+                        delta_rate = s->rate / s->ramp_steps;
+                    }
+
+                    // Get angle deltas (positive by construction)
+                    float start_to_curr_angle;
+                    float curr_angle_to_end;
+                    float delta_angle;
+                    if (s->dir == 0)
+                    {
+                        start_to_curr_angle = s->curr_angle - s->last_des_angle;
+                        curr_angle_to_end = s->des_angle - s->curr_angle;
+                        delta_angle = s->angle_per_step;
+                    }
+                    else
+                    {
+                        start_to_curr_angle = s->last_des_angle - s->curr_angle;
+                        curr_angle_to_end = s->curr_angle - s->des_angle;
+                        delta_angle = -s->angle_per_step;
+                    }
+
+                    if (start_to_curr_angle < s->ramp_angle && 
+                        delta_rate > 0)
+                    {
+                        Serial.println("ramping up");
+                        if (s->rate - s->curr_rate < delta_rate)
+                        {
+                            s->curr_rate = s->rate;
+                        }
+                        else
+                        {
+                            s->curr_rate += delta_rate;
+                        }
+                    }
+                    // ramping down
+                    else if (curr_angle_to_end < s->ramp_angle && 
+                             delta_rate > 0)
+                    {
+                        Serial.println("ramping down");
+                        if (s->curr_rate - s->ramp_start < delta_rate)
+                        {
+                            s->curr_rate = s->ramp_start;
+                        }
+                        else
+                        {
+                            s->curr_rate -= delta_rate;
+                        }
+                    }
+                    // executing normal rate
+                    else
+                    {
+                        Serial.println("middle");
+                        // do nothing to the rate
+                    }
+
+                    digitalWrite(s->pin_pul, HIGH);
+                    // update curr_angle after step
+                    s->curr_angle += delta_angle;
+                }
+                else
+                {
+                    // set curr_steps to des_steps and reset curr_rate
+                    s->last_des_angle = s->des_angle;
+                    s->curr_angle = s->des_angle;
+                    s->curr_rate = s->rate;
+                }
+                s->counter = 0;
+            }
+            else
+            {
+                digitalWrite(s->pin_pul, LOW);
+                s->counter++;
+            }
+            break;
         case STEPPER_MODE_COUNT:
         default:
             break;
@@ -311,12 +453,27 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
     }
     else
     {
-        float steps = atoi(args[1]);
-        uint8_t dir = atoi(args[2]);
-        uint16_t rate = atoi(args[3]);
-        uint16_t ramp = atoi(args[4]);
-        uint8_t ramp_start = atoi(args[5]);
-        stepper_command(s, steps, dir, rate, ramp, ramp_start);
+        if (strcmp(args[1], "angle") == 0)
+        {
+            float des_angle = atof(args[2]);
+            uint16_t rate = atoi(args[3]);
+            float ramp_angle = atof(args[4]);
+            uint8_t ramp_start = atoi(args[5]);
+            stepper_commandAngle(s, des_angle, ramp_angle, rate, ramp_start);
+        }
+        else if (strcmp(args[1], "steps") == 0)
+        {
+            uint16_t steps = atoi(args[2]);
+            uint8_t dir = atoi(args[3]);
+            uint16_t rate = atoi(args[4]);
+            uint16_t ramp_steps = atoi(args[5]);
+            uint16_t ramp_start = atoi(args[6]);
+            stepper_command(s, steps, dir, rate, ramp_steps, ramp_start);
+        }
+        else
+        {
+            serial_send_nl(PORT_COMPUTER, "invalid stepper mode");
+        }
     }
 }
 

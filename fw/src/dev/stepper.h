@@ -38,13 +38,17 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
                      uint16_t rate, uint16_t ramp, uint8_t ramp_start);
 bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond, 
                           uint8_t dir, uint16_t rate);
+bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle, 
+                          uint16_t rate, uint16_t rate_start);
+void stepper_calibAngle(stepper_id_E stepper, float angle);
+
 void stepper_update(stepper_id_E);
 
 void stepper_cli_move(uint8_t argNumber, char* args[]);
 void stepper_cli_dump(uint8_t argNumber, char* args[]);
 
 #define STEPPER_COMMANDS \
-{stepper_cli_move, "stepper-move", NULL, NULL, 6, 6},\
+{stepper_cli_move, "stepper-move", NULL, NULL, 6, 7},\
 {stepper_cli_dump, "stepper-dump", NULL, NULL, 1, 1}
 
 #endif
