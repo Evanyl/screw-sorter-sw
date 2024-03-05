@@ -17,10 +17,10 @@ class ClassifySystem:
     
     def __top_down_state_func(self, curr_state):
         next_state = curr_state
-        if self.response == "top-down" and self.thread is None:
+        if self.station_state == "top-down" and self.thread is None:
             # create a new thread and start it to handle imaging
             pass
-        elif self.response == "top-down" and self.thread_is_alive():
+        elif self.station_state == "top-down" and self.thread_is_alive():
             # performing the imaging, stay static
             pass
         else:
@@ -31,7 +31,7 @@ class ClassifySystem:
 
     def __side_on_state_func(self, curr_state):
         next_state = curr_state
-        if self.response == "side-on" and not self.thread.is_alive():
+        if self.station_state == "side-on" and not self.thread.is_alive():
             # break off a new thread for side-on imaging
             pass
         return next_state
@@ -51,17 +51,17 @@ class ClassifySystem:
         self.curr_state = "idle"
         self.core_comms = core_comms
         self.desired_state = "idle"
-        self.response = ""
+        self.station_state = ""
         self.thread = None
         self.last_time = datetime.now()
 
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):
 
-            # get last response
-            self.response = self.core_comms.getInData()["curr_state"]
+            # get last station_state
+            self.station_state = self.core_comms.getInData()["curr_state"]
             # send next desired state
             self.core_comms.updateOutData("des_state", self.curr_state)
 
-            # execute the state machine
+            # execute the state machine TODO fix this call here, causing fault
             self.curr_state = self.switch_dict[self.curr_state](self.curr_state)
