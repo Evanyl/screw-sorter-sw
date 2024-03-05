@@ -215,7 +215,6 @@ bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle,
         s->rate = rate;
         s->ramp_start = rate_start;
         s->ramp_steps = (uint16_t) ramp_angle / s->angle_per_step;
-        Serial.println(s->ramp_steps);
         if (s->ramp_steps == 0)
         {
             s->curr_rate = rate;
@@ -342,8 +341,7 @@ void stepper_update(stepper_id_E stepper)
                 digitalWrite(s->pin_dir, s->dir);
                 delayMicroseconds(10); // Ensure direction is registered
                 if (abs(s->des_angle - s->curr_angle) > s->angle_per_step)
-                {   
-                    Serial.println(s->curr_rate);
+                {
                     uint8_t delta_rate = 0;
                     if (s->ramp_steps > 0)
                     {
@@ -366,11 +364,10 @@ void stepper_update(stepper_id_E stepper)
                         curr_angle_to_end = s->curr_angle - s->des_angle;
                         delta_angle = -s->angle_per_step;
                     }
-
+                    // Ramping up
                     if (start_to_curr_angle < s->ramp_angle && 
                         delta_rate > 0)
                     {
-                        Serial.println("ramping up");
                         if (s->rate - s->curr_rate < delta_rate)
                         {
                             s->curr_rate = s->rate;
@@ -380,11 +377,10 @@ void stepper_update(stepper_id_E stepper)
                             s->curr_rate += delta_rate;
                         }
                     }
-                    // ramping down
+                    // Ramping down
                     else if (curr_angle_to_end < s->ramp_angle && 
                              delta_rate > 0)
                     {
-                        Serial.println("ramping down");
                         if (s->curr_rate - s->ramp_start < delta_rate)
                         {
                             s->curr_rate = s->ramp_start;
@@ -394,20 +390,19 @@ void stepper_update(stepper_id_E stepper)
                             s->curr_rate -= delta_rate;
                         }
                     }
-                    // executing normal rate
+                    // Executing normal rate
                     else
                     {
-                        Serial.println("middle");
                         // do nothing to the rate
                     }
 
                     digitalWrite(s->pin_pul, HIGH);
-                    // update curr_angle after step
+                    // Update curr_angle after step
                     s->curr_angle += delta_angle;
                 }
                 else
                 {
-                    // set curr_steps to des_steps and reset curr_rate
+                    // Set curr_steps to des_steps and reset curr_rate
                     s->last_des_angle = s->des_angle;
                     s->curr_angle = s->des_angle;
                     s->curr_rate = s->rate;
@@ -424,6 +419,11 @@ void stepper_update(stepper_id_E stepper)
         default:
             break;
     }
+}
+
+void stepper_cli_zero(uint8_t argNumber, char* args[])
+{
+
 }
 
 void stepper_cli_move(uint8_t argNumber, char* args[])
@@ -449,7 +449,7 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
 
     if (s == STEPPER_COUNT)
     {
-        serial_send_nl(PORT_COMPUTER, "invalid servo");
+        serial_send_nl(PORT_COMPUTER, "invalid stepper");
     }
     else
     {
