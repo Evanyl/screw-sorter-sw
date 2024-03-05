@@ -78,7 +78,7 @@ static system_state_E system_state_update_state(system_state_E curr_state)
     depositor_state_E depositor = depositor_getState();
     lighting_state_E lighting = lighting_getState();
     arm_state_E arm = arm_getState();
-    // plane_state_E plane = plane_getState();
+    plane_state_E plane = plane_getState();
     // get rpi desired state from core_comms
     system_state_E des_state = system_state_data.des_state;
 
@@ -87,7 +87,8 @@ static system_state_E system_state_update_state(system_state_E curr_state)
         case SYSTEM_STATE_STARTUP:
             if (depositor == DEPOSITOR_STATE_IDLE &&
                 arm == ARM_STATE_IDLE             &&
-                lighting == LIGHTING_STATE_IDLE)
+                lighting == LIGHTING_STATE_IDLE   &&
+                plane == PLANE_STATE_IDLE)
             {
                 next_state = SYSTEM_STATE_IDLE;
             }
@@ -155,7 +156,8 @@ static system_state_E system_state_update_state(system_state_E curr_state)
 
         case SYSTEM_STATE_ENTERING_SIDEON:
             if (arm == ARM_STATE_SIDEON           && 
-                lighting == LIGHTING_STATE_SIDEON/*plane == PLANE_STATE_ACTIVE*/)
+                lighting == LIGHTING_STATE_SIDEON &&
+                plane == PLANE_STATE_ACTIVE)
             {
                 next_state = SYSTEM_STATE_SIDEON;
             }
@@ -179,8 +181,8 @@ static system_state_E system_state_update_state(system_state_E curr_state)
         case SYSTEM_STATE_ENTERING_IDLE:
             if (depositor == DEPOSITOR_STATE_IDLE &&
                 lighting == LIGHTING_STATE_IDLE   &&
-                arm == ARM_STATE_IDLE             
-                /*plane == PLANE_STATE_IDLE*/)
+                arm == ARM_STATE_IDLE             &&          
+                plane == PLANE_STATE_IDLE)
             {
                 next_state = SYSTEM_STATE_IDLE;
             }
@@ -203,7 +205,8 @@ static PT_THREAD(run100ms(struct pt* thread))
     PT_WAIT_UNTIL(thread, 
                   scheduler_taskReleased(PERIOD_100ms, 
                   (uint8_t) SYSTEM_STATE));
-    system_state_data.curr_state = system_state_update_state(system_state_data.curr_state);
+    system_state_data.curr_state = 
+        system_state_update_state(system_state_data.curr_state);
     PT_END(thread);
 }
 

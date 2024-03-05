@@ -31,6 +31,8 @@ typedef struct
     uint8_t pin_ena;               // Enable:LOW, Disable:HIGH      
     uint8_t dir;                   // 1:CW 0:CCW (top-down, imaging plane left)
     uint16_t rate;                 // Steps per second
+    uint16_t ramp_start;
+    uint16_t curr_rate;
     uint16_t counter;
     stepper_mode_E mode;
     // Angle based control
@@ -43,8 +45,6 @@ typedef struct
     uint16_t des_steps;
     uint16_t curr_steps;
     uint16_t ramp_steps;
-    uint16_t ramp_start;
-    uint16_t curr_rate;
     // Condition-based control
     bool until;
     stepper_cond_f condition;
@@ -76,20 +76,27 @@ stepper_data_s stepper_data =
             .last_des_angle = 0.0,
             .des_angle = 0.0,
             .curr_angle = 0.0,
-            .angle_per_step = 1.0 / \
-                              ((3200.0 / 360.0)/*steps/rev*/*(72 / 24))/*ratio*/
+            .angle_per_step = 1.0 / ((3200.0 / 360.0)*(72 / 24))
         },
         [STEPPER_PLANE] =
         {
             .pin_dir = PB4,
             .pin_pul = PB5,
-            .pin_ena = PB3
+            .pin_ena = PB3,
+            .last_des_angle = 0.0,
+            .des_angle = 0.0,
+            .curr_angle = 0.0,
+            .angle_per_step = 1.0 / ((3200.0 / 360.0)*(72 / 24)) // TODO check gear ratio and steps per rev
         },
         [STEPPER_ARM] = 
         {
             .pin_dir = PA12,
             .pin_pul = PA15,
-            .pin_ena = PA11
+            .pin_ena = PA11,
+            .last_des_angle = 0.0,
+            .des_angle = 0.0,
+            .curr_angle = 0.0,
+            .angle_per_step = 1.0 / ((3200.0 / 360.0)*(72 / 24)) // TODO check gear ratio and steps per rev
         },
         [STEPPER_SIDELIGHT] =
         {
@@ -479,33 +486,6 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
 
 void stepper_cli_dump(uint8_t argNumber, char* args[])
 {
-    if (strcmp(args[0], "depositor") == 0)
-    {
-        stepper_s* s = &stepper_data.steppers[STEPPER_DEPOSITOR];
-        char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
-        sprintf(st, 
-                "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d,\ 
-                  \"ramp_steps\":%d}", 
-                s->des_steps, s->curr_steps, s->dir, s->rate, s->ramp_steps);
-        serial_send_nl(PORT_COMPUTER, st);
-        free(st);
-    }
-    else if (strcmp(args[0], "plane") == 0)
-    {
-        stepper_s* s = &stepper_data.steppers[STEPPER_PLANE];
-        char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
-        sprintf(st, 
-                "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d,\ 
-                  \"ramp_steps\":%d}", 
-                s->des_steps, s->curr_steps, s->dir, s->rate, s->ramp_steps);
-        serial_send_nl(PORT_COMPUTER, st);
-        free(st);
-    }
-    else
-    {
-        serial_send_nl(PORT_COMPUTER, "invalid stepper");
-    }
-
     stepper_s* s = NULL;
     if (strcmp(args[0], "depositor") == 0)
     {

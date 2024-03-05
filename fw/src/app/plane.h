@@ -7,6 +7,7 @@
 *******************************************************************************/ 
 
 #include <Arduino.h>
+#include <pt.h>
 
 #include "dev/stepper.h"
 
@@ -23,6 +24,7 @@ typedef enum
     PLANE_STATE_IDLE,
     PLANE_STATE_ENTERING_ACTIVE,
     PLANE_STATE_ACTIVE,
+    PLANE_STATE_COUNT
 } plane_state_E;
 
 /*******************************************************************************

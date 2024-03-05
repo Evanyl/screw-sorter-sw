@@ -11,13 +11,15 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define ARM_CW 1 
-#define ARM_CCW 0
-#define ARM_HOMING_RATE 100
+#define ARM_SIDEON_ANGLE 74.0
+#define ARM_TOPDOWN_ANGLE 0.0
+#define ARM_RAMP_ANGLE 5.0
 
-#define ARM_STEPS_TO_SIDEON 1000
 #define ARM_NAV_RATE 750
+#define ARM_HOMING_RATE 100
+#define ARM_STARTING_RATE 250
 
+#define ARM_CW 1
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -72,6 +74,7 @@ static arm_state_E arm_update_state(arm_state_E curr_state)
             }
             else
             {
+                stepper_calibAngle(STEPPER_ARM, ARM_TOPDOWN_ANGLE);
                 next_state = ARM_STATE_IDLE;
             }
             break;
@@ -86,12 +89,11 @@ static arm_state_E arm_update_state(arm_state_E curr_state)
             }
             break;
         case ARM_STATE_ENTERING_SIDEON:
-            if (stepper_command(STEPPER_DEPOSITOR,
-                                ARM_STEPS_TO_SIDEON,
-                                ARM_CCW,
-                                ARM_NAV_RATE,
-                                200,
-                                25) == false)
+            if (stepper_commandAngle(STEPPER_ARM,
+                                     ARM_SIDEON_ANGLE,
+                                     ARM_RAMP_ANGLE,
+                                     ARM_NAV_RATE,
+                                     ARM_STARTING_RATE) == false)
             {
                 // do nothing, navigating to side-on position
             }   
@@ -111,12 +113,11 @@ static arm_state_E arm_update_state(arm_state_E curr_state)
             }
             break;
         case ARM_STATE_ENTERING_IDLE:
-            if (stepper_command(STEPPER_DEPOSITOR,
-                                ARM_STEPS_TO_SIDEON,
-                                ARM_CW,
-                                ARM_NAV_RATE,
-                                200,
-                                25) == false)
+            if (stepper_commandAngle(STEPPER_ARM,
+                                     ARM_TOPDOWN_ANGLE,
+                                     ARM_RAMP_ANGLE,
+                                     ARM_NAV_RATE,
+                                     ARM_STARTING_RATE) == false)
             {
                 // do nothinng
             }
