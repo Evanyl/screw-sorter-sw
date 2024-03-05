@@ -1,12 +1,14 @@
-#ifndef APP_SCHEDULER
-#define APP_SCHEDULER
+
+#ifndef APP_ISOLATION
+#define APP_ISOLATION
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
-#include <pt.h>
 #include <Arduino.h>
+
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -14,45 +16,26 @@
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
-*******************************************************************************/
+*******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-    PERIOD_1ms,
-    PERIOD_10ms,
-    PERIOD_100ms,
-} task_period_E;
-
-typedef enum
-{
-    MOTOR_RUNNER,
-    TASK_1ms_COUNT
-} tasks_1ms_E;
-
-typedef enum
-{
-    LIGHTING,
-    DEPOSITOR,
-    ARM,
-    PLANE,
-    CORE_COMMS,
-    ISOLATION,
-    TASK_10ms_COUNT
-} tasks_10ms_E;
-
-typedef enum
-{
-    CLI,
-    SYSTEM_STATE,
-    TASK_100ms_COUNT
-} tasks_100ms_E;
+    ISOLATION_STATE_IDLE,
+    ISOLATION_STATE_MOVING,
+    ISOLATION_STATE_ISOLATED,
+    ISOLATION_STATE_COUNT
+} isolation_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/ 
+*******************************************************************************/
 
-void scheduler_init(void);
-void scheduler_run500us(void);
-bool scheduler_taskReleased(task_period_E period, uint8_t task_id);
+void isolation_init(void);
+void isolation_run10ms(void);
+isolation_state_E isolation_getState(void);
 
-#endif // APP_SCHEDULER
+
+#define ISOLATION_COMMANDS \
+{isolation_cli_home, "isolation-home", NULL, NULL, 0, 0}
+
+#endif // APP_isolation

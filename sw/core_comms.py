@@ -12,10 +12,13 @@ class CoreComms:
         {
             "des_state": "idle",
             "corr_angle": 0.0,
+            "belt_one_angle": 0.0,
+            "belt_two_angle": 0.0
         }
         self.in_data = \
         {
-            "curr_state": "idle"
+            "curr_imaging_state": "idle",
+            "curr_isolation_state": "idle"
         }
         self.state_decode = \
         {
@@ -55,7 +58,8 @@ class CoreComms:
     
     def fromString(self, s):
         d = json.loads(s.strip("\n"))
-        return {"curr_state": self.state_decode[d["system_state"]]}
+        return {"curr_imaging_state": self.state_decode[d["system_state"]],
+                "curr_isolation_state": self.state_decode[d["system_state"]]}
 
     def getInData(self):
         return self.in_data

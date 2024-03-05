@@ -1,12 +1,15 @@
-#ifndef APP_SCHEDULER
-#define APP_SCHEDULER
+
+#ifndef APP_PLANE
+#define APP_PLANE
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
-#include <pt.h>
 #include <Arduino.h>
+#include <pt.h>
+
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -14,45 +17,26 @@
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
-*******************************************************************************/
+*******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-    PERIOD_1ms,
-    PERIOD_10ms,
-    PERIOD_100ms,
-} task_period_E;
-
-typedef enum
-{
-    MOTOR_RUNNER,
-    TASK_1ms_COUNT
-} tasks_1ms_E;
-
-typedef enum
-{
-    LIGHTING,
-    DEPOSITOR,
-    ARM,
-    PLANE,
-    CORE_COMMS,
-    ISOLATION,
-    TASK_10ms_COUNT
-} tasks_10ms_E;
-
-typedef enum
-{
-    CLI,
-    SYSTEM_STATE,
-    TASK_100ms_COUNT
-} tasks_100ms_E;
+    BELT_STATE_IDLE,
+    BELT_STATE_ENTERING_ACTIVE,
+    BELT_STATE_ACTIVE,
+    PLANE_STATE_COUNT
+} belt_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/ 
+*******************************************************************************/
 
-void scheduler_init(void);
-void scheduler_run500us(void);
-bool scheduler_taskReleased(task_period_E period, uint8_t task_id);
+void belt_one_init(void);
+void belt_run10ms(void);
+belt_state_E belt_getState(void);
+void belt_core_comms_setCorrAngle(uint8_t argNumber, char* args[]);
 
-#endif // APP_SCHEDULER
+#define PLANE_CORE_COMMS_COMMANDS \
+{plane_core_comms_setCorrAngle, "corr-angle", 1}
+
+#endif // APP_PLANE

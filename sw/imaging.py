@@ -1,7 +1,13 @@
 
 import time
+from picamera2 import Picamera2
 
 
 def image_and_process(thread_data):
     print("imaging and processing...")
+    time.sleep(3)
+
+def isolation_image_and_process(picamera_object, shared_data):
+    print("Performing isolation imaging/processing...")
+    im = picamera_object.capture_array()
     time.sleep(3)
