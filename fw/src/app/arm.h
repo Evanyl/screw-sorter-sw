@@ -1,6 +1,5 @@
-
-#ifndef APP_DEPOSITOR
-#define APP_DEPOSITOR
+#ifndef APP_ARM
+#define APP_ARM
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
@@ -9,7 +8,6 @@
 #include <Arduino.h>
 
 #include "dev/stepper.h"
-#include "dev/servo.h"
 #include "dev/switch.h"
 
 /*******************************************************************************
@@ -22,26 +20,27 @@
 
 typedef enum 
 {
-    DEPOSITOR_STATE_HOMING,
-    DEPOSITOR_STATE_IDLE,
-    DEPOSITOR_STATE_SWEEPING,
-    DEPOSITOR_STATE_CENTERING,
-    DEPOSITOR_STATE_DROPPING,
-    DEPOSITOR_STATE_ENTERING_IDLE,   
-    DEPOSITOR_STATE_COUNT
-} depositor_state_E;
+    ARM_STATE_HOMING,
+    ARM_STATE_IDLE,
+    ARM_STATE_ENTERING_TOPDOWN,
+    ARM_STATE_TOPDOWN,
+    ARM_STATE_ENTERING_SIDEON,
+    ARM_STATE_SIDEON,
+    ARM_STATE_ENTERING_IDLE,
+    ARM_STATE_COUNT
+} arm_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void depositor_init(void);
-void depositor_run10ms(void);
-depositor_state_E depositor_getState(void);
+void arm_init(void);
+void arm_run10ms(void);
+arm_state_E arm_getState(void);
 
-void depositor_cli_home(uint8_t argNumber, char* args[]);
+void arm_cli_home(uint8_t argNumber, char* args[]);
 
-#define DEPOSITOR_COMMANDS \
-{depositor_cli_home, "depositor-home", NULL, NULL, 0, 0}
+#define ARM_COMMANDS \
+{arm_cli_home, "arm-home", NULL, NULL, 0, 0}
 
-#endif // APP_DEPOSITOR
+#endif // APP_ARM

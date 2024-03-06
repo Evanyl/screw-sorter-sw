@@ -1,16 +1,12 @@
 
-#ifndef APP_DEPOSITOR
-#define APP_DEPOSITOR
+#ifndef APP_SYSTEM_STATE
+#define APP_SYSTEM_STATE
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
 #include <Arduino.h>
-
-#include "dev/stepper.h"
-#include "dev/servo.h"
-#include "dev/switch.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -22,26 +18,36 @@
 
 typedef enum 
 {
-    DEPOSITOR_STATE_HOMING,
-    DEPOSITOR_STATE_IDLE,
-    DEPOSITOR_STATE_SWEEPING,
-    DEPOSITOR_STATE_CENTERING,
-    DEPOSITOR_STATE_DROPPING,
-    DEPOSITOR_STATE_ENTERING_IDLE,   
-    DEPOSITOR_STATE_COUNT
-} depositor_state_E;
+    SYSTEM_STATE_STARTUP,
+    SYSTEM_STATE_IDLE,
+    SYSTEM_STATE_ENTERING_DEPOSITED,
+    SYSTEM_STATE_DEPOSITED,
+    SYSTEM_STATE_ENTERING_TOPDOWN,
+    SYSTEM_STATE_TOPDOWN,
+    SYSTEM_STATE_ENTERING_SIDEON,
+    SYSTEM_STATE_SIDEON,
+    SYSTEM_STATE_ENTERING_IDLE,
+    SYSTEM_STATE_COUNT
+} system_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void depositor_init(void);
-void depositor_run10ms(void);
-depositor_state_E depositor_getState(void);
+void system_state_init(void);
+void system_state_run100ms(void);
+system_state_E system_state_getState(void);
 
-void depositor_cli_home(uint8_t argNumber, char* args[]);
+void system_state_cli_target(uint8_t argNumber, char* args[]);
+void system_state_cli_dump(uint8_t argNumer, char* args[]);
 
-#define DEPOSITOR_COMMANDS \
-{depositor_cli_home, "depositor-home", NULL, NULL, 0, 0}
+void system_state_core_comms_setDesState(uint8_t argNumber, char* args[]);
 
-#endif // APP_DEPOSITOR
+#define SYSTEM_STATE_COMMANDS \
+{system_state_cli_target, "system-state-target", NULL, NULL, 1, 1}, \
+{system_state_cli_dump, "system-state-dump", NULL, NULL, 0, 0}
+
+#define SYSTEM_STATE_CORE_COMMS_COMMANDS \
+{system_state_core_comms_setDesState, "des-state", 1}
+
+#endif // APP_SYSTEM_STATE

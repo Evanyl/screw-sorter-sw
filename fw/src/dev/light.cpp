@@ -48,8 +48,8 @@ light_data_s light_data =
         },
         [LIGHT_SIDE] =
         {
-            .dig_pin = PB1,
-            .pwm_pin = PB_1,
+            .dig_pin = PA8,
+            .pwm_pin = PA_8,
         }
     }
 };
@@ -62,12 +62,21 @@ light_data_s light_data =
 *                       P U B L I C    F U N C T I O N S                       * 
 *******************************************************************************/ 
 
-void light_init(light_id_E id)
+void light_init(light_id_E id, uint16_t brightness)
 {
     light_s* l = &light_data.lights[id];
     pinMode(l->dig_pin, OUTPUT);
     pwm_start((PinName) l->pwm_pin, 
               LIGHT_PWM_FREQ_HZ, 
-              60000,
+              brightness,
+              TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
+}
+
+void light_command(light_id_E id, uint16_t brightness)
+{
+    light_s* l = &light_data.lights[id];
+    pwm_start((PinName) l->pwm_pin, 
+              LIGHT_PWM_FREQ_HZ, 
+              brightness,
               TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
 }

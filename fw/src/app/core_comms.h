@@ -1,16 +1,17 @@
 
-#ifndef APP_DEPOSITOR
-#define APP_DEPOSITOR
+#ifndef APP_CORE_COMMS
+#define APP_CORE_COMMS
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
+#include <pt.h>
 #include <Arduino.h>
 
-#include "dev/stepper.h"
-#include "dev/servo.h"
-#include "dev/switch.h"
+#include "scheduler.h"
+#include "dev/serial.h"
+#include "system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -20,28 +21,11 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef enum 
-{
-    DEPOSITOR_STATE_HOMING,
-    DEPOSITOR_STATE_IDLE,
-    DEPOSITOR_STATE_SWEEPING,
-    DEPOSITOR_STATE_CENTERING,
-    DEPOSITOR_STATE_DROPPING,
-    DEPOSITOR_STATE_ENTERING_IDLE,   
-    DEPOSITOR_STATE_COUNT
-} depositor_state_E;
-
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void depositor_init(void);
-void depositor_run10ms(void);
-depositor_state_E depositor_getState(void);
+void core_comms_init(void);
+void core_comms_run10ms(void);
 
-void depositor_cli_home(uint8_t argNumber, char* args[]);
-
-#define DEPOSITOR_COMMANDS \
-{depositor_cli_home, "depositor-home", NULL, NULL, 0, 0}
-
-#endif // APP_DEPOSITOR
+#endif // APP_CORE_COMMS

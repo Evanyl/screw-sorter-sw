@@ -1,16 +1,15 @@
 
-#ifndef APP_DEPOSITOR
-#define APP_DEPOSITOR
+#ifndef APP_PLANE
+#define APP_PLANE
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
 #include <Arduino.h>
+#include <pt.h>
 
 #include "dev/stepper.h"
-#include "dev/servo.h"
-#include "dev/switch.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -22,26 +21,22 @@
 
 typedef enum 
 {
-    DEPOSITOR_STATE_HOMING,
-    DEPOSITOR_STATE_IDLE,
-    DEPOSITOR_STATE_SWEEPING,
-    DEPOSITOR_STATE_CENTERING,
-    DEPOSITOR_STATE_DROPPING,
-    DEPOSITOR_STATE_ENTERING_IDLE,   
-    DEPOSITOR_STATE_COUNT
-} depositor_state_E;
+    PLANE_STATE_IDLE,
+    PLANE_STATE_ENTERING_ACTIVE,
+    PLANE_STATE_ACTIVE,
+    PLANE_STATE_COUNT
+} plane_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void depositor_init(void);
-void depositor_run10ms(void);
-depositor_state_E depositor_getState(void);
+void plane_init(void);
+void plane_run10ms(void);
+plane_state_E plane_getState(void);
+void plane_core_comms_setCorrAngle(uint8_t argNumber, char* args[]);
 
-void depositor_cli_home(uint8_t argNumber, char* args[]);
+#define PLANE_CORE_COMMS_COMMANDS \
+{plane_core_comms_setCorrAngle, "corr-angle", 1}
 
-#define DEPOSITOR_COMMANDS \
-{depositor_cli_home, "depositor-home", NULL, NULL, 0, 0}
-
-#endif // APP_DEPOSITOR
+#endif // APP_PLANE

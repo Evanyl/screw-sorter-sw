@@ -26,6 +26,9 @@ typedef enum
 *                       P U B L I C    F U N C T I O N S                       *
 *******************************************************************************/ 
 
-void light_init(light_id_E light);
+void light_init(light_id_E light, uint16_t brightness);
+void light_command(light_id_E light, uint16_t brightness);
+
+void light_cli_brightness(uint8_t argNumber, char* args);
 
 #endif // DEV_LIGHT
