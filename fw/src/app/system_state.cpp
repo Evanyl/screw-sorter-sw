@@ -133,7 +133,7 @@ static system_state_E system_state_update_state(system_state_E curr_state)
 
         case SYSTEM_STATE_ENTERING_TOPDOWN:
             if (lighting == LIGHTING_STATE_TOPDOWN &&
-                arm == ARM_STATE_TOPDOWN)
+                arm == ARM_STATE_IDLE)
             {
                 next_state = SYSTEM_STATE_TOPDOWN;
             }

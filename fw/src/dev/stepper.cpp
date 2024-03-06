@@ -86,7 +86,7 @@ stepper_data_s stepper_data =
             .last_des_angle = 0.0,
             .des_angle = 0.0,
             .curr_angle = 0.0,
-            .angle_per_step = 1.0 / ((3200.0 / 360.0)*(72 / 24)) // TODO check gear ratio and steps per rev
+            .angle_per_step = 1.0 / ((3200.0 / 360.0)*(150 / 30))
         },
         [STEPPER_ARM] = 
         {
@@ -96,7 +96,7 @@ stepper_data_s stepper_data =
             .last_des_angle = 0.0,
             .des_angle = 0.0,
             .curr_angle = 0.0,
-            .angle_per_step = 1.0 / ((3200.0 / 360.0)*(72 / 24)) // TODO check gear ratio and steps per rev
+            .angle_per_step = 1.0 / ((4000.0 / 360.0)*(133.0 / 24))
         },
         [STEPPER_SIDELIGHT] =
         {

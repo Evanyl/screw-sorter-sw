@@ -13,7 +13,7 @@
 *******************************************************************************/ 
 
 #define DEPOSITOR_OPEN_STEPS   255
-#define DEPOSITOR_OPEN_RATE    10
+#define DEPOSITOR_OPEN_RATE    25
 #define DEPOSITOR_OPEN_ANGLE   0.0 //-90.0 achieves full open
 
 #define DEPOSITOR_CLOSE_STEPS  255

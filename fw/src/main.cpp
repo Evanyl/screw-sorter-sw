@@ -6,6 +6,7 @@
 #include "app/depositor.h"
 #include "app/lighting.h"
 #include "app/arm.h"
+#include "app/plane.h"
 #include "app/motor_runner.h"
 
 void setup() 
@@ -16,6 +17,7 @@ void setup()
     depositor_init();
     lighting_init();
     arm_init();
+    plane_init();
     cli_init();
     core_comms_init();
     motor_runner_init(); // motors must be initialized first
@@ -33,7 +35,7 @@ void loop()
     depositor_run10ms();
     lighting_run10ms();
     arm_run10ms();
-    // plane_run10ms();
+    plane_run10ms();
     core_comms_run10ms();
 
     // 100ms tasks
