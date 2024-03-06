@@ -26,7 +26,7 @@ class ClassifySystem:
         print(f"alive: {self.thread.is_alive()}")
         if self.station_state == "top-down" and self.thread.is_alive() == False:
             # branch off a thread to handle imaging, processing, storage...
-            self.thread = Thread(target=image_and_process, args=[self.thread_data])
+            self.thread = Thread(target=image_and_process, args=[self.thread_data, self.curr_state])
             self.thread.start()
             next_state = "image-and-process"
         else:
@@ -57,7 +57,7 @@ class ClassifySystem:
         next_state = self.curr_state
         if self.station_state == "side-on" and self.thread.is_alive() == False:
             # break off a new thread for side-on imaging
-            self.thread = Thread(target=image_and_process, args=[self.thread_data])
+            self.thread = Thread(target=image_and_process, args=[self.thread_data, self.curr_state])
             self.thread.start()
             # go back to image_and_process TODO
             next_state = "image-and-process"
