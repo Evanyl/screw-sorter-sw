@@ -1,9 +1,9 @@
 
 from datetime import datetime
-import sys
+import json
 from threading import Thread
 from imaging import image_and_process
-from inference import inference
+from inference import InferenceRunner
 
 class ClassifySystem:
     
@@ -44,7 +44,7 @@ class ClassifySystem:
             self.des_station_state = "side-on"
             next_state = "side-on"
         if self.station_state == "side-on" and self.thread.is_alive() == False:
-            self.thread = Thread(target=inference, args=[self.thread_data])
+            self.thread = Thread(target=self.inference_runner.infer, args=[self.thread_data])
             self.thread.start()
             self.des_station_state = "idle"
             next_state = "inference"
@@ -70,7 +70,16 @@ class ClassifySystem:
         next_state = self.curr_state
         if self.station_state == "idle" and self.thread.is_alive() == False:
             # finished inference, print it out for now
-            print(self.thread_data["pred"])
+            print("#########################")
+            print("#########################")
+            print("#########################")
+            print("#########################")
+            print("#########################")
+            pred = self.thread_data["pred"]
+            print(pred)
+            decoded = self.inference_runner.decode(pred)
+            print(json.dumps(decoded, indent=4))
+
             next_state = "idle"
         else:
             # performing inference, wait for thread to finish
@@ -93,8 +102,10 @@ class ClassifySystem:
 
         self.thread_data = \
         {
-            "corr_angle": 60.0,
-            "pred":       ""
+            "corr_angle":    60.0,
+            "pred":          "",
+            "out_dir_path":  core_comms.out_dir_path,
+            "initialized": False,
         }
 
         self.curr_state = "idle"
@@ -103,6 +114,8 @@ class ClassifySystem:
 
         self.core_comms = core_comms
         self.thread = Thread()
+
+        self.inference_runner = InferenceRunner(core_comms.model_path, core_comms.decoder_path)
 
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):

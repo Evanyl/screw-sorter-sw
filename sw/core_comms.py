@@ -5,9 +5,12 @@ import json
 
 class CoreComms:
 
-    def __init__(self):
+    def __init__(self, out_dir_path, model_path, decoder_path):
         self.id = "core_comms"
         self.connection = serial.Serial("/dev/ttyUSB0", 115200)
+        self.out_dir_path = out_dir_path
+        self.model_path = model_path
+        self.decoder_path = decoder_path
         self.out_data = \
         {
             "des_state": "idle",

@@ -309,12 +309,35 @@ def _pad(img, desired_shape):
        raise Exception("Bounding Box Error: size of subject exceeds 250x575")
     return out
 
+def get_correction_angle(read_fpath):
+    """
+    in:  path to raw image data to read read_fpath
+    out: straightened and cropped binary image of shape 250x575
+    """
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_UNCHANGED)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+    _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
+
+    contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # get data necessary for determining pose (centroid and true center)
+    [vx,vy,x,y] = cv2.fitLine(contours_sorted[1], cv2.DIST_L2,0,0.01,0.01)
+    M = cv2.moments(contours_sorted[1])
+    x_centroid = int(M['m10']/M['m00'])
+    y_centroid = int(M['m01']/M['m00'])
+    x_center, y_center = _get_center(contours_sorted[1], x, y, vx, vy)
+
+    # produce a unit vector in the direction of the screw head
+    vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
+    return _correction_angle(vec)
+
 def transform_top_image(read_fpath):
     """
     in:  path to raw image data to read read_fpath
     out: straightened and cropped binary image of shape 250x575
     """
-    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_UNCHANGED)
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
     _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
 
@@ -345,7 +368,7 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=160
     out: cropped image of shape 800x800
     """
 
-    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_UNCHANGED)
     img = img[top_plane_y:bot_plane_y, left_plane_x:right_plane_x]
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 
@@ -359,7 +382,7 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=160
     cX = int(M["m10"] / M["m00"]) + left_plane_x
     cY = int(M["m01"] / M["m00"]) + top_plane_y
 
-    img = cv2.imread(read_fpath, cv2.IMREAD_COLOR)
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_COLOR)
     img = img[int(cY-crop_h):int(cY+crop_h), int(cX-crop_w):int(cX+crop_w)]
 
     return img
