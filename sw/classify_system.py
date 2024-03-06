@@ -13,20 +13,21 @@ class ClassifySystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
-        for line in sys.stdin:
-            if line.rstrip() == "start":
-                self.des_station_state = "top-down"
-                next_state = "top-down"
-                print(self.curr_state)
-            else:
-                pass # no prompt to start control loop
+        if self.station_state == "idle":
+            next_state = "top-down"
+            self.des_station_state = "top-down"
+        else:
+            # do nothing, the station is homing still...
+            pass
         return next_state
     
     def __top_down_state_func(self):
         next_state = self.curr_state
+        print(f"alive: {self.thread.is_alive()}")
         if self.station_state == "top-down" and self.thread.is_alive() == False:
             # branch off a thread to handle imaging, processing, storage...
-            self.thread = Thread(image_and_process, self.thread_data)
+            self.thread = Thread(target=image_and_process, args=[self.thread_data])
+            self.thread.start()
             next_state = "image-and-process"
         else:
             # do nothing, station assuming top-down position
@@ -35,6 +36,7 @@ class ClassifySystem:
     
     def __image_and_process_state_func(self):
         next_state = self.curr_state
+        print("here")
         if self.station_state == "top-down" and self.thread.is_alive() == False:
             # imaging and processing is finished, pass corr-angle to core_comms
             self.core_comms.updateOutData("corr_angle",
@@ -42,7 +44,8 @@ class ClassifySystem:
             self.des_station_state = "side-on"
             next_state = "side-on"
         if self.station_state == "side-on" and self.thread.is_alive() == False:
-            self.thread = Thread(inference, self.thread_data)
+            self.thread = Thread(target=inference, args=[self.thread_data])
+            self.thread.start()
             self.des_station_state = "idle"
             next_state = "inference"
         else:
@@ -54,7 +57,8 @@ class ClassifySystem:
         next_state = self.curr_state
         if self.station_state == "side-on" and self.thread.is_alive() == False:
             # break off a new thread for side-on imaging
-            self.thread = Thread(image_and_process, self.thread_data)
+            self.thread = Thread(target=image_and_process, args=[self.thread_data])
+            self.thread.start()
             # go back to image_and_process TODO
             next_state = "image-and-process"
         else:
@@ -62,8 +66,8 @@ class ClassifySystem:
             pass
         return next_state
 
-    def __inference_state_func(self, curr_state):
-        next_state = curr_state
+    def __inference_state_func(self):
+        next_state = self.curr_state
         if self.station_state == "idle" and self.thread.is_alive() == False:
             # finished inference, print it out for now
             print(self.thread_data["pred"])
@@ -89,7 +93,7 @@ class ClassifySystem:
 
         self.thread_data = \
         {
-            "corr_angle": 0.0,
+            "corr_angle": 60.0,
             "pred":       ""
         }
 
@@ -107,6 +111,8 @@ class ClassifySystem:
             self.station_state = self.core_comms.getInData()["curr_state"]
             # send next desired state
             self.core_comms.updateOutData("des_state", self.des_station_state)
+
+            print(self.station_state)
 
             # execute the state machine TODO fix this call here, causing fault?
             self.curr_state = self.switch_dict[self.curr_state]()

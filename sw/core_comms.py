@@ -21,13 +21,13 @@ class CoreComms:
         {
             0: "startup",
             1: "idle",
-            2: "entering_deposited",
+            2: "entering-deposited",
             3: "deposited",
-            4: "entering_topdown",
-            5: "topdown",
-            6: "entering_sideon",
-            7: "sideon",
-            8: "entering_idle",
+            4: "entering-topdown",
+            5: "top-down",
+            6: "entering-sideon",
+            7: "side-on",
+            8: "entering-idle",
             9: "count"
         }
 
@@ -38,7 +38,6 @@ class CoreComms:
             if self.connection.in_waiting > 0:
                 s = self.connection.read_until(b"\n").decode('utf-8')
                 self.in_data = self.fromString(s)
-                print(self.in_data)
             else:
                 # no new data, don't read from the serial buffer
                 pass
