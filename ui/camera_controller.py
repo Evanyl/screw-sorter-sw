@@ -38,14 +38,7 @@ def setup_camera(cam: Camera):
                                           OPENCV_PIXEL_FORMATS)
         color_fmts = intersect_pixel_formats(cv_fmts, COLOR_PIXEL_FORMATS)
 
-        if color_fmts:
-            cam.set_pixel_format(color_fmts[0])
-        else:
-            mono_fmts = intersect_pixel_formats(cv_fmts, MONO_PIXEL_FORMATS)
-            if mono_fmts:
-                cam.set_pixel_format(mono_fmts[0])
-            else:
-                abort('Camera does not support a OpenCV compatible format')
+        cam.set_pixel_format(color_fmts[0])
 
 
 def begin_imaging_process(imaging_camera: Camera):
@@ -77,7 +70,6 @@ def begin_imaging_process(imaging_camera: Camera):
                         print("Got a frame")
                         time.sleep(1)
                         print("Frame saved to mem")
-                        frame.convert_pixel_format(PixelFormat.Mono8)
                         cv2.imwrite(f+FILE_NAME.format(n=n),
                                     frame.as_opencv_image())
                         n += 1

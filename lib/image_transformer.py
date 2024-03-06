@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy  as np
+import time
 import json
 from pathlib import Path
 import re
@@ -319,15 +320,11 @@ def _pad(img, desired_shape):
        raise Exception("Bounding Box Error: size of subject exceeds 250x575")
     return out
 
-def transform_top_image(read_fpath):
+def get_correction_angle(img):
     """
     in:  path to raw image data to read read_fpath
     out: straightened and cropped binary image of shape 250x575
     """
-    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
-    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
-    _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
-
     contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     contours_sorted = sorted(contours, key=cv2.contourArea, reverse=True)
 
@@ -340,14 +337,25 @@ def transform_top_image(read_fpath):
 
     # produce a unit vector in the direction of the screw head
     vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
-    correction_theta = _correction_angle(vec,[1,0])
+    return _correction_angle(vec), x_center, y_center
+
+def transform_top_image(read_fpath):
+    """
+    in:  path to raw image data to read read_fpath
+    out: straightened and cropped binary image of shape 250x575
+    """
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_UNCHANGED)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
+    _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
+
+    correction_theta, x_center, y_center = get_correction_angle(img)
 
     # correct the image so the head is facing to the right
     img = _straighten(img, (x_center, y_center), correction_theta)
     img = _crop(img)
     img = _pad(img, [400, 800]) # 250 575
 
-    return img
+    return img, correction_theta
 
 def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=1600, bot_plane_y=2450, left_plane_x=1696, right_plane_x=3800): # 5496
     """
@@ -355,13 +363,12 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=160
     out: cropped image of shape 800x800
     """
 
-    img = cv2.imread(read_fpath, cv2.IMREAD_UNCHANGED)
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_UNCHANGED)
     img = img[top_plane_y:bot_plane_y, left_plane_x:right_plane_x]
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 
     blur = cv2.blur(img,(13,13), 0)
-    #_, img = cv2.threshold(blur, 130, 255, cv2.THRESH_BINARY_INV)
-    _, img = cv2.threshold(blur, 80, 255, cv2.THRESH_BINARY_INV)
+    _, img = cv2.threshold(blur, 130, 255, cv2.THRESH_BINARY_INV)
 
     contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     main_contour = sorted(contours, key=cv2.contourArea, reverse=True)[0]
@@ -370,7 +377,7 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=160
     cX = int(M["m10"] / M["m00"]) + left_plane_x
     cY = int(M["m01"] / M["m00"]) + top_plane_y
 
-    img = cv2.imread(read_fpath, cv2.IMREAD_COLOR)
+    img = cv2.imread(str(read_fpath), cv2.IMREAD_COLOR)
     img = img[int(cY-crop_h):int(cY+crop_h), int(cX-crop_w):int(cX+crop_w)]
 
     return img

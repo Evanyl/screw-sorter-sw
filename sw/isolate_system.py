@@ -12,4 +12,4 @@ class IsolateSystem:
             t = datetime.now()
             dt = int((t - self.last_time).total_seconds() * 1000)
             self.last_time = t
-            print(f"isolate dt: {dt}")
+            #print(f"isolate dt: {dt}")
