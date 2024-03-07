@@ -29,4 +29,9 @@ typedef enum
 void light_init(light_id_E light, uint16_t brightness);
 void light_command(light_id_E light, uint16_t brightness);
 
+void light_cli_update(uint8_t argNumber, char* args[]);
+
+#define LIGHT_COMMANDS \
+{light_cli_update, "light-update", NULL, NULL, 2, 2} \
+
 #endif // DEV_LIGHT

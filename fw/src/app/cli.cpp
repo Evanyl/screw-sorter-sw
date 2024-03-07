@@ -7,6 +7,7 @@
 #include "dev/servo.h"
 #include "dev/stepper.h"
 #include "dev/switch.h"
+#include "dev/light.h"
 #include "app/depositor.h"
 #include "app/lighting.h"
 #include "app/arm.h"
@@ -63,6 +64,7 @@ static cli_data_s cli_data =
         SERVO_COMMANDS,
         STEPPER_COMMANDS,
         SWITCH_COMMANDS,
+        LIGHT_COMMANDS,
         DEPOSITOR_COMMANDS,
         LIGHTING_COMMANDS,
         ARM_COMMANDS,

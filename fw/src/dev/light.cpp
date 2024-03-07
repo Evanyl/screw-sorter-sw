@@ -5,6 +5,7 @@
 #include <Arduino.h>
 
 #include "light.h"
+#include "serial.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -79,4 +80,31 @@ void light_command(light_id_E id, uint16_t brightness)
               LIGHT_PWM_FREQ_HZ, 
               brightness,
               TimerCompareFormat_t::RESOLUTION_16B_COMPARE_FORMAT);
+}
+
+void light_cli_update(uint8_t argNumber, char* args[])
+{
+    light_id_E l = LIGHT_COUNT;
+    if (strcmp(args[0], "sidelight") == 0)
+    {   
+        l = LIGHT_SIDE;
+    }
+    else if (strcmp(args[0], "backlight") == 0)
+    {
+        l = LIGHT_BACK;
+    }
+    else
+    {
+        // do nothing
+    }
+
+    uint16_t brightness = atoi(args[1]);
+    if (l != LIGHT_COUNT)
+    {
+        light_command(l, brightness);
+    }
+    else
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid light");
+    }
 }
