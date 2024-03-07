@@ -103,6 +103,18 @@ stepper_data_s stepper_data =
             .pin_dir = PA2,
             .pin_pul = PA1,
             .pin_ena = PA3
+        },
+        [STEPPER_BELT_TOP] = 
+        {
+            .pin_dir = PA5,
+            .pin_pul = PA4,
+            .pin_ena = PA6
+        },
+        [STEPPER_BELT_BOTTOM] =
+        {
+            .pin_dir = PB13,
+            .pin_pul = PB14,
+            .pin_ena = PB12
         }
     },
 };
@@ -453,6 +465,14 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
     {
         s = STEPPER_SIDELIGHT;
     }
+    else if (strcmp(args[0], "belt_top") == 0)
+    {
+        s = STEPPER_BELT_TOP;
+    }
+    else if (strcmp(args[0], "belt_bottom") == 0)
+    {
+        s = STEPPER_BELT_BOTTOM;
+    }
 
     if (s == STEPPER_COUNT)
     {
@@ -498,6 +518,14 @@ void stepper_cli_dump(uint8_t argNumber, char* args[])
     else if (strcmp(args[0], "arm") == 0)
     {
         s = &stepper_data.steppers[STEPPER_ARM];
+    }
+    else if (strcmp(args[0], "belt_top") == 0)
+    {
+        s = &stepper_data.steppers[STEPPER_BELT_TOP];
+    }
+    else if (strcmp(args[0], "belt_bottom") == 0)
+    {
+        s = &stepper_data.steppers[STEPPER_BELT_BOTTOM];
     }
 
     if (s == NULL)

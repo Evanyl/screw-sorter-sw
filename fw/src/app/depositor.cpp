@@ -202,6 +202,10 @@ void depositor_init(void)
     servo_init(SERVO_DEPOSITOR, DEPOSITOR_CLOSE_ANGLE);
     switch_init(SWITCH_DEPOSITOR);
     stepper_init(STEPPER_DEPOSITOR);
+
+    // TODO remove this
+    stepper_init(STEPPER_BELT_TOP);
+    stepper_init(STEPPER_BELT_BOTTOM);
 }
 
 void depositor_run10ms(void)
