@@ -350,7 +350,7 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=160
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 
     blur = cv2.blur(img,(13,13), 0)
-    _, img = cv2.threshold(blur, 130, 255, cv2.THRESH_BINARY_INV)
+    _, img = cv2.threshold(blur, 30, 255, cv2.THRESH_BINARY_INV)
 
     contours,_ = cv2.findContours(img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     main_contour = sorted(contours, key=cv2.contourArea, reverse=True)[0]
