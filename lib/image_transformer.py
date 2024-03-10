@@ -231,25 +231,35 @@ def _make_vector(vx, vy, x_center, y_center, x_centroid, y_centroid):
         vec = (abs(vx), -abs(vy))
     return vec
 
-def _correction_angle(vec):
+def _correction_angle(vec, vec_des):
     """
-    in:  unit vector in the direction of screw head
-    out: angle to rotate CW s/t unit vector is || to <1,0>
+    in:  unit vector in the direction of the screw head,
+         unit vector representing the coordinate axis is align to
+    out: angle to rotate CCW s/t unit vector is || to coordinate axis
     """
-    theta = np.arccos(np.dot([vec[0],vec[1]], [1,0]))*180/np.pi
+    theta = np.arccos(np.dot([vec[0], vec[1]], 
+                             [vec_des[0],vec_des[1]])) * 180/np.pi
     correction_theta = 0.0
-    if (vec[0] >= 0 and vec[1] > 0):
-        # Quadrant 1
-        correction_theta = -theta
-    elif (vec[0] < 0 and vec[1] >= 0):
-       # Quadrant 2
-       correction_theta = -theta
-    elif (vec[0] <= 0 and vec[1] < 0):
-       # Quadrant 3
-       correction_theta = theta
-    elif (vec[0] > 0 and vec[1] <= 0):
-       # Quadrant 4
-       correction_theta = theta
+    if vec_des[0] == 1 and vec_des[1] == 0:
+        if vec[1] >= 0: # oriented above or below y=0
+            correction_theta = -theta
+        else:
+            correction_theta = theta
+    elif vec_des[0] == 0 and vec_des[1] == 1:
+        if vec[0] >= 0: #oriented right or left x=0
+            correction_theta = theta
+        else:
+            correction_theta = -theta
+    elif vec_des[0] == -1 and vec_des[1] == 0:
+        if vec[1] >= 0: # oriented above or below y=0
+            correction_theta = theta
+        else:
+            correction_theta = -theta
+    elif vec_des[0] == 0 and vec_des[1] == -1:
+        if vec[0] >= 0: # oriented right or left x=0
+            correction_theta = -theta
+        else:
+            correction_theta = theta
     return correction_theta
 
 def _straighten(image, center, theta):
@@ -330,7 +340,7 @@ def transform_top_image(read_fpath):
 
     # produce a unit vector in the direction of the screw head
     vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
-    correction_theta = _correction_angle(vec)
+    correction_theta = _correction_angle(vec,[1,0])
 
     # correct the image so the head is facing to the right
     img = _straighten(img, (x_center, y_center), correction_theta)
