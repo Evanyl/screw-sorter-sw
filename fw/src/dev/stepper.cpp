@@ -249,6 +249,8 @@ bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle,
 void stepper_calibAngle(stepper_id_E stepper, float angle)
 {
     stepper_data.steppers[stepper].curr_angle = angle;
+    stepper_data.steppers[stepper].last_des_angle = angle;
+    stepper_data.steppers[stepper].des_angle = angle;
 }
 
 void stepper_update(stepper_id_E stepper)
