@@ -249,6 +249,8 @@ bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle,
 void stepper_calibAngle(stepper_id_E stepper, float angle)
 {
     stepper_data.steppers[stepper].curr_angle = angle;
+    stepper_data.steppers[stepper].last_des_angle = angle;
+    stepper_data.steppers[stepper].des_angle = angle;
 }
 
 void stepper_update(stepper_id_E stepper)
@@ -430,7 +432,32 @@ void stepper_update(stepper_id_E stepper)
 
 void stepper_cli_zero(uint8_t argNumber, char* args[])
 {
+    stepper_id_E s = STEPPER_COUNT;
+    if (strcmp(args[0], "depositor") == 0)
+    {
+        s = STEPPER_DEPOSITOR;
+    }
+    else if (strcmp(args[0], "plane") == 0)
+    {
+        s = STEPPER_PLANE;
+    }
+    else if (strcmp(args[0], "arm") == 0)
+    {
+        s = STEPPER_ARM;
+    }
+    else if (strcmp(args[0], "sidelight") == 0)
+    {
+        s = STEPPER_SIDELIGHT;
+    }
 
+    if (s == STEPPER_COUNT)
+    {
+        serial_send_nl(PORT_COMPUTER, "invalid stepper");
+    }
+    else
+    {
+        stepper_calibAngle(s, 0.0);
+    }
 }
 
 void stepper_cli_move(uint8_t argNumber, char* args[])
@@ -460,11 +487,13 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
     }
     else
     {
+        // bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle, 
+        //                   uint16_t rate, uint16_t rate_start)
         if (strcmp(args[1], "angle") == 0)
         {
             float des_angle = atof(args[2]);
-            uint16_t rate = atoi(args[3]);
-            float ramp_angle = atof(args[4]);
+            uint16_t rate = atoi(args[4]);
+            float ramp_angle = atof(args[3]);
             uint8_t ramp_start = atoi(args[5]);
             stepper_commandAngle(s, des_angle, ramp_angle, rate, ramp_start);
         }
