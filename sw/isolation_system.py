@@ -12,7 +12,7 @@ from imaging import isolation_image_and_process
 REGION_ONE_BOX = ((20,10),(60,100)) # Corrsponds to direct output of belt 1 
                                     # top-left corner to bottom-right corner
 REGION_TWO_BOX = ((80,220),(300,400)) # direct output of belt 2, just before chute
-class IsolateSystem:
+class IsolationSystem:
 
     ############################################################################
     #              S T A T E    M A C H I N E    F U N C T I O N S             #
@@ -104,7 +104,7 @@ class IsolateSystem:
         self.thread = Thread()
 
     def run100ms(self, scheduler):
-        if scheduler.taskReleased("isolate_system"):
+        if scheduler.taskReleased("isolation_system"):
 
             # get last station_state
             self.station_state = self.core_comms.getInData()["curr_isolation_state"]

@@ -10,17 +10,18 @@ class CoreComms:
         self.connection = serial.Serial("/dev/ttyUSB0", 115200)
         self.out_data = \
         {
-            "des_state": "idle",
+            "classify_des_state": "idle",
+            "isolation_des_state": "idle",
             "corr_angle": 0.0,
-            "belt_one_angle": 0.0,
-            "belt_two_angle": 0.0
+            "belt_top_steps": 0.0,
+            "belt_bottom_steps": 0.0
         }
         self.in_data = \
         {
             "curr_imaging_state": "idle",
             "curr_isolation_state": "idle"
         }
-        self.state_decode = \
+        self.classify_state_decode = \
         {
             0: "startup",
             1: "idle",
@@ -32,6 +33,17 @@ class CoreComms:
             7: "side-on",
             8: "entering-idle",
             9: "count"
+        }
+        self.isolation_state_decode = \
+        {
+            0: "startup",
+            1: "idle",
+            2: "attempt-isolated",
+            3: "isolated",
+            4: "entering-delivered",
+            5: "delivered",
+            6: "entering-idle",
+            7: "count"
         }
 
     def run50ms(self, scheduler):
@@ -58,8 +70,8 @@ class CoreComms:
     
     def fromString(self, s):
         d = json.loads(s.strip("\n"))
-        return {"curr_imaging_state": self.state_decode[d["system_state"]],
-                "curr_isolation_state": self.state_decode[d["system_state"]]}
+        return {"curr_imaging_state": self.classify_state_decode[d["classify_system_state"]],
+                "curr_isolation_state": self.isolation_state_decode[d["isolation_system_state"]]}
 
     def getInData(self):
         return self.in_data

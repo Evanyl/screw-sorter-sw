@@ -47,7 +47,7 @@ static belts_state_E belts_update_state(belts_state_E curr_state);
 static belts_data_S belts_data = 
 {
     .state = BELTS_STATE_IDLE,
-    .belt_top_steps = 750,
+    .belt_top_steps = 950,
     .belt_bottom_steps = 750
 };
 
@@ -62,7 +62,7 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
     switch (curr_state)
     {
         case BELTS_STATE_IDLE:
-            if (isolation_system_state == ISOLATION_SYSTEM_STATE_ENTERING_ISOLATED
+            if (isolation_system_state == ISOLATION_SYSTEM_STATE_ATTEMPT_ISOLATED
                 ||
                 isolation_system_state == ISOLATION_SYSTEM_STATE_ENTERING_DELIVERED)
             {
@@ -74,19 +74,21 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             }
             break;
         case BELTS_STATE_ENTERING_ACTIVE:
-            if (stepper_command(STEPPER_BELT_TOP,
+        {
+            // Use temp variables to prevent if-statement short-circuit evaluation
+            bool first_stepper = stepper_command(STEPPER_BELT_TOP,
                                 belts_data.belt_top_steps,
                                 BELT_TOP_FORWARD,
                                 BELTS_NAV_RATE,
                                 BELTS_STARTING_RATE,
-                                BELTS_RAMP_WINDOW) == false
-                ||
-                stepper_command(STEPPER_BELT_BOTTOM,
+                                BELTS_RAMP_WINDOW);
+            bool second_stepper = stepper_command(STEPPER_BELT_BOTTOM,
                                 belts_data.belt_bottom_steps,
                                 BELT_BOTTOM_FORWARD,
                                 BELTS_NAV_RATE,
                                 BELTS_STARTING_RATE,
-                                BELTS_RAMP_WINDOW) == false)
+                                BELTS_RAMP_WINDOW);
+            if (first_stepper == false || second_stepper == false)
             {
                 // do nothing, one or both of the belts are moving
             }
@@ -95,6 +97,7 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
                 next_state = BELTS_STATE_ACTIVE;
             }
             break;
+        }
         case BELTS_STATE_ACTIVE:
             if (isolation_system_state == ISOLATION_SYSTEM_STATE_ENTERING_IDLE)
             {

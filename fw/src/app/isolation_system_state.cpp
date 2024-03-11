@@ -52,7 +52,11 @@ static isolation_system_state_E isolation_system_state_parseState(char* s)
     {
         state = ISOLATION_SYSTEM_STATE_IDLE;
     }
-    else if (strcmp(s, "isolate") == 0)
+    else if (strcmp(s, "attempt-isolate") == 0)
+    {
+        state = ISOLATION_SYSTEM_STATE_ATTEMPT_ISOLATED;
+    }
+    else if (strcmp(s, "confirm-isolate") == 0)
     {
         state = ISOLATION_SYSTEM_STATE_ISOLATED;
     }
@@ -89,9 +93,11 @@ static isolation_system_state_E isolation_system_state_update_state(isolation_sy
             break;
 
         case ISOLATION_SYSTEM_STATE_IDLE:
-            if (des_state == ISOLATION_SYSTEM_STATE_ISOLATED)
+            if (des_state == ISOLATION_SYSTEM_STATE_ATTEMPT_ISOLATED
+                ||
+                des_state == ISOLATION_SYSTEM_STATE_ISOLATED)
             {
-                next_state = ISOLATION_SYSTEM_STATE_ENTERING_ISOLATED;
+                next_state = des_state;
             }
             else
             {
@@ -99,14 +105,16 @@ static isolation_system_state_E isolation_system_state_update_state(isolation_sy
             }
             break;
 
-        case ISOLATION_SYSTEM_STATE_ENTERING_ISOLATED:
+        case ISOLATION_SYSTEM_STATE_ATTEMPT_ISOLATED:
             if (belts == BELTS_STATE_ACTIVE)
             {
-                next_state = ISOLATION_SYSTEM_STATE_ISOLATED;
+                // belts have completed movement, return to idle
+                next_state = ISOLATION_SYSTEM_STATE_ENTERING_IDLE;
+                isolation_system_state_data.des_state = ISOLATION_SYSTEM_STATE_IDLE;  // change des_state to prevent inf loop
             }   
             else
             {
-                // do nothing, depositor executing deposit sequence.
+                // do nothing, belts are still moving
             }
             break;
         

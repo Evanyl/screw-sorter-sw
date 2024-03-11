@@ -20,8 +20,9 @@ typedef enum
 {
     ISOLATION_SYSTEM_STATE_STARTUP,
     ISOLATION_SYSTEM_STATE_IDLE,
-    ISOLATION_SYSTEM_STATE_ENTERING_ISOLATED,
-    ISOLATION_SYSTEM_STATE_ISOLATED,
+    ISOLATION_SYSTEM_STATE_ATTEMPT_ISOLATED,   // chug the belts some distance in an attempt to achieve isolation,
+                                                // but confirmation of isolation is from camera
+    ISOLATION_SYSTEM_STATE_ISOLATED,            // rpi sets this state when camera sees isolated fastener
     ISOLATION_SYSTEM_STATE_ENTERING_DELIVERED,
     ISOLATION_SYSTEM_STATE_DELIVERED,
     ISOLATION_SYSTEM_STATE_ENTERING_IDLE,
