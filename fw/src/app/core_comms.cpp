@@ -4,7 +4,9 @@
 
 #include "core_comms.h"
 #include "plane.h"
+#include "belts.h"
 #include "classify_system_state.h"
+#include "isolation_system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -28,13 +30,17 @@ typedef struct
 
 typedef struct
 {
-    classify_system_state_E des_state;
+    classify_system_state_E classify_des_state;
+    isolation_system_state_E isolation_des_state;
     float corr_angle;
+    float belt_top_steps;
+    float belt_bottom_steps;
 } core_comms_in_s;
 
 typedef struct
 {
-    classify_system_state_E curr_state;
+    classify_system_state_E classify_curr_state;
+    isolation_system_state_E isolation_curr_state;
 } core_comms_out_s;
 
 typedef struct 
@@ -65,17 +71,23 @@ static core_comms_s core_comms_data =
 {
     .in_data =
     {
-        .des_state = CLASSIFY_SYSTEM_STATE_IDLE,
-        .corr_angle = 0.0
+        .classify_des_state = CLASSIFY_SYSTEM_STATE_IDLE,
+        .isolation_des_state = ISOLATION_SYSTEM_STATE_IDLE,
+        .corr_angle = 0.0,
+        .belt_top_steps = 0.0,
+        .belt_bottom_steps = 0.0
     },
     .out_data =
     {
-        .curr_state = CLASSIFY_SYSTEM_STATE_STARTUP
+        .classify_curr_state = CLASSIFY_SYSTEM_STATE_STARTUP,
+        .isolation_curr_state = ISOLATION_SYSTEM_STATE_STARTUP
     },
     .cmds = 
     {
         CLASSIFY_SYSTEM_STATE_CORE_COMMS_COMMANDS,
+        ISOLATION_SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
+        BELTS_CORE_COMMS_COMMANDS,
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
 };
@@ -141,7 +153,7 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"classify_system_state\": %d}\n", classify_system_state_getState());
+            sprintf(resp, "{\"classify_system_state\": %d}\n{\"isolation_system_state\": %d}\n", classify_system_state_getState(), isolation_system_state_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

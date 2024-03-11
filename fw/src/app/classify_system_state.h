@@ -27,8 +27,6 @@ typedef enum
     CLASSIFY_SYSTEM_STATE_ENTERING_SIDEON,
     CLASSIFY_SYSTEM_STATE_SIDEON,
     CLASSIFY_SYSTEM_STATE_ENTERING_IDLE,
-    CLASSIFY_SYSTEM_STATE_MOVING_BELT_ONE,
-    CLASSIFY_SYSTEM_STATE_MOVING_BELT_TWO,
     CLASSIFY_SYSTEM_STATE_COUNT
 } classify_system_state_E;
 
@@ -46,10 +44,10 @@ void classify_system_state_cli_dump(uint8_t argNumer, char* args[]);
 void classify_system_state_core_comms_setDesState(uint8_t argNumber, char* args[]);
 
 #define CLASSIFY_SYSTEM_STATE_COMMANDS \
-{classify_system_state_cli_target, "system-state-target", NULL, NULL, 1, 1}, \
-{classify_system_state_cli_dump, "system-state-dump", NULL, NULL, 0, 0}
+{classify_system_state_cli_target, "classify-system-state-target", NULL, NULL, 1, 1}, \
+{classify_system_state_cli_dump, "classify-system-state-dump", NULL, NULL, 0, 0}
 
 #define CLASSIFY_SYSTEM_STATE_CORE_COMMS_COMMANDS \
-{classify_system_state_core_comms_setDesState, "des-state", 1}
+{classify_system_state_core_comms_setDesState, "classify-des-state", 1}
 
 #endif // APP_CLASSIFY_SYSTEM_STATE

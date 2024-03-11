@@ -35,6 +35,7 @@ typedef enum
     DEPOSITOR,
     ARM,
     PLANE,
+    BELTS,
     CORE_COMMS,
     ISOLATION,
     TASK_10ms_COUNT
@@ -44,6 +45,7 @@ typedef enum
 {
     CLI,
     CLASSIFY_SYSTEM_STATE,
+    ISOLATION_SYSTEM_STATE,
     TASK_100ms_COUNT
 } tasks_100ms_E;
 

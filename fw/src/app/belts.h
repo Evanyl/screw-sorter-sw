@@ -1,12 +1,13 @@
 
-#ifndef APP_ISOLATION
-#define APP_ISOLATION
+#ifndef APP_BELTS
+#define APP_BELTS
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
 #include <Arduino.h>
+#include <pt.h>
 
 #include "dev/stepper.h"
 
@@ -20,22 +21,22 @@
 
 typedef enum 
 {
-    ISOLATION_STATE_IDLE,
-    ISOLATION_STATE_MOVING,
-    ISOLATION_STATE_ISOLATED,
-    ISOLATION_STATE_COUNT
-} isolation_state_E;
+    BELTS_STATE_IDLE,
+    BELTS_STATE_ENTERING_ACTIVE,
+    BELTS_STATE_ACTIVE,
+    BELTS_STATE_COUNT
+} belts_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void isolation_init(void);
-void isolation_run10ms(void);
-isolation_state_E isolation_getState(void);
+void belts_init(void);
+void belts_run10ms(void);
+belts_state_E belts_getState(void);
+void belts_core_comms_setDistance(uint8_t argNumber, char* args[]);
 
+#define BELTS_CORE_COMMS_COMMANDS \
+{belts_core_comms_setDistance, "belts-distance", 2} // idx 0 is top belt, idx 1 bottom belt
 
-#define ISOLATION_COMMANDS \
-{isolation_cli_home, "isolation-home", NULL, NULL, 0, 0}
-
-#endif // APP_isolation
+#endif // APP_BELTS
