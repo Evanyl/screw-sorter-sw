@@ -6,6 +6,7 @@
 #include "belts.h"
 #include "isolation_system_state.h"
 #include "scheduler.h"
+#include "dev/serial.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -46,8 +47,8 @@ static belts_state_E belts_update_state(belts_state_E curr_state);
 static belts_data_S belts_data = 
 {
     .state = BELTS_STATE_IDLE,
-    .belt_top_steps = 0,
-    .belt_bottom_steps = 0
+    .belt_top_steps = 750,
+    .belt_bottom_steps = 750
 };
 
 /*******************************************************************************
@@ -58,19 +59,6 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
 {
     belts_state_E next_state = curr_state;
     isolation_system_state_E isolation_system_state = isolation_system_state_getState();
-stepper_command(STEPPER_BELT_TOP,
-                                2000,
-                                BELT_TOP_BACKWARD,
-                                BELTS_NAV_RATE,
-                                BELTS_STARTING_RATE,
-                                BELTS_RAMP_WINDOW);
-                stepper_command(STEPPER_BELT_BOTTOM,
-                                2000,
-                                BELT_BOTTOM_FORWARD,
-                                BELTS_NAV_RATE,
-                                BELTS_STARTING_RATE,
-                                BELTS_RAMP_WINDOW);
-
     switch (curr_state)
     {
         case BELTS_STATE_IDLE:
@@ -160,4 +148,14 @@ void belts_core_comms_setDistance(uint8_t argNumber, char* args[])
 {
     belts_data.belt_top_steps = atof(args[0]);
     belts_data.belt_bottom_steps = atof(args[1]);
+}
+
+void belts_cli_dump_state(uint8_t argNumber, char* args[])
+{
+    char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+    sprintf(st, 
+            "{\"curr_state\": %d}", 
+            (uint8_t) belts_data.state);
+    serial_send_nl(PORT_COMPUTER, st);
+    free(st);
 }

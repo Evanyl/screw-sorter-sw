@@ -35,8 +35,12 @@ void belts_init(void);
 void belts_run10ms(void);
 belts_state_E belts_getState(void);
 void belts_core_comms_setDistance(uint8_t argNumber, char* args[]);
+void belts_cli_dump_state(uint8_t argNumber, char* args[]);
 
 #define BELTS_CORE_COMMS_COMMANDS \
 {belts_core_comms_setDistance, "belts-distance", 2} // idx 0 is top belt, idx 1 bottom belt
+
+#define BELTS_COMMANDS \
+{belts_cli_dump_state, "belts-dump-state", NULL, NULL, 0, 0}
 
 #endif // APP_BELTS

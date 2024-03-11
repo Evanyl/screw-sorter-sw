@@ -54,7 +54,11 @@ static isolation_system_state_E isolation_system_state_parseState(char* s)
     }
     else if (strcmp(s, "isolate") == 0)
     {
-        state = ISOLATION_SYSTEM_STATE_ENTERING_ISOLATED;
+        state = ISOLATION_SYSTEM_STATE_ISOLATED;
+    }
+    else if (strcmp(s, "deliver") == 0)
+    {
+        state = ISOLATION_SYSTEM_STATE_DELIVERED;
     }
     else
     {
@@ -80,7 +84,7 @@ static isolation_system_state_E isolation_system_state_update_state(isolation_sy
             }
             else
             {
-                // do nothing, system still homing.
+                // do nothing, system still homing. with just belts this is instant.
             }
             break;
 
@@ -91,7 +95,7 @@ static isolation_system_state_E isolation_system_state_update_state(isolation_sy
             }
             else
             {
-                // do nothing, no imaging requested
+                // do nothing, no isolation requested
             }
             break;
 
