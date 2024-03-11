@@ -15,10 +15,10 @@
 #define BELTS_STARTING_RATE 50
 #define BELTS_RAMP_WINDOW 250
 
-#define BELT_TOP_FORWARD 0
-#define BELT_TOP_BACKWARD 1
-#define BELT_BOTTOM_FORWARD 0
-#define BELT_BOTTOM_BACKWARD 1
+#define BELT_TOP_FORWARD 1
+#define BELT_TOP_BACKWARD 0
+#define BELT_BOTTOM_FORWARD 1
+#define BELT_BOTTOM_BACKWARD 0
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -58,6 +58,18 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
 {
     belts_state_E next_state = curr_state;
     isolation_system_state_E isolation_system_state = isolation_system_state_getState();
+stepper_command(STEPPER_BELT_TOP,
+                                2000,
+                                BELT_TOP_BACKWARD,
+                                BELTS_NAV_RATE,
+                                BELTS_STARTING_RATE,
+                                BELTS_RAMP_WINDOW);
+                stepper_command(STEPPER_BELT_BOTTOM,
+                                2000,
+                                BELT_BOTTOM_FORWARD,
+                                BELTS_NAV_RATE,
+                                BELTS_STARTING_RATE,
+                                BELTS_RAMP_WINDOW);
 
     switch (curr_state)
     {
