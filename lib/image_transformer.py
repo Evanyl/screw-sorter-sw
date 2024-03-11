@@ -240,6 +240,7 @@ def _correction_angle(vec, vec_des):
     theta = np.arccos(np.dot([vec[0], vec[1]], 
                              [vec_des[0],vec_des[1]])) * 180/np.pi
     correction_theta = 0.0
+    print(theta)
     if vec_des[0] == 1 and vec_des[1] == 0:
         if vec[1] >= 0: # oriented above or below y=0
             correction_theta = -theta
@@ -251,6 +252,7 @@ def _correction_angle(vec, vec_des):
         else:
             correction_theta = -theta
     elif vec_des[0] == -1 and vec_des[1] == 0:
+        print("here")
         if vec[1] >= 0: # oriented above or below y=0
             correction_theta = theta
         else:
@@ -260,6 +262,7 @@ def _correction_angle(vec, vec_des):
             correction_theta = -theta
         else:
             correction_theta = theta
+    print(correction_theta)
     return correction_theta
 
 def _straighten(image, center, theta):

@@ -104,6 +104,7 @@ class ClassifySystem:
 
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):
+            print(self.curr_state)
             # get last station_state
             self.station_state = self.core_comms.getInData()["curr_state"]
             # send next desired state
