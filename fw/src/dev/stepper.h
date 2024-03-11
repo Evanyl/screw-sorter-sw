@@ -24,6 +24,8 @@ typedef enum
     STEPPER_PLANE,
     STEPPER_ARM,
     STEPPER_SIDELIGHT,
+    STEPPER_BELT_TOP,
+    STEPPER_BELT_BOTTOM,
     STEPPER_COUNT
 } stepper_id_E;
 
