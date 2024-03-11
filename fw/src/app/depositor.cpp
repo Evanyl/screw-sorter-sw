@@ -12,24 +12,30 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define DEPOSITOR_OPEN_STEPS   255
-#define DEPOSITOR_OPEN_RATE    25
-#define DEPOSITOR_OPEN_ANGLE   0.0 //-90.0 achieves full open
-
 #define DEPOSITOR_CLOSE_STEPS  255
 #define DEPOSITOR_CLOSE_RATE   255
 #define DEPOSITOR_CLOSE_ANGLE  62.0 // Fully closed
+
+#define DEPOSITOR_OPEN_STEPS   200
+#define DEPOSITOR_OPEN_RATE    25
+#define DEPOSITOR_OPEN_ANGLE   0.0 //-90.0 achieves full open
+
+#define DEPOSITOR_SLIT_ANGLE   DEPOSITOR_CLOSE_ANGLE - 12.0
+#define DEPOSITOR_SLIT_RATE    255
+#define DEPOSITOR_SLIT_STEPS   5
 
 #define DEPOSITOR_ARM_HOME_ANGLE 0.0
 #define DEPOSITOR_ARM_CENTER_ANGLE 75.0
 #define DEPOSITOR_ARM_SWEEP_ANGLE  110.0
 #define DEPOSITOR_ARM_RAMP_ANGLE 5.0 // Degrees
 
-#define DEPOSITOR_ARM_NAV_RATE 750
+#define DEPOSITOR_ARM_NAV_RATE 1500
 #define DEPOSITOR_ARM_HOME_RATE 150
 #define DEPOSITOR_ARM_STARTING_RATE 250 // Steps per second
 
 #define DEPOSITOR_ARM_CW 1
+
+#define DEPOSITOR_JOSTLE_MOVEMENTS 20
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -39,6 +45,8 @@ typedef struct
 {
     struct pt  thread;
     depositor_state_E state;
+    int8_t jostle_counter;
+    float jostle_routine[DEPOSITOR_JOSTLE_MOVEMENTS];
 } depositor_data_S;
 
 /*******************************************************************************
@@ -56,6 +64,8 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state);
 static depositor_data_S depositor_data = 
 {
     .state = DEPOSITOR_STATE_HOMING,
+    .jostle_counter = 0,
+    .jostle_routine = {0,1,-1,0,0,0,-1,1,0,0,0,1,-1,0,0,0,-1,1,0,0},
 };
 
 /*******************************************************************************
@@ -121,11 +131,11 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             }
             else
             {
-                next_state = DEPOSITOR_STATE_DROPPING;
+                next_state = DEPOSITOR_STATE_CENTERING;
             }
             break;
 
-        case DEPOSITOR_STATE_DROPPING:
+        case DEPOSITOR_STATE_CENTERING:
             if (stepper_commandAngle(STEPPER_DEPOSITOR, 
                                      DEPOSITOR_ARM_CENTER_ANGLE, 
                                      DEPOSITOR_ARM_RAMP_ANGLE, 
@@ -137,14 +147,51 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             else
             {
                 if (servo_command(SERVO_DEPOSITOR,
-                                  DEPOSITOR_OPEN_ANGLE,
-                                  DEPOSITOR_OPEN_STEPS,
-                                  DEPOSITOR_OPEN_RATE) == false)
+                                  DEPOSITOR_SLIT_ANGLE,
+                                  DEPOSITOR_SLIT_STEPS,
+                                  DEPOSITOR_SLIT_RATE) == false)
                 {
                     // do nothing
                 }
                 else
                 {
+                    next_state = DEPOSITOR_STATE_DROPPING;
+                }
+            }
+            break;
+
+        case DEPOSITOR_STATE_DROPPING:
+            if (depositor_data.jostle_counter < DEPOSITOR_JOSTLE_MOVEMENTS)
+            {
+                uint8_t j = depositor_data.jostle_counter;
+                float dtheta = depositor_data.jostle_routine[j];
+                bool stepper = stepper_commandAngle(STEPPER_DEPOSITOR, 
+                                         DEPOSITOR_ARM_CENTER_ANGLE + dtheta,
+                                         0.0,
+                                         DEPOSITOR_ARM_NAV_RATE,
+                                         DEPOSITOR_ARM_NAV_RATE);
+                if (stepper == false)
+                {
+                    // wait for current motion to finish
+                }
+                else
+                {
+                    depositor_data.jostle_counter++;
+                }
+            }
+            else
+            {
+                if (servo_command(SERVO_DEPOSITOR,
+                                  DEPOSITOR_OPEN_ANGLE,
+                                  DEPOSITOR_OPEN_STEPS,
+                                  DEPOSITOR_OPEN_RATE) == false)
+                {
+                    // wait for cup to open
+                }
+                else
+                {
+                    // reset jostle counter for next time, change state
+                    depositor_data.jostle_counter = 0;
                     next_state = DEPOSITOR_STATE_ENTERING_IDLE;
                 }
             }
@@ -202,10 +249,6 @@ void depositor_init(void)
     servo_init(SERVO_DEPOSITOR, DEPOSITOR_CLOSE_ANGLE);
     switch_init(SWITCH_DEPOSITOR);
     stepper_init(STEPPER_DEPOSITOR);
-
-    // TODO remove this
-    stepper_init(STEPPER_BELT_TOP);
-    stepper_init(STEPPER_BELT_BOTTOM);
 }
 
 void depositor_run10ms(void)

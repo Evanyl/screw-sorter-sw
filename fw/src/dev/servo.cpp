@@ -10,7 +10,9 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define MILLI_SEC_TO_SEC          (1000)
+#define MICROSEC_TO_SEC (uint32_t)  1000000
+#define MOTOR_RUNNER_CYCLE_us       500
+#define MOTOR_RUNNER_PERIOD_PER_SEC MICROSEC_TO_SEC / MOTOR_RUNNER_CYCLE_us
 
 #define SERVO_PWM_PERIOD_MICROSEC (20000)
 #define SERVO_PWM_FREQ_HZ         (1 / (SERVO_PWM_PERIOD_MICROSEC * pow(10,-6)))
@@ -118,7 +120,7 @@ bool servo_command(servo_id_E servo, float angle, uint8_t steps, uint16_t rate) 
 void servo_update(servo_id_E servo)
 {
     servo_s* s = &servo_data.servos[servo];
-    if (s->counter >= MILLI_SEC_TO_SEC/s->rate)
+    if (s->counter >= MOTOR_RUNNER_PERIOD_PER_SEC/s->rate)
     {
         if (abs(s->des_angle - s->curr_angle) < abs(s->delta) && 
             s->curr_angle != s->des_angle)
