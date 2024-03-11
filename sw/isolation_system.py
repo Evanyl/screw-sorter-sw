@@ -9,9 +9,7 @@ from imaging import isolation_image_and_process
 ############################################################################
 #              S T A T E    M A C H I N E   C O N S T A N T S             #
 ############################################################################
-REGION_ONE_BOX = ((20,10),(60,100)) # Corrsponds to direct output of belt 1 
-                                    # top-left corner to bottom-right corner
-REGION_TWO_BOX = ((80,220),(300,400)) # direct output of belt 2, just before chute
+FIXED_DEPOSITOR_STEP_COUNT = 250
 class IsolationSystem:
 
     ############################################################################
@@ -20,61 +18,70 @@ class IsolationSystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
-        for line in sys.stdin:
-            if line.rstrip() == "start-isolate":
-                self.thread = Thread(target=isolation_image_and_process, args=(self.camera, self.thread_data))
-                next_state = "isolation-image-and-process"
-            else:
-                pass
+        if self.station_state == "idle":
+            next_state = "attempt-isolated"
+            self.des_station_state = "attempt-isolated"
+        else:
+            # do nothing, station still in startup
+            pass
         return next_state
     
+    def __attempt_isolated_state_func(self):
+        next_state = self.curr_state
+        if self.station_state == "idle" and self.thread.is_alive() == False:
+            self.thread = Thread(target=isolation_image_and_process, args=[self.camera, self.thread_data])
+            self.thread.start()
+            next_state = "isolation-image-and-process"
+        else:
+            # do nothing, belts still in motion
+            pass
+        return next_state
+
     def __isolation_image_and_process_state_func(self):
         # camera is being queried, awaiting result
         next_state = self.curr_state
-        if self.station_state == "move-belt-one" and self.thread.is_alive() == False:
-            self.core_comms.updateOutData("belt_one_distance",
-                                            self.thread_data["belt_one_distance"])
-            self.des_station_state = "move-belt-one"
-            next_state = "move-belt-one"
-        if self.station_state == "move-belt-two" and self.thread.is_alive() == False:
-            self.core_comms.updateOutData("belt_two_distance",
-                                            self.thread_data["belt_two_distance"])
-            self.des_station_state = "move-belt-two"
-            next_state = "move-belt-two"
+        if self.station_state == "idle" and self.thread.is_alive() == False:
+            if self.thread_data["fastener_present"] == True:
+                if self.thread_data["isolated"] == True:
+                    self.des_station_state = "isolated"
+                    next_state = "deliver"
+                else:
+                    self.des_station_state = "reject"
+                    next_state = "reject"
+            else:
+                self.core_comms.updateOutData("belt_top_steps",
+                                            self.thread_data["belt_top_steps"])
+                self.core_comms.updateOutData("belt_bottom_steps",
+                                            self.thread_data["belt_bottom_steps"])
+                self.des_station_state = "attempt-isolated"
+                next_state = "attempt-isolated"
         else:
             # waiting for processing to complete
             pass
-        
         return next_state
     
-    def __move_belt_one_state_func(self):
+    def __deliver_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "move-belt-one" and self.thread.is_alive() == False:
-            # completed motion
-            self.thread = Thread(target=isolation_image_and_process, args=(self.camera, self.thread_data))
-            next_state = "isolation-image-and-process"
+        # TODO implement boolean check for if depositor is ready for fastener
+        if self.station_state == "isolated":
+            self.core_comms.updateOutData("belt_top_steps", 0)
+            self.core_comms.updateOutData("belt_bottom_steps",
+                                        FIXED_DEPOSITOR_STEP_COUNT)
+            self.des_station_state = "delivered"
+            next_state = "idle"
         else:
-            # wait for belt to finish movement
-            pass
-        return next_state
-
-    def __move_belt_two_state_func(self):  
-        next_state = self.curr_state  
-        if self.station_state == "move-belt-two" and self.thread.is_alive() == False:
-            # completed motion
-            self.thread = Thread(target=isolation_image_and_process, args=(self.camera, self.thread_data))
-            next_state = "isolation-image-and-process"
-        else:
-            # wait for belt to finish movement
-            pass
+            pass # station has not updated its variable to isolated
         return next_state
     
-    def __move_chute(self):
-        # TODO think of how to integrate this fcn into code
-        # required for accept/reject.
+    def __reject_state_func(self):
         next_state = self.curr_state
+        if self.station_state == "reject":
+            self.des_station_state == "idle"
+            next_state = "idle"
+        else:
+            pass # station still in process of rejection
         return next_state
-
+    
     ############################################################################
     #                 P U B L I C    C L A S S    M E T H O D S                #
     ############################################################################
@@ -84,17 +91,22 @@ class IsolationSystem:
         {
             "idle":                             self.__idle_state_func,
             "isolation-image-and-process":      self.__isolation_image_and_process_state_func,
-            "move-belt-one":                    self.__move_belt_one_state_func,
-            "move-belt-two":                    self.__move_belt_two_state_func,
+            "attempt-isolated":                 self.__attempt_isolated_state_func,
+            "deliver":                          self.__deliver_state_func,
+            "reject":                           self.__reject_state_func
         }
 
         self.thread_data = \
         {
-            "belt-one-distance": 0.0,
-            "belt-two-distance": 0.0
+            "fastener_present": False,
+            "isolated": False,
+            "belt_top_steps": 0.0,
+            "belt_bottom_steps": 0.0
         }
 
         self.camera = Picamera2()
+        camera_config = self.camera.create_preview_configuration()
+        self.camera.configure(camera_config)
 
         self.curr_state = "idle"
         self.des_station_state = "idle"

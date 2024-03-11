@@ -99,6 +99,10 @@ static isolation_system_state_E isolation_system_state_update_state(isolation_sy
             {
                 next_state = des_state;
             }
+            else if (des_state == ISOLATION_SYSTEM_STATE_REJECT)
+            {
+                next_state = ISOLATION_SYSTEM_STATE_ENTERING_REJECT;
+            }
             else
             {
                 // do nothing, no isolation requested
@@ -141,6 +145,17 @@ static isolation_system_state_E isolation_system_state_update_state(isolation_sy
             break;
 
         case ISOLATION_SYSTEM_STATE_DELIVERED:
+                next_state = ISOLATION_SYSTEM_STATE_ENTERING_IDLE;
+            break;
+
+        case ISOLATION_SYSTEM_STATE_ENTERING_REJECT:
+            if (belts == BELTS_STATE_ACTIVE)
+            {
+                next_state = ISOLATION_SYSTEM_STATE_REJECT;
+            }
+            break;
+
+        case ISOLATION_SYSTEM_STATE_REJECT:
                 next_state = ISOLATION_SYSTEM_STATE_ENTERING_IDLE;
             break;
             

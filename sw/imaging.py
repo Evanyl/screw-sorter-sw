@@ -10,4 +10,12 @@ def image_and_process(thread_data):
 def isolation_image_and_process(picamera_object, shared_data):
     print("Performing isolation imaging/processing...")
     im = picamera_object.capture_array()
+    
+    fastener_present = False
+    fastener_isolated = False
+
+    shared_data["fastener_present"] = fastener_present
+    shared_data["isolated"] = fastener_isolated
+    shared_data["belt_top_steps"] = 500
+    shared_data["belt_bottom_steps"] = 500
     time.sleep(3)
