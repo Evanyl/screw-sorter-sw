@@ -3,7 +3,7 @@
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
-#include "system_state.h"
+#include "classify_system_state.h"
 
 #include "core_comms.h"
 #include "lighting.h"
@@ -24,44 +24,44 @@
 typedef struct
 {
     struct pt thread;
-    system_state_E curr_state;
-    system_state_E des_state;
-} system_state_data_S;
+    classify_system_state_E curr_state;
+    classify_system_state_E des_state;
+} classify_system_state_data_S;
 
 /*******************************************************************************
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-static system_state_E system_state_update_state(system_state_E curr_state);
-static system_state_E system_state_parseState(char* s);
+static classify_system_state_E classify_system_state_update_state(classify_system_state_E curr_state);
+static classify_system_state_E classify_system_state_parseState(char* s);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
 *******************************************************************************/ 
 
-static system_state_data_S system_state_data = 
+static classify_system_state_data_S classify_system_state_data = 
 {
-    .curr_state = SYSTEM_STATE_STARTUP,
+    .curr_state = CLASSIFY_SYSTEM_STATE_STARTUP,
 };
 
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/
 
-static system_state_E system_state_parseState(char* s)
+static classify_system_state_E classify_system_state_parseState(char* s)
 {
-    system_state_E state = SYSTEM_STATE_COUNT;
+    classify_system_state_E state = CLASSIFY_SYSTEM_STATE_COUNT;
     if (strcmp(s, "idle") == 0)
     {
-        state = SYSTEM_STATE_IDLE;
+        state = CLASSIFY_SYSTEM_STATE_IDLE;
     }
     else if (strcmp(s, "top-down") == 0)
     {
-        state = SYSTEM_STATE_TOPDOWN;
+        state = CLASSIFY_SYSTEM_STATE_TOPDOWN;
     }
     else if (strcmp(s, "side-on") == 0)
     {
-        state = SYSTEM_STATE_SIDEON;
+        state = CLASSIFY_SYSTEM_STATE_SIDEON;
     }
     else
     {
@@ -71,26 +71,26 @@ static system_state_E system_state_parseState(char* s)
     return state;
 }
 
-static system_state_E system_state_update_state(system_state_E curr_state)
+static classify_system_state_E classify_system_state_update_state(classify_system_state_E curr_state)
 {
-    system_state_E next_state = curr_state;
+    classify_system_state_E next_state = curr_state;
     // get the states of all subsystems
     depositor_state_E depositor = depositor_getState();
     lighting_state_E lighting = lighting_getState();
     arm_state_E arm = arm_getState();
     plane_state_E plane = plane_getState();
     // get rpi desired state from core_comms
-    system_state_E des_state = system_state_data.des_state;
+    classify_system_state_E des_state = classify_system_state_data.des_state;
 
-    switch (system_state_data.curr_state)
+    switch (classify_system_state_data.curr_state)
     {
-        case SYSTEM_STATE_STARTUP:
+        case CLASSIFY_SYSTEM_STATE_STARTUP:
             if (depositor == DEPOSITOR_STATE_IDLE &&
                 arm == ARM_STATE_IDLE             &&
                 lighting == LIGHTING_STATE_IDLE   &&
                 plane == PLANE_STATE_IDLE)
             {
-                next_state = SYSTEM_STATE_IDLE;
+                next_state = CLASSIFY_SYSTEM_STATE_IDLE;
             }
             else
             {
@@ -98,10 +98,10 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_IDLE:
-            if (des_state == SYSTEM_STATE_TOPDOWN)
+        case CLASSIFY_SYSTEM_STATE_IDLE:
+            if (des_state == CLASSIFY_SYSTEM_STATE_TOPDOWN)
             {
-                next_state = SYSTEM_STATE_ENTERING_DEPOSITED;
+                next_state = CLASSIFY_SYSTEM_STATE_ENTERING_DEPOSITED;
             }
             else
             {
@@ -109,10 +109,10 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_ENTERING_DEPOSITED:
+        case CLASSIFY_SYSTEM_STATE_ENTERING_DEPOSITED:
             if (depositor == DEPOSITOR_STATE_ENTERING_IDLE)
             {
-                next_state = SYSTEM_STATE_DEPOSITED;
+                next_state = CLASSIFY_SYSTEM_STATE_DEPOSITED;
             }   
             else
             {
@@ -120,10 +120,10 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_DEPOSITED:
+        case CLASSIFY_SYSTEM_STATE_DEPOSITED:
             if (depositor == DEPOSITOR_STATE_IDLE)
             {
-                next_state = SYSTEM_STATE_ENTERING_TOPDOWN;
+                next_state = CLASSIFY_SYSTEM_STATE_ENTERING_TOPDOWN;
             }
             else
             {
@@ -131,11 +131,11 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_ENTERING_TOPDOWN:
+        case CLASSIFY_SYSTEM_STATE_ENTERING_TOPDOWN:
             if (lighting == LIGHTING_STATE_TOPDOWN &&
                 arm == ARM_STATE_IDLE)
             {
-                next_state = SYSTEM_STATE_TOPDOWN;
+                next_state = CLASSIFY_SYSTEM_STATE_TOPDOWN;
             }
             else
             {
@@ -143,10 +143,10 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_TOPDOWN:
-            if (des_state == SYSTEM_STATE_SIDEON)
+        case CLASSIFY_SYSTEM_STATE_TOPDOWN:
+            if (des_state == CLASSIFY_SYSTEM_STATE_SIDEON)
             {
-                next_state = SYSTEM_STATE_ENTERING_SIDEON;
+                next_state = CLASSIFY_SYSTEM_STATE_ENTERING_SIDEON;
             }
             else
             {
@@ -154,12 +154,12 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_ENTERING_SIDEON:
+        case CLASSIFY_SYSTEM_STATE_ENTERING_SIDEON:
             if (arm == ARM_STATE_SIDEON           && 
                 lighting == LIGHTING_STATE_SIDEON &&
                 plane == PLANE_STATE_ACTIVE)
             {
-                next_state = SYSTEM_STATE_SIDEON;
+                next_state = CLASSIFY_SYSTEM_STATE_SIDEON;
             }
             else
             {
@@ -167,10 +167,10 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_SIDEON:
-            if (des_state == SYSTEM_STATE_IDLE)
+        case CLASSIFY_SYSTEM_STATE_SIDEON:
+            if (des_state == CLASSIFY_SYSTEM_STATE_IDLE)
             {
-                next_state = SYSTEM_STATE_ENTERING_IDLE;
+                next_state = CLASSIFY_SYSTEM_STATE_ENTERING_IDLE;
             }
             else
             {
@@ -178,13 +178,13 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_ENTERING_IDLE:
+        case CLASSIFY_SYSTEM_STATE_ENTERING_IDLE:
             if (depositor == DEPOSITOR_STATE_IDLE &&
                 lighting == LIGHTING_STATE_IDLE   &&
                 arm == ARM_STATE_IDLE             &&          
                 plane == PLANE_STATE_IDLE)
             {
-                next_state = SYSTEM_STATE_IDLE;
+                next_state = CLASSIFY_SYSTEM_STATE_IDLE;
             }
             else
             {
@@ -192,7 +192,7 @@ static system_state_E system_state_update_state(system_state_E curr_state)
             }
             break;
 
-        case SYSTEM_STATE_COUNT:
+        case CLASSIFY_SYSTEM_STATE_COUNT:
             break;
     }
 
@@ -204,9 +204,9 @@ static PT_THREAD(run100ms(struct pt* thread))
     PT_BEGIN(thread);
     PT_WAIT_UNTIL(thread, 
                   scheduler_taskReleased(PERIOD_100ms, 
-                  (uint8_t) SYSTEM_STATE));
-    system_state_data.curr_state = 
-        system_state_update_state(system_state_data.curr_state);
+                  (uint8_t) CLASSIFY_SYSTEM_STATE));
+    classify_system_state_data.curr_state = 
+        classify_system_state_update_state(classify_system_state_data.curr_state);
     PT_END(thread);
 }
 
@@ -214,47 +214,47 @@ static PT_THREAD(run100ms(struct pt* thread))
 *                       P U B L I C    F U N C T I O N S                       *
 *******************************************************************************/ 
 
-void system_state_init(void)
+void classify_system_state_init(void)
 {
-    PT_INIT(&system_state_data.thread);
+    PT_INIT(&classify_system_state_data.thread);
 }
 
-void system_state_run100ms(void)
+void classify_system_state_run100ms(void)
 {
-    run100ms(&system_state_data.thread);
+    run100ms(&classify_system_state_data.thread);
 }
 
-system_state_E system_state_getState(void)
+classify_system_state_E classify_system_state_getState(void)
 {
-    return system_state_data.curr_state;
+    return classify_system_state_data.curr_state;
 }
 
-void system_state_setTarget(system_state_E target)
+void classify_system_state_setTarget(classify_system_state_E target)
 {
     // also need to set the desired angle of the plane, perhaps maintain a
     // struct in core comms that holds this updated mem, and write getters to
     // bring data into state machine modules.
-    system_state_data.des_state = target;
+    classify_system_state_data.des_state = target;
 }
 
 
-void system_state_cli_target(uint8_t argNumber, char* args[])
+void classify_system_state_cli_target(uint8_t argNumber, char* args[])
 {
-    system_state_data.des_state = system_state_parseState(args[0]);
+    classify_system_state_data.des_state = classify_system_state_parseState(args[0]);
 }
 
-void system_state_cli_dump(uint8_t argNumber, char* args[])
+void classify_system_state_cli_dump(uint8_t argNumber, char* args[])
 {
     char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
     sprintf(st, 
             "{\"des_state\": %d, \"curr_state\": %d}", 
-            (uint8_t) system_state_data.des_state,
-            (uint8_t) system_state_data.curr_state);
+            (uint8_t) classify_system_state_data.des_state,
+            (uint8_t) classify_system_state_data.curr_state);
     serial_send_nl(PORT_COMPUTER, st);
     free(st);
 }
 
-void system_state_core_comms_setDesState(uint8_t argNumber, char* args[])
+void classify_system_state_core_comms_setDesState(uint8_t argNumber, char* args[])
 {
-    system_state_data.des_state = system_state_parseState(args[0]);
+    classify_system_state_data.des_state = classify_system_state_parseState(args[0]);
 }

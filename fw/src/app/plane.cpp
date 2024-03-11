@@ -4,7 +4,7 @@
 *******************************************************************************/ 
 
 #include "plane.h"
-#include "system_state.h"
+#include "classify_system_state.h"
 #include "scheduler.h"
 
 /*******************************************************************************
@@ -51,12 +51,12 @@ static plane_data_S plane_data =
 static plane_state_E plane_update_state(plane_state_E curr_state)
 {
     plane_state_E next_state = curr_state;
-    system_state_E system_state = system_state_getState();
+    classify_system_state_E classify_system_state = classify_system_state_getState();
 
     switch (curr_state)
     {
         case PLANE_STATE_IDLE:
-            if (system_state == SYSTEM_STATE_ENTERING_SIDEON)
+            if (classify_system_state == CLASSIFY_SYSTEM_STATE_ENTERING_SIDEON)
             {
                 stepper_calibAngle(STEPPER_PLANE, PLANE_IDLE_ANGLE);
                 next_state = PLANE_STATE_ENTERING_ACTIVE;
@@ -81,7 +81,7 @@ static plane_state_E plane_update_state(plane_state_E curr_state)
             }
             break;
         case PLANE_STATE_ACTIVE:
-            if (system_state == SYSTEM_STATE_ENTERING_IDLE)
+            if (classify_system_state == CLASSIFY_SYSTEM_STATE_ENTERING_IDLE)
             {
                 next_state = PLANE_STATE_IDLE;
             }

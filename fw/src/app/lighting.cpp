@@ -4,7 +4,7 @@
 
 #include "lighting.h"
 #include "scheduler.h"
-#include "system_state.h"
+#include "classify_system_state.h"
 
 #include "dev/light.h"
 
@@ -60,7 +60,7 @@ static bool lighting_atHome(void)
 static lighting_state_E lighting_update_state(lighting_state_E curr_state)
 {
     lighting_state_E next_state = curr_state;
-    system_state_E system_state = system_state_getState();
+    classify_system_state_E classify_system_state = classify_system_state_getState();
 
     switch (curr_state)
     {
@@ -93,7 +93,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             }
             break;
         case LIGHTING_STATE_IDLE:
-            if (system_state == SYSTEM_STATE_ENTERING_TOPDOWN)
+            if (classify_system_state == CLASSIFY_SYSTEM_STATE_ENTERING_TOPDOWN)
             {
                 next_state = LIGHTING_STATE_ENTERING_TOPDOWN;
             }
@@ -107,7 +107,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             next_state = LIGHTING_STATE_TOPDOWN;
             break;
         case LIGHTING_STATE_TOPDOWN:
-            if (system_state == SYSTEM_STATE_ENTERING_SIDEON)
+            if (classify_system_state == CLASSIFY_SYSTEM_STATE_ENTERING_SIDEON)
             {
                 light_command(LIGHT_BACK, LIGHTING_BACKLIGHT_OFF);
                 next_state = LIGHTING_STATE_ENTERING_SIDEON;
@@ -134,7 +134,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             }
             break;
         case LIGHTING_STATE_SIDEON:
-            if (system_state == SYSTEM_STATE_ENTERING_IDLE)
+            if (classify_system_state == CLASSIFY_SYSTEM_STATE_ENTERING_IDLE)
             {
                 light_command(LIGHT_SIDE, LIGHTING_SIDELIGHT_OFF);
                 next_state = LIGHTING_STATE_ENTERING_IDLE;

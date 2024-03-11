@@ -1,6 +1,6 @@
 
 #include "app/scheduler.h"
-#include "app/system_state.h"
+#include "app/classify_system_state.h"
 #include "app/cli.h"
 #include "app/core_comms.h"
 #include "app/depositor.h"
@@ -13,7 +13,7 @@ void setup()
 {
     // initialization of applications
     scheduler_init();
-    system_state_init();
+    classify_system_state_init();
     depositor_init();
     lighting_init();
     arm_init();
@@ -39,6 +39,6 @@ void loop()
     core_comms_run10ms();
 
     // 100ms tasks
-    system_state_run100ms();
+    classify_system_state_run100ms();
     cli_run100ms();
 }

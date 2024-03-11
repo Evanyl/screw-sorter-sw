@@ -4,7 +4,7 @@
 *******************************************************************************/ 
 
 #include "isolation.h"
-#include "system_state.h"
+#include "classify_system_state.h"
 #include "scheduler.h"
 
 /*******************************************************************************
@@ -54,7 +54,7 @@ static isolation_data_S isolation_data =
 static isolation_state_E isolation_update_state(isolation_state_E curr_state)
 {
     isolation_state_E next_state = curr_state;
-    system_state_E system_state = system_state_getState();
+    classify_system_state_E classify_system_state = classify_system_state_getState();
 
     switch (curr_state)
     {

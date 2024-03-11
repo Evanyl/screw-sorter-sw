@@ -4,7 +4,7 @@
 
 #include "core_comms.h"
 #include "plane.h"
-#include "system_state.h"
+#include "classify_system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -28,13 +28,13 @@ typedef struct
 
 typedef struct
 {
-    system_state_E des_state;
+    classify_system_state_E des_state;
     float corr_angle;
 } core_comms_in_s;
 
 typedef struct
 {
-    system_state_E curr_state;
+    classify_system_state_E curr_state;
 } core_comms_out_s;
 
 typedef struct 
@@ -65,16 +65,16 @@ static core_comms_s core_comms_data =
 {
     .in_data =
     {
-        .des_state = SYSTEM_STATE_IDLE,
+        .des_state = CLASSIFY_SYSTEM_STATE_IDLE,
         .corr_angle = 0.0
     },
     .out_data =
     {
-        .curr_state = SYSTEM_STATE_STARTUP
+        .curr_state = CLASSIFY_SYSTEM_STATE_STARTUP
     },
     .cmds = 
     {
-        SYSTEM_STATE_CORE_COMMS_COMMANDS,
+        CLASSIFY_SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
@@ -141,7 +141,7 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"system_state\": %d}\n", system_state_getState());
+            sprintf(resp, "{\"classify_system_state\": %d}\n", classify_system_state_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

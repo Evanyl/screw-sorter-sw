@@ -43,7 +43,7 @@ typedef enum
 typedef enum
 {
     CLI,
-    SYSTEM_STATE,
+    CLASSIFY_SYSTEM_STATE,
     TASK_100ms_COUNT
 } tasks_100ms_E;
 
