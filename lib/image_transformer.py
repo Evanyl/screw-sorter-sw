@@ -1,7 +1,6 @@
 import os
 import cv2
 import numpy  as np
-import time
 import json
 from pathlib import Path
 import re
@@ -320,7 +319,7 @@ def _pad(img, desired_shape):
        raise Exception("Bounding Box Error: size of subject exceeds 250x575")
     return out
 
-def get_correction_angle(img):
+def get_correction_angles(img, targets):
     """
     in:  path to raw image data to read read_fpath
     out: straightened and cropped binary image of shape 250x575
@@ -337,7 +336,10 @@ def get_correction_angle(img):
 
     # produce a unit vector in the direction of the screw head
     vec = _make_vector(vx[0], vy[0], x_center, y_center, x_centroid, y_centroid)
-    return _correction_angle(vec), x_center, y_center
+    angles = []
+    for target in targets:
+        angles.append(_correction_angle(vec, target))
+    return angles, x_center, y_center
 
 def transform_top_image(read_fpath):
     """
@@ -348,16 +350,20 @@ def transform_top_image(read_fpath):
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
     _, img = cv2.threshold(img, THRESH, 255, cv2.THRESH_BINARY)
 
-    correction_theta, x_center, y_center = get_correction_angle(img)
+    # [1,0] for image straightening and [0,-1] for plane rotation 
+    correction_thetas, x_center, y_center = \
+        get_correction_angles(img, [[1,0],[0,-1]])
 
     # correct the image so the head is facing to the right
-    img = _straighten(img, (x_center, y_center), correction_theta)
+    img = _straighten(img, (x_center, y_center), correction_thetas[0])
     img = _crop(img)
     img = _pad(img, [400, 800]) # 250 575
+    # return the straightened image and correction angle for head alignment
+    return img, correction_thetas[1]
 
-    return img, correction_theta
-
-def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, top_plane_y=1600, bot_plane_y=2450, left_plane_x=1696, right_plane_x=3800): # 5496
+def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, 
+                         top_plane_y=1600, bot_plane_y=2450, left_plane_x=1696, 
+                         right_plane_x=3800): # 5496
     """
     in:  path to raw image data to read read_fpath
     out: cropped image of shape 800x800
