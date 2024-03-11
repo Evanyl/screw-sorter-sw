@@ -9,7 +9,8 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define BASE_PERIOD_MICROSEC (100)
+#define BASE_PERIOD_MICROSEC (50)
+#define COUNT_100us          (100    / BASE_PERIOD_MICROSEC) 
 #define COUNT_500us          (500    / BASE_PERIOD_MICROSEC)
 #define COUNT_1ms            (1000   / BASE_PERIOD_MICROSEC)
 #define COUNT_10ms           (10000  / BASE_PERIOD_MICROSEC)
@@ -31,12 +32,16 @@ typedef struct
     HardwareTimer* timer;
     // private volatile data, only expose to scheduler task
     volatile uint16_t counter;
+
+    volatile bool task_100us_flag;
     volatile bool task_500us_flag;
+
     volatile bool task_1ms_flag;
     volatile bool task_10ms_flag;
     volatile bool task_100ms_flag;
     // public data
     struct pt thread;
+    bool mutexes_500us[TASK_500us_COUNT];
     bool mutexes_1ms[TASK_1ms_COUNT];
     bool mutexes_10ms[TASK_10ms_COUNT];
     bool mutexes_100ms[TASK_100ms_COUNT];
@@ -57,6 +62,10 @@ static void scheduler_ISR(void)
     if (scheduler_data.counter < COUNT_100ms)
     {
         scheduler_data.counter++;
+        if (scheduler_data.counter % COUNT_100us == 0)
+        {
+            scheduler_data.task_100us_flag = true;
+        }
         if (scheduler_data.counter % COUNT_500us == 0)
         {
             scheduler_data.task_500us_flag = true;
@@ -80,12 +89,18 @@ static void scheduler_ISR(void)
     }
 }
 
-static PT_THREAD(run500us(struct pt* thread))
+static PT_THREAD(run100us(struct pt* thread))
 {
     PT_BEGIN(thread);
-    PT_WAIT_UNTIL(thread, scheduler_data.task_500us_flag);
+    PT_WAIT_UNTIL(thread, scheduler_data.task_100us_flag);
     // scheduling code here
-    if (scheduler_data.task_1ms_flag)
+    if (scheduler_data.task_500us_flag)
+    {
+        scheduler_data.task_500us_flag = false;
+        (void) memset(&scheduler_data.mutexes_500us, 1, 
+                      sizeof(scheduler_data.mutexes_500us));
+    }
+    else if (scheduler_data.task_1ms_flag)
     {
         scheduler_data.task_1ms_flag = false;
         (void) memset(&scheduler_data.mutexes_1ms, 1, 
@@ -107,7 +122,7 @@ static PT_THREAD(run500us(struct pt* thread))
     {
         // do nothing
     }
-    scheduler_data.task_500us_flag = false;
+    scheduler_data.task_100us_flag = false;
     PT_END(thread);
 }
 
@@ -127,15 +142,20 @@ void scheduler_init(void)
     PT_INIT(&scheduler_data.thread);
 }
 
-void scheduler_run500us(void)
+void scheduler_run100us(void)
 {
-    run500us(&scheduler_data.thread);
+    run100us(&scheduler_data.thread);
 }
 
 bool scheduler_taskReleased(task_period_E period, uint8_t task_id)
 {
     bool ret = false;
-    if (period == PERIOD_1ms)
+    if (period == PERIOD_500us)
+    {
+        ret = scheduler_data.mutexes_500us[task_id];
+        scheduler_data.mutexes_500us[task_id] = false;
+    }
+    else if (period == PERIOD_1ms)
     {
         ret = scheduler_data.mutexes_1ms[task_id];
         scheduler_data.mutexes_1ms[task_id] = false;

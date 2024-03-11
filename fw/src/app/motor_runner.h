@@ -21,6 +21,6 @@
 *******************************************************************************/ 
 
 void motor_runner_init(void);
-void motor_runner_run1ms(void);
+void motor_runner_run500us(void);
 
 #endif // DEV_MOTOR
