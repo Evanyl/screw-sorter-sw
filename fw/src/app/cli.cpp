@@ -12,7 +12,6 @@
 #include "app/arm.h"
 #include "app/belts.h"
 #include "app/classify_system_state.h"
-#include "app/isolation_system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -70,7 +69,6 @@ static cli_data_s cli_data =
         ARM_COMMANDS,
         BELTS_COMMANDS,
         CLASSIFY_SYSTEM_STATE_COMMANDS,
-        ISOLATION_SYSTEM_STATE_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };

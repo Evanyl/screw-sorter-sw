@@ -15,6 +15,14 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
+#define BELTS_NAV_RATE 750
+#define BELTS_STARTING_RATE 50
+#define BELTS_RAMP_WINDOW 250
+
+#define BELT_TOP_FORWARD 1
+#define BELT_TOP_BACKWARD 0
+#define BELT_BOTTOM_FORWARD 1
+#define BELT_BOTTOM_BACKWARD 0
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
@@ -22,7 +30,6 @@
 typedef enum 
 {
     BELTS_STATE_IDLE,
-    BELTS_STATE_ENTERING_ACTIVE,
     BELTS_STATE_ACTIVE,
     BELTS_STATE_COUNT
 } belts_state_E;
@@ -34,11 +41,11 @@ typedef enum
 void belts_init(void);
 void belts_run10ms(void);
 belts_state_E belts_getState(void);
-void belts_core_comms_setDistance(uint8_t argNumber, char* args[]);
+void belts_core_comms_setDesState(uint8_t argNumber, char* args[]);
 void belts_cli_dump_state(uint8_t argNumber, char* args[]);
 
 #define BELTS_CORE_COMMS_COMMANDS \
-{belts_core_comms_setDistance, "belts-distance", 2} // idx 0 is top belt, idx 1 bottom belt
+{belts_core_comms_setDesState, "belts-move", 10}
 
 #define BELTS_COMMANDS \
 {belts_cli_dump_state, "belts-dump-state", NULL, NULL, 0, 0}

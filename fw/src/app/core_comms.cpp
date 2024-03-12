@@ -6,7 +6,6 @@
 #include "plane.h"
 #include "belts.h"
 #include "classify_system_state.h"
-#include "isolation_system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -31,16 +30,24 @@ typedef struct
 typedef struct
 {
     classify_system_state_E classify_des_state;
-    isolation_system_state_E isolation_des_state;
     float corr_angle;
-    float belt_top_steps;
-    float belt_bottom_steps;
+    belts_state_E belts_des_state;
+    uint16_t belt_top_steps;
+    uint8_t belt_top_dir;
+    uint16_t belt_top_rate;
+    uint16_t belt_top_ramp_rate;
+    uint8_t belt_top_ramp_window;
+    uint16_t belt_bottom_steps;
+    uint8_t belt_bottom_dir;
+    uint16_t belt_bottom_rate;
+    uint16_t belt_bottom_ramp_rate;
+    uint8_t belt_bottom_ramp_window;
 } core_comms_in_s;
 
 typedef struct
 {
     classify_system_state_E classify_curr_state;
-    isolation_system_state_E isolation_curr_state;
+    belts_state_E belts_curr_state;
 } core_comms_out_s;
 
 typedef struct 
@@ -72,20 +79,27 @@ static core_comms_s core_comms_data =
     .in_data =
     {
         .classify_des_state = CLASSIFY_SYSTEM_STATE_IDLE,
-        .isolation_des_state = ISOLATION_SYSTEM_STATE_IDLE,
         .corr_angle = 0.0,
-        .belt_top_steps = 0.0,
-        .belt_bottom_steps = 0.0
+        .belts_des_state = BELTS_STATE_IDLE,
+        .belt_top_steps = 0,
+        .belt_top_dir = BELT_TOP_FORWARD,
+        .belt_top_rate = BELTS_NAV_RATE,
+        .belt_top_ramp_rate = BELTS_STARTING_RATE,
+        .belt_top_ramp_window = BELTS_RAMP_WINDOW,
+        .belt_bottom_steps = 0,
+        .belt_bottom_dir = BELT_BOTTOM_FORWARD,
+        .belt_bottom_rate = BELTS_NAV_RATE,
+        .belt_bottom_ramp_rate = BELTS_STARTING_RATE,
+        .belt_bottom_ramp_window = BELTS_RAMP_WINDOW
     },
     .out_data =
     {
         .classify_curr_state = CLASSIFY_SYSTEM_STATE_STARTUP,
-        .isolation_curr_state = ISOLATION_SYSTEM_STATE_STARTUP
+        .belts_curr_state = BELTS_STATE_IDLE,
     },
     .cmds = 
     {
         CLASSIFY_SYSTEM_STATE_CORE_COMMS_COMMANDS,
-        ISOLATION_SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
         BELTS_CORE_COMMS_COMMANDS,
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
@@ -153,7 +167,7 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"classify_system_state\": %d}\n{\"isolation_system_state\": %d}\n", classify_system_state_getState(), isolation_system_state_getState());
+            sprintf(resp, "{\"classify_system_state\": %d}\n{\"belts_state\": %d}\n", classify_system_state_getState(), belts_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

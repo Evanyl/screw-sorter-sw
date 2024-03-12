@@ -1,7 +1,6 @@
 
 #include "app/scheduler.h"
 #include "app/classify_system_state.h"
-#include "app/isolation_system_state.h"
 #include "app/cli.h"
 #include "app/core_comms.h"
 #include "app/depositor.h"
@@ -44,6 +43,5 @@ void loop()
 
     // 100ms tasks
     classify_system_state_run100ms();
-    isolation_system_state_run100ms();
     cli_run100ms();
 }
