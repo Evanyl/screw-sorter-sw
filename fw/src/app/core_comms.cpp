@@ -5,6 +5,7 @@
 #include "core_comms.h"
 #include "plane.h"
 #include "belts.h"
+#include "depositor.h"
 #include "classify_system_state.h"
 
 /*******************************************************************************
@@ -12,7 +13,7 @@
 *******************************************************************************/ 
 
 #define CORE_COMMS_CMD_LIST_TERMINATOR "END OF LIST"
-#define CORE_COMMS_MAX_ARGS 10
+#define CORE_COMMS_MAX_ARGS 15
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -167,7 +168,10 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"classify_system_state\": %d}\n{\"belts_state\": %d}\n", classify_system_state_getState(), belts_getState());
+            sprintf(resp, "{\"classify_system_state\": %d}\n{\"belts_state\": %d}\n{\"depositor_state\": %d}\n",
+                            classify_system_state_getState(),
+                            belts_getState(),
+                            depositor_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

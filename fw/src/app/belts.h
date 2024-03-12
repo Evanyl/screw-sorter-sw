@@ -45,7 +45,7 @@ void belts_core_comms_setDesState(uint8_t argNumber, char* args[]);
 void belts_cli_dump_state(uint8_t argNumber, char* args[]);
 
 #define BELTS_CORE_COMMS_COMMANDS \
-{belts_core_comms_setDesState, "belts-move", 10}
+{belts_core_comms_setDesState, "belts-des-state", 10}
 
 #define BELTS_COMMANDS \
 {belts_cli_dump_state, "belts-dump-state", NULL, NULL, 0, 0}

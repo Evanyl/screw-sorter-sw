@@ -163,7 +163,7 @@ belts_state_E belts_getState(void)
 
 void belts_core_comms_setDesState(uint8_t argNumber, char* args[])
 {
-    // belts_data.des_state = BELTS_STATE_ACTIVE; // set state here or no? 
+    belts_data.des_state = BELTS_STATE_ACTIVE;
     belts_data.belt_top_steps = atoi(args[0]);
     belts_data.belt_top_dir = atoi(args[1]);
     belts_data.belt_top_rate = atoi(args[2]);
