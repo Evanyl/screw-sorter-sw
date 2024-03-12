@@ -17,7 +17,7 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define CLI_MAX_ARGS            7
+#define CLI_MAX_ARGS            15
 #define CLI_CMD_LIST_TERMINATOR "END OF LIST"
 #define CLI_PROMPT              "snorter>"
 
