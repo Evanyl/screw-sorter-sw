@@ -168,7 +168,7 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"classify_system_state\": %d}\n{\"belts_state\": %d}\n{\"depositor_state\": %d}\n",
+            sprintf(resp, "{\"classify_system_state\": %d,\"belts_state\": %d,\"depositor_state\": %d}\n",
                             classify_system_state_getState(),
                             belts_getState(),
                             depositor_getState());
