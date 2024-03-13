@@ -13,9 +13,7 @@ class CoreComms:
             "classify_des_state": "idle",
             "corr_angle": 0.0,
             "belts_des_state": "idle",
-            "belt_top_steps": 0,
-            "belt_bottom_steps": 0,
-        }
+            "belt_top_steps": 0, "belt_bottom_steps": 0, } 
         self.in_data = \
         {
             "curr_imaging_state": "idle",
@@ -84,6 +82,8 @@ class CoreComms:
         
         # send a belt move command once.
         if self.in_data["curr_isolation_state"] == "active":
+            self.out_data['belt_top_steps'] = 0
+            self.out_data['belt_bottom_steps'] = 0
             belts_out_str = "belts-nop"
         else:
             belts_out_str = f"belts-des-state " + \
