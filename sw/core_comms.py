@@ -74,9 +74,14 @@ class CoreComms:
 
     def toString(self):
         angle = self.out_data["corr_angle"]
-        return  str.encode(
-            f"classify-des-state {self.out_data['classify_des_state']} " + \
-            f"corr-angle {angle} " + \
+        # return  str.encode(
+        #     f"classify-des-state {self.out_data['classify_des_state']} " + \
+        #     f"corr-angle {angle} " + \
+        #     f"belt-des-state " + \
+        #     f"{self.out_data['belt_top_steps']} " + \
+        #     f"{self.out_data['belt_bottom_steps']}\n"
+        #     )
+        return str.encode(
             f"belt-des-state " + \
             f"{self.out_data['belt_top_steps']} " + \
             f"{self.out_data['belt_bottom_steps']}\n"
