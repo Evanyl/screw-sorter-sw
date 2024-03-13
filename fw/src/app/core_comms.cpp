@@ -102,6 +102,7 @@ static void core_comms_parseLine(char* message)
     uint8_t i = 0;
     while (tok != NULL && i < (CORE_COMMS_MAX_ARGS + 1))
     {
+        Serial1.print("");
         core_comms_data.tokLine[i] = tok;
         tok = strtok(NULL, " ");
         i++;
