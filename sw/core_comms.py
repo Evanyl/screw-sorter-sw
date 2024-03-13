@@ -13,7 +13,9 @@ class CoreComms:
             "classify_des_state": "idle",
             "corr_angle": 0.0,
             "belts_des_state": "idle",
-            "belt_top_steps": 0, "belt_bottom_steps": 0, } 
+            "belt_top_steps": 0, 
+            "belt_bottom_steps": 0
+        } 
         self.in_data = \
         {
             "curr_imaging_state": "idle",
@@ -56,7 +58,7 @@ class CoreComms:
             # Read in new serial data
             if self.connection.in_waiting > 0:
                 s = self.connection.read_until(b"\n").decode('utf-8')
-                print(s)
+                # print(s)
                 self.in_data = self.fromString(s)
             else:
                 # no new data, don't read from the serial buffer
@@ -64,22 +66,17 @@ class CoreComms:
             
             # Send an updated version of out_data
             outstr = self.toString()
-            print(outstr)
+            # print(outstr)
             self.connection.write(outstr)
 
     def updateOutData(self, name, val):
         self.out_data[name] = val
 
     def toString(self):
-        angle = self.out_data["corr_angle"]
-        # return  str.encode(
-        #     f"classify-des-state {self.out_data['classify_des_state']} " + \
-        #     f"corr-angle {angle} " + \
-        #     f"belts-des-state " + \
-        #     f"{self.out_data['belt_top_steps']} " + \
-        #     f"{self.out_data['belt_bottom_steps']}\n"
-        #     )
-        
+        # angle = self.out_data["corr_angle"]
+        # classify_str = f"classify-des-state {self.out_data['classify_des_state']} " + \
+                        # f"corr-angle {angle} "
+        classify_str = ""
         # send a belt move command once.
         if self.in_data["curr_isolation_state"] == "active":
             self.out_data['belt_top_steps'] = 0
@@ -90,7 +87,7 @@ class CoreComms:
                 f"{self.out_data['belt_top_steps']} " + \
                 f"{self.out_data['belt_bottom_steps']}"
 
-        return str.encode(belts_out_str+"\n")
+        return str.encode(classify_str + belts_out_str + "\n")
 
     def fromString(self, s):
         d = json.loads(s.strip("\n"))

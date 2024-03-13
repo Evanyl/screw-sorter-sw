@@ -14,7 +14,7 @@ def isolation_image_and_process(picamera_object, shared_data):
     fastener_isolated = True
 
     shared_data["isolated"] = fastener_isolated
-    shared_data["belt_top_steps"] = 0 
+    shared_data["belt_top_steps"] = 499
     shared_data["belt_bottom_steps"] = 1000
     time.sleep(3)
     print("Done isolation imaging/processing")

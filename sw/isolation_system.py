@@ -113,5 +113,5 @@ class IsolationSystem:
             self.depositor_system_state = self.core_comms.getInData()["curr_depositor_state"]              
             
             # execute the state machine
-            print(f"{self.curr_state} {self.isolation_system_state}")
+            # print(f"{self.curr_state} {self.isolation_system_state}")
             self.curr_state = self.switch_dict[self.curr_state]()
