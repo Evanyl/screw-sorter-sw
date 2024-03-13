@@ -73,7 +73,9 @@ class CoreComms:
                 pass
             
             # Send an updated version of out_data
-            self.connection.write(self.toString())
+            outstr = self.toString()
+            print(outstr)
+            self.connection.write(outstr)
 
     def updateOutData(self, name, val):
         self.out_data[name] = val

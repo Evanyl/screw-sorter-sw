@@ -102,6 +102,7 @@ class IsolationSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolation_system") and ISOLATION_ACTIVE:
+            print(f"{self.curr_state}, {self.isolation_system_state}")
             # get last station_state
             self.isolation_system_state = self.core_comms.getInData()["curr_isolation_state"]
             self.depositor_system_state = self.core_comms.getInData()["curr_depositor_state"]              
