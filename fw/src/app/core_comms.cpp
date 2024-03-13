@@ -137,7 +137,11 @@ static void core_comms_parseLine(char* message)
         }
         if (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) == 0) {
             // not sending to PORT_RPI so we don't screw up sw side loop
-            serial_send_nl(PORT_COMPUTER, "invalid command");
+            char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE + 50);
+            sprintf(resp, "invalid command: %s", core_comms_data.tokLine[j]);
+            serial_send_nl(PORT_COMPUTER, resp);
+            free(resp);
+            serial_send_nl(PORT_COMPUTER, message);
             break;
         }
     }
@@ -155,11 +159,11 @@ static PT_THREAD(run10ms(struct pt* thread))
     // wait until there is serial data
     while (serial_available(PORT_RPI))
     {
-        // Serial1.print("loop avail");
+        // Serial1.print("loop avail\n");
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
             serial_getLine(PORT_RPI, core_comms_data.line);
-            // Serial1.print(core_comms_data.line);
+            // Serial1.println(core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
             sprintf(resp, "{\"classify_system_state\": %d,\"belts_state\": %d,\"depositor_state\": %d}\n",

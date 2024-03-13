@@ -55,7 +55,7 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
     switch (curr_state)
     {
         case BELTS_STATE_IDLE:
-            if (belts_data.belt_top_steps < 0 || belts_data.belt_bottom_steps < 0)
+            if (belts_data.belt_top_steps > 0 || belts_data.belt_bottom_steps > 0)
             {
                 next_state = BELTS_STATE_ACTIVE;
                 belts_data.belt_top_in_motion = true;
@@ -82,12 +82,13 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
                                 BELTS_NAV_RATE,
                                 BELTS_STARTING_RATE,
                                 BELTS_RAMP_WINDOW);
-            if (first_stepper == true) {
+            // for belts.cpp, when step count is 0, the belts have stopped moving.
+            if (first_stepper == true || belts_data.belt_top_steps == 0) {
                 // reset the step values
                 belts_data.belt_top_steps = 0;
                 belts_data.belt_top_in_motion = false;
             }
-            if (second_stepper == true) {
+            if (second_stepper == true || belts_data.belt_bottom_steps == 0) {
                 belts_data.belt_bottom_steps = 0;
                 belts_data.belt_bottom_in_motion = false;
             }
@@ -173,10 +174,12 @@ void belts_cli_dump_state(uint8_t argNumber, char* args[])
 {
     char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
     sprintf(st, 
-            "{\"curr_state\": %d,\"belt_top_steps\": %d,\"belt_bottom_steps\": %d}", 
+            "{\"curr_state\": %d,\"belt_top_steps\": %d,\"belt_bottom_steps\": %d,\"belt_top_in_motion\": %d,\"belt_bottom_in_motion\": %d}", 
             (uint8_t) belts_data.curr_state,
             (uint16_t) belts_data.belt_top_steps,
-            (uint16_t) belts_data.belt_bottom_steps);
+            (uint16_t) belts_data.belt_bottom_steps,
+            (uint8_t) belts_data.belt_top_in_motion,
+            (uint8_t) belts_data.belt_bottom_in_motion);
     serial_send_nl(PORT_COMPUTER, st);
     free(st);
 }
