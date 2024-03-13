@@ -81,11 +81,16 @@ class CoreComms:
         #     f"{self.out_data['belt_top_steps']} " + \
         #     f"{self.out_data['belt_bottom_steps']}\n"
         #     )
-        return str.encode(
-            f"belts-des-state " + \
-            f"{self.out_data['belt_top_steps']} " + \
-            f"{self.out_data['belt_bottom_steps']}\n"
-            )
+        
+        # send a belt move command once.
+        if self.in_data["curr_isolation_state"] == "active":
+            belts_out_str = "belts-nop"
+        else:
+            belts_out_str = f"belts-des-state " + \
+                f"{self.out_data['belt_top_steps']} " + \
+                f"{self.out_data['belt_bottom_steps']}"
+
+        return str.encode(belts_out_str+"\n")
 
     def fromString(self, s):
         d = json.loads(s.strip("\n"))

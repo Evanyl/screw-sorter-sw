@@ -19,7 +19,6 @@ typedef struct
 {
     struct pt thread;
     belts_state_E curr_state;
-    belts_state_E des_state;
     bool belt_top_in_motion;
     bool belt_bottom_in_motion;
     uint16_t belt_top_steps;
@@ -31,7 +30,6 @@ typedef struct
 *******************************************************************************/
 
 static belts_state_E belts_update_state(belts_state_E curr_state);
-static belts_state_E belts_parseState(char* s);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -40,7 +38,6 @@ static belts_state_E belts_parseState(char* s);
 static belts_data_S belts_data = 
 {
     .curr_state = BELTS_STATE_IDLE,
-    .des_state = BELTS_STATE_IDLE,
     .belt_top_in_motion = false,
     .belt_bottom_in_motion = false,
     .belt_top_steps = 0,
@@ -50,33 +47,15 @@ static belts_data_S belts_data =
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/
-static belts_state_E belts_parseState(char* s)
-{
-    belts_state_E state = BELTS_STATE_COUNT;
-    if (strcmp(s, "idle") == 0)
-    {
-        state = BELTS_STATE_IDLE;
-    }
-    else if (strcmp(s, "move") == 0)
-    {
-        state = BELTS_STATE_ACTIVE;
-    }
-    else
-    {
-        // do nothing
-    }
-    return state;
-}
 
 
 static belts_state_E belts_update_state(belts_state_E curr_state)
 {
     belts_state_E next_state = curr_state;
-    belts_state_E des_state = belts_data.des_state;
     switch (curr_state)
     {
         case BELTS_STATE_IDLE:
-            if (des_state == BELTS_STATE_ACTIVE)
+            if (belts_data.belt_top_steps < 0 || belts_data.belt_bottom_steps < 0)
             {
                 next_state = BELTS_STATE_ACTIVE;
                 belts_data.belt_top_in_motion = true;
@@ -112,6 +91,7 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
                 belts_data.belt_bottom_steps = 0;
                 belts_data.belt_bottom_in_motion = false;
             }
+
             if (belts_data.belt_top_in_motion == true 
                 || 
                 belts_data.belt_bottom_in_motion == true)
@@ -121,7 +101,8 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             else
             {
                 next_state = BELTS_STATE_IDLE;
-                belts_data.des_state = BELTS_STATE_IDLE;
+                belts_data.belt_top_steps = 0;
+                belts_data.belt_bottom_steps = 0;
             }
             break;
         }
@@ -166,14 +147,24 @@ belts_state_E belts_getState(void)
 
 void belts_core_comms_setDesState(uint8_t argNumber, char* args[])
 {
-    belts_data.des_state = BELTS_STATE_ACTIVE;
     belts_data.belt_top_steps = atoi(args[0]);
     belts_data.belt_bottom_steps = atoi(args[1]);
 }
 
+void belts_core_comms_nop(uint8_t argNumber, char* args[])
+{
+    return;
+}
+
+void belts_cli_stop(uint8_t argNumber, char* args[])
+{
+    belts_data.curr_state = BELTS_STATE_IDLE;
+    belts_data.belt_top_steps = 0;
+    belts_data.belt_bottom_steps = 0;
+}
+
 void belts_cli_target(uint8_t argNumber, char* args[])
 {
-    belts_data.des_state = BELTS_STATE_ACTIVE;
     belts_data.belt_top_steps = atoi(args[0]);
     belts_data.belt_bottom_steps = atoi(args[1]);
 }
@@ -182,9 +173,10 @@ void belts_cli_dump_state(uint8_t argNumber, char* args[])
 {
     char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
     sprintf(st, 
-            "{\"des_state\": %d, \"curr_state\": %d}", 
-            (uint8_t) belts_data.des_state,
-            (uint8_t) belts_data.curr_state);
+            "{\"curr_state\": %d,\"belt_top_steps\": %d,\"belt_bottom_steps\": %d}", 
+            (uint8_t) belts_data.curr_state,
+            (uint16_t) belts_data.belt_top_steps,
+            (uint16_t) belts_data.belt_bottom_steps);
     serial_send_nl(PORT_COMPUTER, st);
     free(st);
 }

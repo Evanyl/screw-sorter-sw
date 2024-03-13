@@ -32,7 +32,6 @@ typedef struct
 {
     classify_system_state_E classify_des_state;
     float corr_angle;
-    belts_state_E belts_des_state;
     uint16_t belt_top_steps;
     uint16_t belt_bottom_steps;
 } core_comms_in_s;
@@ -73,7 +72,6 @@ static core_comms_s core_comms_data =
     {
         .classify_des_state = CLASSIFY_SYSTEM_STATE_IDLE,
         .corr_angle = 0.0,
-        .belts_des_state = BELTS_STATE_IDLE,
         .belt_top_steps = 0,
         .belt_bottom_steps = 0,
     },
@@ -102,7 +100,7 @@ static void core_comms_parseLine(char* message)
     uint8_t i = 0;
     while (tok != NULL && i < (CORE_COMMS_MAX_ARGS + 1))
     {
-        Serial1.print("Loop 1");
+        // Serial1.print("Loop 1");
         core_comms_data.tokLine[i] = tok;
         tok = strtok(NULL, " ");
         i++;
@@ -112,12 +110,12 @@ static void core_comms_parseLine(char* message)
     core_comms_cmd_s* cmds = core_comms_data.cmds;
     while (j < i)
     {
-        Serial1.print("Loop 2\n");
+        // Serial1.print("Loop 2\n");
         uint8_t k = 0;
         while (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) != 0) 
         {
-            Serial1.print("Loop 3\n");
-            Serial1.printf("%d, %d, %d, %s, %s\n", i,j,k, core_comms_data.tokLine[j], cmds[k].command);
+            // Serial1.print("Loop 3\n");
+            // Serial1.printf("%d, %d, %d, %s, %s\n", i,j,k, core_comms_data.tokLine[j], cmds[k].command);
             if (strcmp(cmds[k].command, core_comms_data.tokLine[j]) == 0)
             {
                 // Package the args into a char* array
@@ -125,7 +123,7 @@ static void core_comms_parseLine(char* message)
                 {
                     core_comms_data.args[e] = core_comms_data.tokLine[j+e+1];
                 }
-                Serial1.printf("Done for-loop\n");
+                // Serial1.printf("Done for-loop\n");
 
                 // Call the function corresponding to the command with args
                 core_comms_f func = cmds[k].func;
@@ -157,11 +155,11 @@ static PT_THREAD(run10ms(struct pt* thread))
     // wait until there is serial data
     while (serial_available(PORT_RPI))
     {
-        Serial1.print("loop avail");
+        // Serial1.print("loop avail");
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
             serial_getLine(PORT_RPI, core_comms_data.line);
-            Serial1.print(core_comms_data.line);
+            // Serial1.print(core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
             sprintf(resp, "{\"classify_system_state\": %d,\"belts_state\": %d,\"depositor_state\": %d}\n",
