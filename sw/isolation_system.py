@@ -24,9 +24,9 @@ class IsolationSystem:
     #              S T A T E    M A C H I N E    F U N C T I O N S             #
     ############################################################################
     
-    def __idle_state_func(self):
+    def __ready_to_take_photo_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "idle" and self.thread.is_alive() == False:
+        if self.isolation_system_state == "idle" and self.thread.is_alive() == False:
             self.thread = Thread(target=isolation_image_and_process, args=[self.camera, self.thread_data])
             self.thread.start()
             next_state = "isolation-image-and-process"
@@ -38,12 +38,12 @@ class IsolationSystem:
     def __isolation_image_and_process_state_func(self):
         next_state = self.curr_state
         if self.thread.is_alive() == False:
-            # update core_comms with newly populated variables
+            # image processing is complete
             # 
             # --insert some logic based off isolation_image_and_process() results--
-            #
+            # for example, this if-statement
             if self.thread_data["isolated"] == True and self.depositor_state == "idle":
-                # do xyz
+                # do xyz delivery
                 pass
             self.core_comms.updateOutData("belt_top_steps", self.thread_data["belt_top_steps"])
             self.core_comms.updateOutData("belt_top_dir", self.thread_data["belt_top_dir"])
@@ -56,7 +56,7 @@ class IsolationSystem:
             self.core_comms.updateOutData("belt_bottom_ramp_rate", self.thread_data["belt_bottom_ramp_rate"])
             self.core_comms.updateOutData("belt_bottom_ramp_window", self.thread_data["belt_bottom_ramp_window"])
 
-            next_state = "idle"
+            next_state = "photo"
         else:
             # do nothing, still processing
             pass
@@ -70,8 +70,8 @@ class IsolationSystem:
     def __init__(self, core_comms):
         self.switch_dict = \
         {
-            "idle":                             self.__idle_state_func,
-            "isolation-image-and-process":      self.__isolation_image_and_process_state_func,
+            "photo":                             self.__ready_to_take_photo_state_func,
+            "isolation-image-and-process":       self.__isolation_image_and_process_state_func,
         }
 
         self.thread_data = \
@@ -93,9 +93,9 @@ class IsolationSystem:
         camera_config = self.camera.create_preview_configuration()
         self.camera.configure(camera_config)
 
-        self.curr_state = "idle"
-        self.des_station_state = "idle"
-        self.station_state = "count"
+        self.curr_state = "photo"
+        self.isolation_system_state = "idle"
+        self.depositor_system_state = "startup"
 
         self.core_comms = core_comms
         self.thread = Thread()
@@ -103,8 +103,8 @@ class IsolationSystem:
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolation_system") and ISOLATION_ACTIVE:
             # get last station_state
-            self.station_state = self.core_comms.getInData()["curr_isolation_state"]
-            self.depositor_state = self.core_comms.getInData()["curr_depositor_state"]              
+            self.isolation_system_state = self.core_comms.getInData()["curr_isolation_state"]
+            self.depositor_system_state = self.core_comms.getInData()["curr_depositor_state"]              
             
-            # execute the state machine TODO fix this call here, causing fault?
+            # execute the state machine
             self.curr_state = self.switch_dict[self.curr_state]()
