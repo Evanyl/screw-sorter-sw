@@ -17,3 +17,4 @@ def isolation_image_and_process(picamera_object, shared_data):
     shared_data["belt_top_steps"] = 200
     shared_data["belt_bottom_steps"] = 200
     time.sleep(3)
+    print("Done isolation imaging/processing")

@@ -66,6 +66,7 @@ class CoreComms:
             # Read in new serial data
             if self.connection.in_waiting > 0:
                 s = self.connection.read_until(b"\n").decode('utf-8')
+                print(s)
                 self.in_data = self.fromString(s)
             else:
                 # no new data, don't read from the serial buffer
