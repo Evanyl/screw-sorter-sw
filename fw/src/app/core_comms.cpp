@@ -102,7 +102,7 @@ static void core_comms_parseLine(char* message)
     uint8_t i = 0;
     while (tok != NULL && i < (CORE_COMMS_MAX_ARGS + 1))
     {
-        Serial1.print("");
+        Serial1.print("Loop 1");
         core_comms_data.tokLine[i] = tok;
         tok = strtok(NULL, " ");
         i++;
@@ -112,9 +112,12 @@ static void core_comms_parseLine(char* message)
     core_comms_cmd_s* cmds = core_comms_data.cmds;
     while (j < i)
     {
+        Serial1.print("Loop 2\n");
         uint8_t k = 0;
         while (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) != 0) 
         {
+            Serial1.print("Loop 3\n");
+            Serial1.printf("%d, %d, %d, %s, %s\n", i,j,k, core_comms_data.tokLine[j], cmds[k].command);
             if (strcmp(cmds[k].command, core_comms_data.tokLine[j]) == 0)
             {
                 // Package the args into a char* array
@@ -122,6 +125,7 @@ static void core_comms_parseLine(char* message)
                 {
                     core_comms_data.args[e] = core_comms_data.tokLine[j+e+1];
                 }
+                Serial1.printf("Done for-loop\n");
 
                 // Call the function corresponding to the command with args
                 core_comms_f func = cmds[k].func;
@@ -132,6 +136,11 @@ static void core_comms_parseLine(char* message)
                 break;
             }
             k++;
+        }
+        if (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) == 0) {
+            // not sending to PORT_RPI so we don't screw up sw side loop
+            serial_send_nl(PORT_COMPUTER, "invalid command");
+            break;
         }
     }
 
@@ -148,6 +157,7 @@ static PT_THREAD(run10ms(struct pt* thread))
     // wait until there is serial data
     while (serial_available(PORT_RPI))
     {
+        Serial1.print("loop avail");
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
             serial_getLine(PORT_RPI, core_comms_data.line);
