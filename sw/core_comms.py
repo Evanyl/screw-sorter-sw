@@ -80,19 +80,19 @@ class CoreComms:
     def toString(self):
         angle = self.out_data["corr_angle"]
         return  str.encode(
-            f"classify-des-state {self.out_data["classify_des_state"]}\n" + \
+            f"classify-des-state {self.out_data['classify_des_state']}\n" + \
             f"corr-angle {angle}\n" + \
             f"belt-des-state " + \
-            f"{self.out_data["belt_top_steps"]} " + \
-            f"{self.out_data["belt_top_dir"]} " + \
-            f"{self.out_data["belt_top_rate"]} " + \
-            f"{self.out_data["belt_top_ramp_rate"]} " + \
-            f"{self.out_data["belt_top_ramp_window"]} " + \
-            f"{self.out_data["belt_bottom_steps"]} " + \
-            f"{self.out_data["belt_bottom_dir"]} " + \
-            f"{self.out_data["belt_bottom_rate"]} " + \
-            f"{self.out_data["belt_bottom_ramp_rate"]} " + \
-            f"{self.out_data["belt_bottom_ramp_window"]}\n"
+            f"{self.out_data['belt_top_steps']} " + \
+            f"{self.out_data['belt_top_dir']} " + \
+            f"{self.out_data['belt_top_rate']} " + \
+            f"{self.out_data['belt_top_ramp_rate']} " + \
+            f"{self.out_data['belt_top_ramp_window']} " + \
+            f"{self.out_data['belt_bottom_steps']} " + \
+            f"{self.out_data['belt_bottom_dir']} " + \
+            f"{self.out_data['belt_bottom_rate']} " + \
+            f"{self.out_data['belt_bottom_ramp_rate']} " + \
+            f"{self.out_data['belt_bottom_ramp_window']}\n"
             )
     
     def fromString(self, s):

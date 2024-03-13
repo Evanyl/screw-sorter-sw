@@ -1,7 +1,7 @@
 
 from scheduler import Scheduler
 from classify_system import ClassifySystem
-from sw.isolation_system import IsolationSystem
+from isolation_system import IsolationSystem
 from core_comms import CoreComms
 
 class SorterControl:
