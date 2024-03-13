@@ -42,7 +42,7 @@ class IsolationSystem:
             # 
             # --insert some logic based off isolation_image_and_process() results--
             # for example, this if-statement
-            if self.thread_data["isolated"] == True and self.depositor_state == "idle":
+            if self.thread_data["isolated"] == True and self.depositor_system_state == "idle":
                 # do xyz delivery
                 pass
             self.core_comms.updateOutData("belt_top_steps", self.thread_data["belt_top_steps"])
