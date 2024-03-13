@@ -83,8 +83,8 @@ class CoreComms:
     def toString(self):
         angle = self.out_data["corr_angle"]
         return  str.encode(
-            f"classify-des-state {self.out_data['classify_des_state']}\n" + \
-            f"corr-angle {angle}\n" + \
+            f"classify-des-state {self.out_data['classify_des_state']} " + \
+            f"corr-angle {angle} " + \
             f"belt-des-state " + \
             f"{self.out_data['belt_top_steps']} " + \
             f"{self.out_data['belt_top_dir']} " + \
@@ -97,7 +97,7 @@ class CoreComms:
             f"{self.out_data['belt_bottom_ramp_rate']} " + \
             f"{self.out_data['belt_bottom_ramp_window']}\n"
             )
-    
+
     def fromString(self, s):
         d = json.loads(s.strip("\n"))
         return {"curr_imaging_state": self.classify_state_decode[d["classify_system_state"]],
