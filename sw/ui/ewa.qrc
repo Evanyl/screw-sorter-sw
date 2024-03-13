@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>side_diagram_1.png</file>
+  </qresource>
+</RCC>

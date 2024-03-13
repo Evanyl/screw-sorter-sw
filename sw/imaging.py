@@ -5,6 +5,7 @@ import numpy as np
 from vimba import *
 
 sys.path.append("./../lib/")
+sys.path.append("./lib/")
 from image_transformer import transform_top_image, \
                               transform_side_image
 
@@ -91,17 +92,20 @@ class Imager:
             file_name = "1_side_on.tiff"
         else:
             pass
+        raw_file = out_path / f"raw_{file_name}"
         out_file = out_path / file_name
 
         # take an image, store it locally, remember the name
-        self.__take_image(out_file, curr_state)
+        self.__take_image(raw_file, curr_state)
         if curr_state == "top-down":
-            processed_img, corr_angle = transform_top_image(out_file)
+            processed_img, corr_angle = transform_top_image(raw_file)
             self.corr_angle = corr_angle
             self.top_down_path = out_file
+            self.raw_top_down_path = raw_file
         elif curr_state == "side-on":
-            processed_img = transform_side_image(out_file)
+            processed_img = transform_side_image(raw_file)
             self.side_on_path = out_file
+            self.raw_side_on_path = raw_file
         else:
             pass
         cv2.imwrite(str(out_file), processed_img)

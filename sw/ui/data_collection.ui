@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1496</width>
-    <height>931</height>
+    <width>1500</width>
+    <height>1016</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,7 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QFormLayout" name="formLayout">
-    <item row="0" column="0">
+    <item row="0" column="1">
      <widget class="QTabWidget" name="tabWidget">
       <property name="enabled">
        <bool>true</bool>
@@ -3089,14 +3089,14 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_22">
            <item>
-            <widget class="QPushButton" name="activate_camera_feed">
+            <widget class="QPushButton" name="inference_button">
              <property name="text">
               <string>Begin Imaging Process with Inference</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="start_imaging_button">
+            <widget class="QPushButton" name="labelling_button">
              <property name="text">
               <string>Begin 1Top1Side Imaging Process</string>
              </property>
@@ -3107,106 +3107,11 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="CameraFeed">
-       <attribute name="title">
-        <string>Camera Feed</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_17">
-        <item row="1" column="1">
-         <widget class="QPushButton" name="take_side_on_photo_button">
-          <property name="text">
-           <string>Take Side-On Photo</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QPushButton" name="take_top_down_photo_button">
-          <property name="text">
-           <string>Take Top-Down Photo</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="2">
-         <widget class="QLabel" name="camera_feed">
-          <property name="text">
-           <string>Camera Feed Goes Here</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
       <widget class="QWidget" name="Results">
        <attribute name="title">
         <string>Results</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_5">
-        <item row="5" column="0" colspan="2">
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="1">
-           <widget class="QLabel" name="photo2">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="photo1">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="photo3">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QLabel" name="photo9">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLabel" name="photo8">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="photo7">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QLabel" name="photo6">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="photo5">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="photo4">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
         <item row="0" column="0">
          <widget class="QStackedWidget" name="DriveUploadConfirmStack">
           <property name="maximumSize">
@@ -3220,89 +3125,55 @@
           </property>
           <widget class="QWidget" name="page">
            <layout class="QGridLayout" name="gridLayout_6">
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_2">
-              <property name="maximumSize">
-               <size>
-                <width>16777212</width>
-                <height>16777215</height>
-               </size>
-              </property>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="redo_images_button">
               <property name="text">
-               <string>Please review the images before uploading.</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QPushButton" name="discard_images_button">
-              <property name="text">
-               <string>Discard Images and Redo Session</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QPushButton" name="upload_all_sessions_gdrive_button">
-              <property name="text">
-               <string>Upload all past sessions to Google Drive</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="3">
-             <widget class="QPushButton" name="classify_m2_vs_m3">
-              <property name="text">
-               <string>Classify M2 vs M3</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="page_2">
-           <layout class="QHBoxLayout" name="horizontalLayout_9">
-            <item>
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>Upload in progress...</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="page_3">
-           <layout class="QGridLayout" name="gridLayout_19">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_23">
-              <property name="text">
-               <string>Upload Complete!</string>
+               <string>Discard Images and Redo Imaging</string>
               </property>
              </widget>
             </item>
             <item row="1" column="0">
-             <widget class="QPushButton" name="confirm_upload_complete">
+             <widget class="QPushButton" name="save_images_button">
               <property name="text">
-               <string>OK</string>
+               <string>Save Images</string>
               </property>
              </widget>
             </item>
            </layout>
           </widget>
          </widget>
+        </item>
+        <item row="5" column="0" colspan="2">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="photo1">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="photo2">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="text_input_page">
+      <widget class="QWidget" name="InferenceResults">
        <attribute name="title">
-        <string>Notes</string>
+        <string>Inference Results</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QLabel" name="label_25">
+       <layout class="QGridLayout" name="gridLayout_17">
+        <item row="1" column="0" colspan="2" alignment="Qt::AlignRight|Qt::AlignBottom">
+         <widget class="QLabel" name="inference_results_img">
           <property name="text">
-           <string>Notes</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;img src=&quot;:/newPrefix/side_diagram_1.png&quot;/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
-        </item>
-        <item>
-         <widget class="QPlainTextEdit" name="session_notes"/>
         </item>
        </layout>
       </widget>
@@ -3583,36 +3454,38 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1496</width>
+     <width>1500</width>
      <height>20</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="ewa.qrc"/>
+ </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="ScrewPitchImperialGroup"/>
   <buttongroup name="NutDiameterImperialGroup"/>
   <buttongroup name="NutDirectionGroup"/>
-  <buttongroup name="ScrewHeadGroup"/>
-  <buttongroup name="ScrewFinishGroup"/>
-  <buttongroup name="ScrewStandardGroup"/>
-  <buttongroup name="NutPitchImperialGroup"/>
-  <buttongroup name="WasherFinishGroup"/>
-  <buttongroup name="ScrewDiameterMetricGroup"/>
   <buttongroup name="WasherStandardGroup"/>
-  <buttongroup name="NutTypeGroup"/>
-  <buttongroup name="NutFinishGroup"/>
-  <buttongroup name="WasherTypeGroup"/>
-  <buttongroup name="ScrewPitchMetricGroup"/>
-  <buttongroup name="ScrewDirectionGroup"/>
-  <buttongroup name="ScrewDriveGroup"/>
-  <buttongroup name="NutDiameterMetricGroup"/>
-  <buttongroup name="NutStandardGroup"/>
   <buttongroup name="FastenerTypeGroup"/>
-  <buttongroup name="NutPitchMetricGroup"/>
+  <buttongroup name="ScrewFinishGroup"/>
+  <buttongroup name="ScrewPitchMetricGroup"/>
+  <buttongroup name="ScrewPitchImperialGroup"/>
+  <buttongroup name="NutFinishGroup"/>
+  <buttongroup name="ScrewDirectionGroup"/>
+  <buttongroup name="WasherTypeGroup"/>
   <buttongroup name="ScrewDiameterImperialGroup"/>
+  <buttongroup name="NutDiameterMetricGroup"/>
+  <buttongroup name="ScrewHeadGroup"/>
+  <buttongroup name="ScrewDiameterMetricGroup"/>
+  <buttongroup name="ScrewDriveGroup"/>
+  <buttongroup name="NutPitchMetricGroup"/>
+  <buttongroup name="NutTypeGroup"/>
+  <buttongroup name="WasherFinishGroup"/>
+  <buttongroup name="NutStandardGroup"/>
+  <buttongroup name="NutPitchImperialGroup"/>
+  <buttongroup name="ScrewStandardGroup"/>
  </buttongroups>
 </ui>

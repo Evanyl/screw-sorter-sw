@@ -15,7 +15,9 @@ class ClassifySystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "idle":
+        with open(self.core_comms.ui_comms_path) as f:
+            ui_comms = json.load(f)
+        if self.station_state == "idle" and ui_comms['action'] == "image":
             next_state = "top-down"
             self.des_station_state = "top-down"
         else:
@@ -72,8 +74,20 @@ class ClassifySystem:
         if self.station_state == "idle" and self.thread.is_alive() == False:
             # finished inference, print it out for now
             preds = self.predictor.decode(self.predictor.predictions)
-            print(json.dumps(preds, indent=4))
             next_state = "idle"
+
+            ui_comms_out = {
+                "action": "process_results",
+                "top_img_path": str(self.imager.top_down_path),
+                "raw_top_img_path": str(self.imager.raw_top_down_path),
+                "side_img_path": str(self.imager.side_on_path),
+                "raw_side_img_path": str(self.imager.raw_side_on_path),
+                "composed_path": str(self.imager.composed_path),
+                "inference_results": preds,
+            }
+
+            with open(self.core_comms.ui_comms_path, 'w') as f:
+                json.dump(ui_comms_out, f)
         else:
             # performing inference, wait for thread to finish
             pass
