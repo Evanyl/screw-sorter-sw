@@ -46,16 +46,7 @@ class IsolationSystem:
                 # do xyz delivery
                 pass
             self.core_comms.updateOutData("belt_top_steps", self.thread_data["belt_top_steps"])
-            self.core_comms.updateOutData("belt_top_dir", self.thread_data["belt_top_dir"])
-            self.core_comms.updateOutData("belt_top_rate", self.thread_data["belt_top_rate"])
-            self.core_comms.updateOutData("belt_top_ramp_rate", self.thread_data["belt_top_ramp_rate"])
-            self.core_comms.updateOutData("belt_top_ramp_window", self.thread_data["belt_top_ramp_window"])
             self.core_comms.updateOutData("belt_bottom_steps", self.thread_data["belt_bottom_steps"])
-            self.core_comms.updateOutData("belt_bottom_dir", self.thread_data["belt_bottom_dir"])
-            self.core_comms.updateOutData("belt_bottom_rate", self.thread_data["belt_bottom_rate"])
-            self.core_comms.updateOutData("belt_bottom_ramp_rate", self.thread_data["belt_bottom_ramp_rate"])
-            self.core_comms.updateOutData("belt_bottom_ramp_window", self.thread_data["belt_bottom_ramp_window"])
-
             next_state = "photo"
         else:
             # do nothing, still processing
@@ -78,15 +69,7 @@ class IsolationSystem:
         {
             "isolated": True,
             "belt_top_steps": 0,
-            "belt_top_dir": BELT_TOP_FORWARD,
-            "belt_top_rate": BELTS_NAV_RATE,
-            "belt_top_ramp_rate": BELTS_STARTING_RATE,
-            "belt_top_ramp_window": BELTS_RAMP_WINDOW,
             "belt_bottom_steps": 0,
-            "belt_bottom_dir": BELT_BOTTOM_FORWARD,
-            "belt_bottom_rate": BELTS_NAV_RATE,
-            "belt_bottom_ramp_rate": BELTS_STARTING_RATE,
-            "belt_bottom_ramp_window": BELTS_RAMP_WINDOW
         }
 
         self.camera = Picamera2()
@@ -102,7 +85,6 @@ class IsolationSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolation_system") and ISOLATION_ACTIVE:
-            print(f"{self.curr_state}, {self.isolation_system_state}")
             # get last station_state
             self.isolation_system_state = self.core_comms.getInData()["curr_isolation_state"]
             self.depositor_system_state = self.core_comms.getInData()["curr_depositor_state"]              

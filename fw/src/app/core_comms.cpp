@@ -13,7 +13,7 @@
 *******************************************************************************/ 
 
 #define CORE_COMMS_CMD_LIST_TERMINATOR "END OF LIST"
-#define CORE_COMMS_MAX_ARGS 15
+#define CORE_COMMS_MAX_ARGS 25
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -34,15 +34,7 @@ typedef struct
     float corr_angle;
     belts_state_E belts_des_state;
     uint16_t belt_top_steps;
-    uint8_t belt_top_dir;
-    uint16_t belt_top_rate;
-    uint16_t belt_top_ramp_rate;
-    uint8_t belt_top_ramp_window;
     uint16_t belt_bottom_steps;
-    uint8_t belt_bottom_dir;
-    uint16_t belt_bottom_rate;
-    uint16_t belt_bottom_ramp_rate;
-    uint8_t belt_bottom_ramp_window;
 } core_comms_in_s;
 
 typedef struct
@@ -83,15 +75,7 @@ static core_comms_s core_comms_data =
         .corr_angle = 0.0,
         .belts_des_state = BELTS_STATE_IDLE,
         .belt_top_steps = 0,
-        .belt_top_dir = BELT_TOP_FORWARD,
-        .belt_top_rate = BELTS_NAV_RATE,
-        .belt_top_ramp_rate = BELTS_STARTING_RATE,
-        .belt_top_ramp_window = BELTS_RAMP_WINDOW,
         .belt_bottom_steps = 0,
-        .belt_bottom_dir = BELT_BOTTOM_FORWARD,
-        .belt_bottom_rate = BELTS_NAV_RATE,
-        .belt_bottom_ramp_rate = BELTS_STARTING_RATE,
-        .belt_bottom_ramp_window = BELTS_RAMP_WINDOW
     },
     .out_data =
     {
@@ -166,6 +150,7 @@ static PT_THREAD(run10ms(struct pt* thread))
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
             serial_getLine(PORT_RPI, core_comms_data.line);
+            Serial1.print(core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
             sprintf(resp, "{\"classify_system_state\": %d,\"belts_state\": %d,\"depositor_state\": %d}\n",

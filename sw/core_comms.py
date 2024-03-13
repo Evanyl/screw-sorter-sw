@@ -14,15 +14,7 @@ class CoreComms:
             "corr_angle": 0.0,
             "belts_des_state": "idle",
             "belt_top_steps": 0,
-            "belt_top_dir": 1,
-            "belt_top_rate": 750,
-            "belt_top_ramp_rate": 50,
-            "belt_top_ramp_window": 250,
             "belt_bottom_steps": 0,
-            "belt_bottom_dir": 1,
-            "belt_bottom_rate": 750,
-            "belt_bottom_ramp_rate": 50,
-            "belt_bottom_ramp_window": 250
         }
         self.in_data = \
         {
@@ -87,15 +79,7 @@ class CoreComms:
             f"corr-angle {angle} " + \
             f"belt-des-state " + \
             f"{self.out_data['belt_top_steps']} " + \
-            f"{self.out_data['belt_top_dir']} " + \
-            f"{self.out_data['belt_top_rate']} " + \
-            f"{self.out_data['belt_top_ramp_rate']} " + \
-            f"{self.out_data['belt_top_ramp_window']} " + \
-            f"{self.out_data['belt_bottom_steps']} " + \
-            f"{self.out_data['belt_bottom_dir']} " + \
-            f"{self.out_data['belt_bottom_rate']} " + \
-            f"{self.out_data['belt_bottom_ramp_rate']} " + \
-            f"{self.out_data['belt_bottom_ramp_window']}\n"
+            f"{self.out_data['belt_bottom_steps']}\n"
             )
 
     def fromString(self, s):

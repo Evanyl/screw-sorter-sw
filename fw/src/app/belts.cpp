@@ -23,15 +23,7 @@ typedef struct
     bool belt_top_in_motion;
     bool belt_bottom_in_motion;
     uint16_t belt_top_steps;
-    uint8_t belt_top_dir;
-    uint16_t belt_top_rate;
-    uint16_t belt_top_ramp_rate;
-    uint8_t belt_top_ramp_window;
     uint16_t belt_bottom_steps;
-    uint8_t belt_bottom_dir;
-    uint16_t belt_bottom_rate;
-    uint16_t belt_bottom_ramp_rate;
-    uint8_t belt_bottom_ramp_window;
 } belts_data_S;
 
 /*******************************************************************************
@@ -52,15 +44,7 @@ static belts_data_S belts_data =
     .belt_top_in_motion = false,
     .belt_bottom_in_motion = false,
     .belt_top_steps = 0,
-    .belt_top_dir = BELT_TOP_FORWARD,
-    .belt_top_rate = BELTS_NAV_RATE,
-    .belt_top_ramp_rate = BELTS_STARTING_RATE,
-    .belt_top_ramp_window = BELTS_RAMP_WINDOW,
-    .belt_bottom_steps = 0,
-    .belt_bottom_dir = BELT_BOTTOM_FORWARD,
-    .belt_bottom_rate = BELTS_NAV_RATE,
-    .belt_bottom_ramp_rate = BELTS_STARTING_RATE,
-    .belt_bottom_ramp_window = BELTS_RAMP_WINDOW
+    .belt_bottom_steps = 0
 };
 
 /*******************************************************************************
@@ -109,31 +93,23 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             // stepper_command emits a "true" once.
             bool first_stepper = stepper_command(STEPPER_BELT_TOP,
                                 belts_data.belt_top_steps,
-                                belts_data.belt_top_dir,
-                                belts_data.belt_top_rate,
-                                belts_data.belt_top_ramp_rate,
-                                belts_data.belt_top_ramp_window);
+                                BELT_TOP_FORWARD,
+                                BELTS_NAV_RATE,
+                                BELTS_STARTING_RATE,
+                                BELTS_RAMP_WINDOW);
             bool second_stepper = stepper_command(STEPPER_BELT_BOTTOM,
                                 belts_data.belt_bottom_steps,
-                                belts_data.belt_bottom_dir,
-                                belts_data.belt_bottom_rate,
-                                belts_data.belt_bottom_ramp_rate,
-                                belts_data.belt_bottom_ramp_window);
+                                BELT_BOTTOM_FORWARD,
+                                BELTS_NAV_RATE,
+                                BELTS_STARTING_RATE,
+                                BELTS_RAMP_WINDOW);
             if (first_stepper == true) {
                 // reset the step values
                 belts_data.belt_top_steps = 0;
-                belts_data.belt_top_dir = 0;
-                belts_data.belt_top_rate = 0;
-                belts_data.belt_top_ramp_rate = 0;
-                belts_data.belt_top_ramp_window = 0;
                 belts_data.belt_top_in_motion = false;
             }
             if (second_stepper == true) {
                 belts_data.belt_bottom_steps = 0;
-                belts_data.belt_bottom_dir = 0;
-                belts_data.belt_bottom_rate = 0;
-                belts_data.belt_bottom_ramp_rate = 0;
-                belts_data.belt_bottom_ramp_window = 0;
                 belts_data.belt_bottom_in_motion = false;
             }
             if (belts_data.belt_top_in_motion == true 
@@ -192,32 +168,14 @@ void belts_core_comms_setDesState(uint8_t argNumber, char* args[])
 {
     belts_data.des_state = BELTS_STATE_ACTIVE;
     belts_data.belt_top_steps = atoi(args[0]);
-    belts_data.belt_top_dir = atoi(args[1]);
-    belts_data.belt_top_rate = atoi(args[2]);
-    belts_data.belt_top_ramp_rate = atoi(args[3]);
-    belts_data.belt_top_ramp_window = atoi(args[4]);
-
-    belts_data.belt_bottom_steps = atoi(args[5]);
-    belts_data.belt_bottom_dir = atoi(args[6]);
-    belts_data.belt_bottom_rate = atoi(args[7]);
-    belts_data.belt_bottom_ramp_rate = atoi(args[8]);
-    belts_data.belt_bottom_ramp_window = atoi(args[9]);
+    belts_data.belt_bottom_steps = atoi(args[1]);
 }
 
 void belts_cli_target(uint8_t argNumber, char* args[])
 {
     belts_data.des_state = BELTS_STATE_ACTIVE;
     belts_data.belt_top_steps = atoi(args[0]);
-    belts_data.belt_top_dir = atoi(args[1]);
-    belts_data.belt_top_rate = atoi(args[2]);
-    belts_data.belt_top_ramp_rate = atoi(args[3]);
-    belts_data.belt_top_ramp_window = atoi(args[4]);
-
-    belts_data.belt_bottom_steps = atoi(args[5]);
-    belts_data.belt_bottom_dir = atoi(args[6]);
-    belts_data.belt_bottom_rate = atoi(args[7]);
-    belts_data.belt_bottom_ramp_rate = atoi(args[8]);
-    belts_data.belt_bottom_ramp_window = atoi(args[9]);
+    belts_data.belt_bottom_steps = atoi(args[1]);
 }
 
 void belts_cli_dump_state(uint8_t argNumber, char* args[])
