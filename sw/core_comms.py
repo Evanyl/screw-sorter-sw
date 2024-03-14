@@ -51,9 +51,14 @@ class CoreComms:
             5: "entering-idle",
             6: "count"
         }
+        self.last_time = datetime.now()
 
     def run50ms(self, scheduler):
         if scheduler.taskReleased(self.id):
+            t = datetime.now()
+            dt = int((t-self.last_time).total_seconds()*1000)
+            self.last_time = t
+            print(f"dt: {dt}")
 
             # Read in new serial data
             if self.connection.in_waiting > 0:
@@ -66,17 +71,16 @@ class CoreComms:
             
             # Send an updated version of out_data
             outstr = self.toString()
-            # print(outstr)
+            print(outstr)
             self.connection.write(outstr)
 
     def updateOutData(self, name, val):
         self.out_data[name] = val
 
     def toString(self):
-        # angle = self.out_data["corr_angle"]
-        # classify_str = f"classify-des-state {self.out_data['classify_des_state']} " + \
-                        # f"corr-angle {angle} "
-        classify_str = ""
+        angle = self.out_data["corr_angle"]
+        classify_str = f"classify-des-state {self.out_data['classify_des_state']} " + \
+                         f"corr-angle {angle} "
         # send a belt move command once.
         if self.in_data["curr_isolation_state"] == "active":
             self.out_data['belt_top_steps'] = 0
