@@ -74,10 +74,10 @@ class CameraWorker(QtCore.QObject):
         super(CameraWorker, self).__init__()
         self.filename = filename
         # Camera config
-        self.top_down_exposure_us = 133952
+        self.top_down_exposure_us = 18000
         self.top_down_balance_red = 2.88
         self.top_down_balance_blue = 1.9
-        self.side_view_exposure_us = 723824
+        self.side_view_exposure_us = 200000
         self.side_view_balance_red= 2.52
         self.side_view_balance_blue = 1.45
 
@@ -89,6 +89,10 @@ class CameraWorker(QtCore.QObject):
         # Create UUID corresponding to this specific run of fasteners.
         self.fastener_uuid = uuid.uuid4()
         self.fastener_directory = self.setup_fastener_directory(self.fastener_uuid)
+
+        # Class variables tracking if a photo was taken
+        self.top_down_photo_taken = False
+        self.side_on_photo_taken = False
 
     def create_label_json(self, unique_id):
         """Creates json label for specific imaging run. any variables not entered into the GUI will be `None`."""
@@ -173,82 +177,62 @@ class CameraWorker(QtCore.QObject):
         return fastener_directory
 
     def run(self):
-        # Calibrate camera before starting camera loop
-        print("before")
-        self.change_camera_settings.emit(CAMERA, self.top_down_exposure_us, self.top_down_balance_red, self.top_down_balance_blue)
-        side_view_exposure = False
-        print("Waiting for camera settings to finish")
-        # Wait 2s for the setup to finish (.emit() is multithreaded)
-        time.sleep(2)
-
         print("Starting Loop")
-        n = 0
-        # establish serial communication with Bluepill
-        s = serial.Serial("/dev/ttyUSB0", 115200)
-        # commence the imaging session with the "start" command
-        time.sleep(1)
-        print(s.write(b"start\n"))
-        s.flush()
-        while True:
-            # Change camera settings AFTER taking top-down shot
-            if n == 1 and not side_view_exposure:
-                print("sf")
-                time.sleep(2)
-                self.change_camera_settings.emit(CAMERA, 
-                        self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
-                # Error occurred with repeatedly running this fcn
-                # So, we set this flag immediately after
-                side_view_exposure = True
-                # Wait 2s for the setup to finish (.emit() is multithreaded)
-                time.sleep(2)
-            if n >= 10:
-                break
+        # Loops only breaks when we have 1 top-down and 1 side-on photo, these flags are set by other functions
+        while not self.top_down_photo_taken or not self.side_on_photo_taken:
+            QtCore.QCoreApplication.processEvents()
+            # if self.take_top_down_photo_button.clicked():
 
-            # wait on serial communication
-            # to get around serial comms (ie test w/o bluepill), swap this if-statement with "if True"
-            # and replace "message" with "picture\r\n"
-            # if True:
-            if s.in_waiting > 0:
-                time.sleep(1)
-                # message = "picture\r\n"
-                message = s.readline().decode("ascii")
-                if message == "picture\r\n":
-                    print("Obtaining Frame")
-                    # requirement that Vimba instance is opened using "with"
-                    with Vimba.get_instance() as vimba:
-                        with CAMERA as cam:
-                            # set frame capture timeout at max exposure time
-                            try:
-                                frame = cam.get_frame(timeout_ms=1000000)
-                            except VimbaTimeout as e:
-                                print("Frame acquisition timed out: " + str(e))
-                                continue
-                            print("Got a frame")
-                            print("Frame saved to mem")
-                            
-                            frame_cv2 = frame.as_opencv_image()
-                            # flip image on both axes (i.e. rotate 180 deg)
-                            frame_cv2 = cv2.flip(frame_cv2, -1)
-
-                            # Draw directly
-                            print("Drawing")
-                            self.progress.emit(frame_cv2)
-                            print("Done Drawing")
-                            final_filename = os.path.join(
-                                self.fastener_directory, f"{n}_{self.fastener_uuid}.tiff")
-                            print(final_filename)
-                            cv2.imwrite(final_filename, frame_cv2)
-                            n += 1
-                            # send a message to indicate a picture was saved
-                            s.write(b"finished\n")
-                            s.flush()
-
-                elif message == "finished-imaging\r\n":
-                    # exit the control loop
-                    break
+            # if self.take_side_on_photo_button.clicked():
+            continue
 
         self.upload.emit(self.fastener_directory)
         self.finished.emit()
+
+    def take_side_on_photo(self):
+        # change to side-on exposure
+        self.change_camera_settings.emit(CAMERA, 
+                self.side_view_exposure_us, self.side_view_balance_red, self.side_view_balance_blue)
+        print("Change camera settings to side-on")
+        # Wait 2s for the setup to finish (.emit() is multithreaded)
+        time.sleep(2)
+        n = 1
+        self.take_pic(n)
+        self.side_on_photo_taken = True
+
+    def take_top_down_photo(self):
+        # change to top-down exposure
+        self.change_camera_settings.emit(CAMERA, self.top_down_exposure_us, self.top_down_balance_red, self.top_down_balance_blue)
+        print("Change camera settings to top-down")
+        time.sleep(2)
+        n = 0
+        self.take_pic(n)
+        self.top_down_photo_taken = True
+
+    def take_pic(self, n):
+        with Vimba.get_instance() as vimba:
+            with CAMERA as cam:
+                # set frame capture timeout at max exposure time
+                try:
+                    frame = cam.get_frame(timeout_ms=1000000)
+                except VimbaTimeout as e:
+                    print("Frame acquisition timed out: " + str(e))
+                print("Got a frame")
+                print("Frame saved to mem")
+
+                frame_cv2 = frame.as_opencv_image()
+                # flip image on both axes (i.e. rotate 180 deg)
+                frame_cv2 = cv2.flip(frame_cv2, -1)
+
+                # Draw directly
+                print("Drawing")
+                self.progress.emit(frame_cv2)
+                print("Done Drawing")
+                final_filename = os.path.join(
+                    self.fastener_directory, f"{n}_{self.fastener_uuid}.tiff")
+                print(final_filename)
+                cv2.imwrite(final_filename, frame_cv2)
+
 
 class UploadWorker(QtCore.QObject):
     """Class designed for use in a thread to upload imaging runs from the station to the cloud."""
@@ -610,7 +594,7 @@ class My_App(QtWidgets.QMainWindow):
 
     def start_feed_thread(self):
         self.start_imaging_thread(feed=True)
-    
+
     def start_imaging_thread(self, feed=False):
         self.feed = feed
         print(f"{feed=}")
@@ -623,6 +607,8 @@ class My_App(QtWidgets.QMainWindow):
         self.worker.moveToThread(self.camera_thread)
         # Connect signals/slots
         self.camera_thread.started.connect(self.worker.run)
+        self.take_top_down_photo_button.clicked.connect(self.worker.take_top_down_photo)
+        self.take_side_on_photo_button.clicked.connect(self.worker.take_side_on_photo)
         self.worker.progress.connect(self.draw_image_on_gui)
         self.worker.change_camera_settings.connect(self.setup_camera)
         self.worker.upload.connect(self.ask_user_for_upload_decision)
@@ -732,6 +718,7 @@ class My_App(QtWidgets.QMainWindow):
                     if isinstance(exposure_us, int):
                         cam.ExposureAuto.set("Off")
                         cam.ExposureTime.set(exposure_us)
+                        print("i am setting exposure")
                     else:
                         cam.ExposureAuto.set("Continuous")
 

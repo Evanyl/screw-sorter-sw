@@ -3,7 +3,7 @@ from datetime import datetime
 import sys
 from threading import Thread
 from picamera2 import Picamera2
-from imaging import isolation_image_and_process
+from imaging import IsolationImager
 
 
 
@@ -34,12 +34,12 @@ class IsolationSystem:
         if self.isolation_system_state == "idle" and self.thread.is_alive() == False:
             self.photo_done = False
             print("Getting photo")
-            self.photo = self.camera.capture_array(signal_function=self.set_photo_to_ready)
+            # self.photo = self.camera.capture_array(signal_function=self.set_photo_to_ready)
+            self.thread = Thread(target=self.imager.isolation_image_and_process)
+            self.thread.start()
+            next_state = "isolation-image-and-process"
             print("Photo function is done")
-            #self.thread = Thread(target=isolation_image_and_process, args=[self.camera, self.thread_data])
-            #self.thread.start()
-            #next_state = "isolation-image-and-process"
-            next_state = "wait-for-photo"
+            # next_state = "wait-for-photo"
         else:
             # do nothing, station still in motion
             pass
@@ -62,11 +62,11 @@ class IsolationSystem:
             # 
             # --insert some logic based off isolation_image_and_process() results--
             # for example, this if-statement
-            if self.thread_data["isolated"] == True:
+            if self.imager.isolated == True:
                 # do xyz delivery
                 pass
-            self.core_comms.updateOutData("belt_top_steps", self.thread_data["belt_top_steps"])
-            self.core_comms.updateOutData("belt_bottom_steps", self.thread_data["belt_bottom_steps"])
+            self.core_comms.updateOutData("belt_top_steps", self.imager.belt_top_steps)
+            self.core_comms.updateOutData("belt_bottom_steps", self.imager.belt_bottom_steps)
             next_state = "wait"
             self.wait_counter = 0
         else:
@@ -106,16 +106,11 @@ class IsolationSystem:
             "wait-for-photo":                    self.__wait_for_photo_to_finish_state_func
         }
 
-        self.thread_data = \
-        {
-            "isolated": True,
-            "belt_top_steps": 0,
-            "belt_bottom_steps": 0,
-        }
-
         self.camera = Picamera2()
         camera_config = self.camera.create_preview_configuration()
         self.camera.configure(camera_config)
+
+        self.imager = IsolationImager(self.camera)
 
         self.curr_state = "photo"
         self.isolation_system_state = "idle"

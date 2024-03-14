@@ -14,7 +14,7 @@
    <string>Data Collection GUI</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_17">
+   <layout class="QFormLayout" name="formLayout">
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="enabled">
@@ -3098,7 +3098,7 @@
            <item>
             <widget class="QPushButton" name="start_imaging_button">
              <property name="text">
-              <string>Begin Imaging Process</string>
+              <string>Begin 1Top1Side Imaging Process</string>
              </property>
             </widget>
            </item>
@@ -3111,8 +3111,22 @@
        <attribute name="title">
         <string>Camera Feed</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <item>
+       <layout class="QGridLayout" name="gridLayout_17">
+        <item row="1" column="1">
+         <widget class="QPushButton" name="take_side_on_photo_button">
+          <property name="text">
+           <string>Take Side-On Photo</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="take_top_down_photo_button">
+          <property name="text">
+           <string>Take Top-Down Photo</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" colspan="2">
          <widget class="QLabel" name="camera_feed">
           <property name="text">
            <string>Camera Feed Goes Here</string>
@@ -3579,26 +3593,26 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="ScrewFinishGroup"/>
-  <buttongroup name="NutDiameterMetricGroup"/>
-  <buttongroup name="ScrewPitchMetricGroup"/>
-  <buttongroup name="NutStandardGroup"/>
   <buttongroup name="ScrewPitchImperialGroup"/>
-  <buttongroup name="ScrewDirectionGroup"/>
-  <buttongroup name="WasherTypeGroup"/>
-  <buttongroup name="ScrewHeadGroup"/>
-  <buttongroup name="NutFinishGroup"/>
-  <buttongroup name="ScrewDiameterImperialGroup"/>
   <buttongroup name="NutDiameterImperialGroup"/>
-  <buttongroup name="NutTypeGroup"/>
   <buttongroup name="NutDirectionGroup"/>
+  <buttongroup name="ScrewHeadGroup"/>
+  <buttongroup name="ScrewFinishGroup"/>
+  <buttongroup name="ScrewStandardGroup"/>
+  <buttongroup name="NutPitchImperialGroup"/>
+  <buttongroup name="WasherFinishGroup"/>
   <buttongroup name="ScrewDiameterMetricGroup"/>
+  <buttongroup name="WasherStandardGroup"/>
+  <buttongroup name="NutTypeGroup"/>
+  <buttongroup name="NutFinishGroup"/>
+  <buttongroup name="WasherTypeGroup"/>
+  <buttongroup name="ScrewPitchMetricGroup"/>
+  <buttongroup name="ScrewDirectionGroup"/>
+  <buttongroup name="ScrewDriveGroup"/>
+  <buttongroup name="NutDiameterMetricGroup"/>
+  <buttongroup name="NutStandardGroup"/>
   <buttongroup name="FastenerTypeGroup"/>
   <buttongroup name="NutPitchMetricGroup"/>
-  <buttongroup name="WasherStandardGroup"/>
-  <buttongroup name="WasherFinishGroup"/>
-  <buttongroup name="ScrewStandardGroup"/>
-  <buttongroup name="ScrewDriveGroup"/>
-  <buttongroup name="NutPitchImperialGroup"/>
+  <buttongroup name="ScrewDiameterImperialGroup"/>
  </buttongroups>
 </ui>

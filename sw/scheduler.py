@@ -5,7 +5,7 @@ class Scheduler:
 
     def __init__(self, task_periods):
         self.period = task_periods["scheduler"]
-        del task_periods["scheduler"]
+        #del task_periods["scheduler"]
         self.last_time = datetime.now()
         self.tick_count = 1
         self.task_periods = task_periods
