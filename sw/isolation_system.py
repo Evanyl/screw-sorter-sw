@@ -106,11 +106,7 @@ class IsolationSystem:
             "wait-for-photo":                    self.__wait_for_photo_to_finish_state_func
         }
 
-        self.camera = Picamera2()
-        camera_config = self.camera.create_preview_configuration()
-        self.camera.configure(camera_config)
-
-        self.imager = IsolationImager(self.camera)
+        self.imager = IsolationImager()
 
         self.curr_state = "photo"
         self.isolation_system_state = "idle"

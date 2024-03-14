@@ -117,8 +117,11 @@ class Imager:
             print(f"Ready for inference at {str(self.composed_path)}")
 
 class IsolationImager:
-    def __init__(self, picamera_object):
-        self.cam = picamera_object
+    def __init__(self):
+        self.cam = Picamera2()
+        camera_config = self.cam.create_preview_configuration()
+        self.cam.configure(camera_config)
+        self.cam.start()
         self.belt_top_steps = 0
         self.belt_bottom_steps = 0
         self.isolated = False
