@@ -9,7 +9,8 @@ def image_and_process(thread_data):
 
 def isolation_image_and_process(picamera_object, shared_data):
     print("Performing isolation imaging/processing...")
-    # im = picamera_object.capture_array()
+    im = picamera_object.capture_array(wait=True)
+    print("Done getting obj")
     
     fastener_isolated = True
 

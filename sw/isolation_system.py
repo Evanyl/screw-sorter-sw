@@ -22,6 +22,9 @@ WAIT_LIMIT = 10
 
 class IsolationSystem:
 
+    def set_photo_to_ready(self):
+        self.photo_done = True
+
     ############################################################################
     #              S T A T E    M A C H I N E    F U N C T I O N S             #
     ############################################################################
@@ -29,12 +32,27 @@ class IsolationSystem:
     def __ready_to_take_photo_state_func(self):
         next_state = self.curr_state
         if self.isolation_system_state == "idle" and self.thread.is_alive() == False:
-            self.thread = Thread(target=isolation_image_and_process, args=[self.camera, self.thread_data])
-            self.thread.start()
-            next_state = "isolation-image-and-process"
+            self.photo_done = False
+            print("Getting photo")
+            self.photo = self.camera.capture_array(signal_function=self.set_photo_to_ready)
+            print("Photo function is done")
+            #self.thread = Thread(target=isolation_image_and_process, args=[self.camera, self.thread_data])
+            #self.thread.start()
+            #next_state = "isolation-image-and-process"
+            next_state = "wait-for-photo"
         else:
             # do nothing, station still in motion
             pass
+        return next_state
+
+    def __wait_for_photo_to_finish_state_func(self):
+        print("Waiting for photo to arrive")
+        next_state = self.curr_state
+        if self.photo_done:
+            print("Photo obtained!")
+            next_state = "isolation-image-and-process"
+        else:
+            pass # photo capture is multithreaded, waiting on its arrival
         return next_state
     
     def __isolation_image_and_process_state_func(self):
@@ -85,6 +103,7 @@ class IsolationSystem:
             "photo":                             self.__ready_to_take_photo_state_func,
             "isolation-image-and-process":       self.__isolation_image_and_process_state_func,
             "wait":                              self.__wait_for_belts_to_turn_on_state_func,
+            "wait-for-photo":                    self.__wait_for_photo_to_finish_state_func
         }
 
         self.thread_data = \
@@ -105,6 +124,9 @@ class IsolationSystem:
         self.core_comms = core_comms
         self.thread = Thread()
         self.wait_counter = 0
+
+        self.photo = None
+        self.photo_done = False
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolation_system") and ISOLATION_ACTIVE:
