@@ -7,6 +7,20 @@
 #include "belts.h"
 #include "depositor.h"
 #include "classify_system_state.h"
+#include <chrono>
+
+// from https://github.com/arduino/Arduino/issues/9413, but didn't solve my issue
+extern "C" {
+  // This must exist to keep the linker happy but is never called.
+  int _gettimeofday( struct timeval *tv, void *tzvp )
+  {
+    Serial.println("_gettimeofday dummy");
+    uint64_t t = 0;  // get uptime in nanoseconds
+    tv->tv_sec = t / 1000000000;  // convert to seconds
+    tv->tv_usec = ( t % 1000000000 ) / 1000;  // get remaining microseconds
+    return 0;  // return non-zero for error
+  } // end _gettimeofday()
+}
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -89,6 +103,8 @@ static core_comms_s core_comms_data =
     },
 };
 
+static std::chrono::steady_clock::time_point last_time;
+static long long dt = 0;
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
@@ -155,13 +171,20 @@ static PT_THREAD(run10ms(struct pt* thread))
     PT_BEGIN(thread);
     PT_WAIT_UNTIL(thread, 
                   scheduler_taskReleased(PERIOD_10ms, (uint8_t) CORE_COMMS));
-
     // wait until there is serial data
     while (serial_available(PORT_RPI))
     {
         // Serial1.print("loop avail\n");
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
+            std::chrono::steady_clock::time_point curr;
+            curr = std::chrono::steady_clock::now();
+            dt = std::chrono::duration_cast<std::chrono::nanoseconds>(last_time - curr).count();
+            char* time_out = (char*) malloc(SERIAL_MESSAGE_SIZE + 50);
+            sprintf(time_out, "%lld ns", dt);
+            Serial1.println(time_out);
+            free(time_out);
+            last_time = curr;
             serial_getLine(PORT_RPI, core_comms_data.line);
             Serial1.println(core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
@@ -188,6 +211,7 @@ void core_comms_init(void)
 {
     PT_INIT(&core_comms_data.thread);
     serial_init(PORT_RPI);
+    last_time = std::chrono::steady_clock::now();
 }
 
 void core_comms_run10ms(void)
