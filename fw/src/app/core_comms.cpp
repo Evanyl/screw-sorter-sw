@@ -163,7 +163,7 @@ static PT_THREAD(run10ms(struct pt* thread))
         if (serial_handleByte(PORT_RPI, serial_readByte(PORT_RPI)))
         {
             serial_getLine(PORT_RPI, core_comms_data.line);
-            // Serial1.println(core_comms_data.line);
+            Serial1.println(core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
             sprintf(resp, "{\"classify_system_state\": %d,\"belts_state\": %d,\"depositor_state\": %d}\n",
