@@ -19,9 +19,9 @@ class SorterControl:
         }
         self.scheduler = Scheduler(self.task_periods)
         self.core_comms = CoreComms()
-        self.isolate_system = IsolationSystem(self.core_comms)
-        self.classify_system = ClassifySystem(self.core_comms, out_dir_path, 
-                                              model_path, decoder_path)
+        self.isolation_system = IsolationSystem(self.core_comms)
+        # self.classify_system = ClassifySystem(self.core_comms, out_dir_path, 
+        #                                      model_path, decoder_path)
 
     def control(self):
         # execute the runXms functions of all task modules
