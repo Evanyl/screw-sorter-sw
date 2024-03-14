@@ -558,7 +558,7 @@ void stepper_cli_dump(uint8_t argNumber, char* args[])
     }
 
     if (s == NULL)
-    {
+    {   
         serial_send_nl(PORT_COMPUTER, "invalid stepper");
     }
     else
