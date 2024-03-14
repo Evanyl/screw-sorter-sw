@@ -104,17 +104,17 @@ stepper_data_s stepper_data =
             .pin_pul = PA1,
             .pin_ena = PA3
         },
-        [STEPPER_BELT_TOP] = 
-        {
-            .pin_dir = PA5,
-            .pin_pul = PA4,
-            .pin_ena = PA6
-        },
-        [STEPPER_BELT_BOTTOM] =
+        [STEPPER_BELT_TOP] =
         {
             .pin_dir = PB13,
             .pin_pul = PB14,
             .pin_ena = PB12
+        },
+        [STEPPER_BELT_BOTTOM] = 
+        {
+            .pin_dir = PA5,
+            .pin_pul = PA4,
+            .pin_ena = PA6
         }
     },
 };
@@ -558,7 +558,7 @@ void stepper_cli_dump(uint8_t argNumber, char* args[])
     }
 
     if (s == NULL)
-    {
+    {   
         serial_send_nl(PORT_COMPUTER, "invalid stepper");
     }
     else

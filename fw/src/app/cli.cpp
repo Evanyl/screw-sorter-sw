@@ -10,13 +10,14 @@
 #include "app/depositor.h"
 #include "app/lighting.h"
 #include "app/arm.h"
-#include "app/system_state.h"
+#include "app/belts.h"
+#include "app/classify_system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define CLI_MAX_ARGS            7
+#define CLI_MAX_ARGS            25
 #define CLI_CMD_LIST_TERMINATOR "END OF LIST"
 #define CLI_PROMPT              "snorter>"
 
@@ -66,7 +67,8 @@ static cli_data_s cli_data =
         DEPOSITOR_COMMANDS,
         LIGHTING_COMMANDS,
         ARM_COMMANDS,
-        SYSTEM_STATE_COMMANDS,
+        BELTS_COMMANDS,
+        CLASSIFY_SYSTEM_STATE_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };

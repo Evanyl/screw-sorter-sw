@@ -1,4 +1,5 @@
 import time
+from picamera2 import Picamera2
 import sys
 import cv2
 import numpy as np
@@ -105,7 +106,6 @@ class Imager:
         else:
             pass
         cv2.imwrite(str(out_file), processed_img)
-
         # if this is he second image (side-on), form a composed image and save
         if curr_state == "side-on":
             top_img = cv2.imread(str(self.top_down_path))
@@ -115,3 +115,26 @@ class Imager:
             self.composed_path = out_path / "composed.tiff"
             cv2.imwrite(str(self.composed_path), img_concat)
             print(f"Ready for inference at {str(self.composed_path)}")
+
+class IsolationImager:
+    def __init__(self):
+        self.cam = Picamera2()
+        camera_config = self.cam.create_preview_configuration()
+        self.cam.configure(camera_config)
+        self.cam.start()
+        self.belt_top_steps = 0
+        self.belt_bottom_steps = 0
+        self.isolated = False
+
+    def isolation_image_and_process(self):
+        print("Performing isolation imaging/processing...")
+        im = self.cam.capture_array(wait=True)
+        print("Done getting obj")
+        
+        fastener_isolated = True
+
+        self.isolated = fastener_isolated
+        self.belt_top_steps = 499
+        self.belt_bottom_steps = 1000
+        time.sleep(3)
+        print("Done isolation imaging/processing")

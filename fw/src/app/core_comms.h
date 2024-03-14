@@ -11,7 +11,7 @@
 
 #include "scheduler.h"
 #include "dev/serial.h"
-#include "system_state.h"
+#include "classify_system_state.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *

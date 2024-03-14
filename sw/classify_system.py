@@ -106,7 +106,7 @@ class ClassifySystem:
         if scheduler.taskReleased("classify_system"):
             print(self.curr_state)
             # get last station_state
-            self.station_state = self.core_comms.getInData()["curr_state"]
+            self.station_state = self.core_comms.getInData()["curr_imaging_state"]
             # send next desired state
             self.core_comms.updateOutData("des_state", self.des_station_state)
             # call state updating function

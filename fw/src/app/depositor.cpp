@@ -5,7 +5,7 @@
 
 #include "depositor.h"
 #include "lighting.h"
-#include "system_state.h"
+#include "classify_system_state.h"
 #include "scheduler.h"
 
 /*******************************************************************************
@@ -70,7 +70,7 @@ static bool depositor_atHome(void)
 static depositor_state_E depositor_update_state(depositor_state_E curr_state)
 {
     depositor_state_E next_state = curr_state;
-    system_state_E system_state = system_state_getState();
+    classify_system_state_E classify_system_state = classify_system_state_getState();
 
     switch (curr_state)
     {
@@ -99,7 +99,7 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
             break;
 
         case DEPOSITOR_STATE_IDLE:
-            if (system_state == SYSTEM_STATE_ENTERING_DEPOSITED)
+            if (classify_system_state == CLASSIFY_SYSTEM_STATE_ENTERING_DEPOSITED)
             {
                 next_state = DEPOSITOR_STATE_SWEEPING;
             }
@@ -202,10 +202,6 @@ void depositor_init(void)
     servo_init(SERVO_DEPOSITOR, DEPOSITOR_CLOSE_ANGLE);
     switch_init(SWITCH_DEPOSITOR);
     stepper_init(STEPPER_DEPOSITOR);
-
-    // TODO remove this
-    stepper_init(STEPPER_BELT_TOP);
-    stepper_init(STEPPER_BELT_BOTTOM);
 }
 
 void depositor_run10ms(void)
