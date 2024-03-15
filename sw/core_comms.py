@@ -22,7 +22,7 @@ class CoreComms:
             "curr_state": "idle",
             "belts_curr_state": "idle"
         }
-        self.belt_state_decode = \
+        self.belts_state_decode = \
         {
             0: "idle",
             1: "active"
@@ -62,12 +62,14 @@ class CoreComms:
         angle = self.out_data["corr_angle"]
         top_belt_steps = self.out_data["top_belt_steps"]
         bottom_belt_steps = self.out_data["bottom_belt_steps"]
-        return  str.encode(                                                 \
+        s = str.encode(                                                 \
                     "des-state " + self.out_data["des_state"] +             \
                     f" corr-angle {angle} " +                               \
                     "belts-des-state " + self.out_data["belts_des_state"] + \
                     f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"  \
                 )
+        print(s)
+        return s
     
     def fromString(self, s):
         d = json.loads(s.strip("\n"))
