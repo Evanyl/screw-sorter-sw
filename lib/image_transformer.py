@@ -372,7 +372,6 @@ def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2,
     in:  path to raw image data to read read_fpath
     out: cropped image of shape 800x800
     """
-
     img = cv2.imread(str(read_fpath), cv2.IMREAD_UNCHANGED)
     img = img[top_plane_y:bot_plane_y, left_plane_x:right_plane_x]
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)

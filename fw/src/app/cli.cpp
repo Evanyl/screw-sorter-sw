@@ -10,6 +10,7 @@
 #include "app/depositor.h"
 #include "app/lighting.h"
 #include "app/arm.h"
+#include "app/belts.h"
 #include "app/system_state.h"
 
 /*******************************************************************************
@@ -66,6 +67,7 @@ static cli_data_s cli_data =
         DEPOSITOR_COMMANDS,
         LIGHTING_COMMANDS,
         ARM_COMMANDS,
+        BELTS_CLI_COMMANDS,
         SYSTEM_STATE_COMMANDS,
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
