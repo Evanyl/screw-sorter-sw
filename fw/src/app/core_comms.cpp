@@ -5,6 +5,7 @@
 #include "core_comms.h"
 #include "plane.h"
 #include "system_state.h"
+#include "belts.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -30,11 +31,16 @@ typedef struct
 {
     system_state_E des_state;
     float corr_angle;
+
+    belts_state_E belts_des_state;
+    uint16_t top_belt_steps;
+    uint16_t bottom_belt_steps;
 } core_comms_in_s;
 
 typedef struct
 {
     system_state_E curr_state;
+    belts_state_E belts_curr_state;
 } core_comms_out_s;
 
 typedef struct 
@@ -66,16 +72,23 @@ static core_comms_s core_comms_data =
     .in_data =
     {
         .des_state = SYSTEM_STATE_IDLE,
-        .corr_angle = 0.0
+        .corr_angle = 0.0,
+
+        .belts_des_state = BELTS_STATE_IDLE,
+        .top_belt_steps = 0,
+        .bottom_belt_steps = 0,
     },
     .out_data =
     {
-        .curr_state = SYSTEM_STATE_STARTUP
+        .curr_state = SYSTEM_STATE_STARTUP,
+
+        .belts_curr_state = BELTS_STATE_IDLE,
     },
     .cmds = 
     {
         SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
+        BELTS_CORE_COMMS_COMMANDS,
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
 };
@@ -132,7 +145,6 @@ static PT_THREAD(run10ms(struct pt* thread))
     PT_BEGIN(thread);
     PT_WAIT_UNTIL(thread, 
                   scheduler_taskReleased(PERIOD_10ms, (uint8_t) CORE_COMMS));
-
     // wait until there is serial data
     while (serial_available(PORT_RPI))
     {
@@ -141,7 +153,10 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, "{\"system_state\": %d}\n", system_state_getState());
+            sprintf(resp,
+                    "{\"system_state\": %d, \"belts_state\": %d}\n",
+                    system_state_getState(),
+                    belts_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

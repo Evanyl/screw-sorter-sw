@@ -42,7 +42,9 @@ bool stepper_commandUntil(stepper_id_E stepper, stepper_cond_f cond,
                           uint8_t dir, uint16_t rate);
 bool stepper_commandAngle(stepper_id_E stepper, float angle, float ramp_angle, 
                           uint16_t rate, uint16_t rate_start);
+                          
 void stepper_calibAngle(stepper_id_E stepper, float angle);
+void stepper_calibSteps(stepper_id_E stepper);
 
 void stepper_update(stepper_id_E);
 
