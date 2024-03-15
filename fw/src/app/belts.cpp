@@ -70,12 +70,16 @@ static belts_state_E belts_parseState(char* s)
 static belts_state_E belts_update_state(belts_state_E curr_state)
 {
     belts_state_E next_state = curr_state;
+    bool top = false;
+    bool bottom = false;
 
     switch (curr_state)
     {
         case BELTS_STATE_IDLE:
             if (belts_data.des_state == BELTS_STATE_ACTIVE)
             {
+                // only go to active once per write from SW to des_state
+                belts_data.des_state = BELTS_STATE_IDLE;
                 next_state = BELTS_STATE_ACTIVE;
             }
             else
@@ -84,18 +88,19 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             }
             break;
         case BELTS_STATE_ACTIVE:
-            if (stepper_command(STEPPER_BELT_TOP, 
+            top = stepper_command(STEPPER_BELT_TOP,  
                                 belts_data.top_belt_steps, 
                                 1, 
                                 750, 
-                                belts_data.bottom_belt_steps*0.1, 
-                                100) == false ||
-                stepper_command(STEPPER_BELT_TOP,  
+                                belts_data.top_belt_steps*0.1, 
+                                100);
+            bottom = stepper_command(STEPPER_BELT_BOTTOM,  
                                 belts_data.bottom_belt_steps, 
                                 1, 
                                 750, 
                                 belts_data.bottom_belt_steps*0.1, 
-                                100) == false)
+                                100);
+            if (top == false || bottom == false)
             {
                 // do nothing, belts are moving
             }
@@ -144,6 +149,17 @@ void belts_run10ms(void)
 belts_state_E belts_getState(void)
 {
     return belts_data.state;
+}
+
+void belts_cli_setDesState(uint8_t argNumber, char* args[])
+{
+    belts_data.des_state = belts_parseState(args[0]);
+}
+
+void belts_cli_setSteps(uint8_t argNumber, char* args[])
+{
+    belts_data.top_belt_steps = atoi(args[0]);
+    belts_data.bottom_belt_steps = atoi(args[1]);
 }
 
 void belts_core_comms_setDesState(uint8_t argNumber, char* args[])

@@ -113,11 +113,11 @@ static void core_comms_parseLine(char* message)
     core_comms_cmd_s* cmds = core_comms_data.cmds;
     while (j < i)
     {
-        uint8_t k = 0;
         while (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) != 0) 
         {
             if (strcmp(cmds[k].command, core_comms_data.tokLine[j]) == 0)
             {
+                Serial.println(core_comms_data.tokLine[j]);
                 // Package the args into a char* array
                 for (uint8_t e=0; e<cmds[k].params; e++)
                 {

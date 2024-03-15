@@ -12,10 +12,20 @@ class CoreComms:
         {
             "des_state": "idle",
             "corr_angle": 0.0,
+
+            "belts_des_state": "idle",
+            "top_belt_steps": 100,
+            "bottom_belt_steps": 100
         }
         self.in_data = \
         {
-            "curr_state": "idle"
+            "curr_state": "idle",
+            "belts_curr_state": "idle"
+        }
+        self.belt_state_decode = \
+        {
+            0: "idle",
+            1: "active"
         }
         self.state_decode = \
         {
@@ -50,12 +60,22 @@ class CoreComms:
 
     def toString(self):
         angle = self.out_data["corr_angle"]
-        return  str.encode("des-state " + self.out_data["des_state"] + \
-                f" corr-angle {angle}\n")
+        top_belt_steps = self.out_data["top_belt_steps"]
+        bottom_belt_steps = self.out_data["bottom_belt_steps"]
+        s = str.encode(                                                 \
+                    "des-state " + self.out_data["des_state"] +             \
+                    f" corr-angle {angle} " +                               \
+                    "belts-des-state " + self.out_data["belts_des_state"] + \
+                    f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"  \
+                )
+        return s
     
     def fromString(self, s):
         d = json.loads(s.strip("\n"))
-        return {"curr_state": self.state_decode[d["system_state"]]}
+        return {
+                   "curr_state": self.state_decode[d["system_state"]],
+                   "belts_curr_state": self.belts_state_decode[d["belts_state"]]
+               }
 
     def getInData(self):
         return self.in_data
