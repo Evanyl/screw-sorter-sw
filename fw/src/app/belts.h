@@ -1,12 +1,15 @@
-#ifndef APP_SCHEDULER
-#define APP_SCHEDULER
+
+#ifndef APP_BELTS
+#define APP_BELTS
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
-#include <pt.h>
 #include <Arduino.h>
+#include <pt.h>
+
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -14,45 +17,27 @@
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
-*******************************************************************************/
+*******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-    PERIOD_1ms,
-    PERIOD_10ms,
-    PERIOD_100ms,
-} task_period_E;
-
-typedef enum
-{
-    MOTOR_RUNNER,
-    TASK_1ms_COUNT
-} tasks_1ms_E;
-
-typedef enum
-{
-    LIGHTING,
-    DEPOSITOR,
-    ARM,
-    PLANE,
-    BELTS,
-    CORE_COMMS, 
-    TASK_10ms_COUNT
-} tasks_10ms_E;
-
-typedef enum
-{
-    CLI,
-    SYSTEM_STATE,
-    TASK_100ms_COUNT
-} tasks_100ms_E;
+    BELTS_STATE_IDLE,
+    BELTS_STATE_ACTIVE,
+    BELTS_STATE_COUNT
+} belts_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
-*******************************************************************************/ 
+*******************************************************************************/
 
-void scheduler_init(void);
-void scheduler_run500us(void);
-bool scheduler_taskReleased(task_period_E period, uint8_t task_id);
+void belts_init(void);
+void belts_run10ms(void);
+belts_state_E belts_getState(void);
+void belts_core_comms_setDesState(uint8_t argNumber, char* args[]);
+void belts_core_comms_setSteps(uint8_t argNumber, char* args[]);
 
-#endif // APP_SCHEDULER
+#define BELTS_CORE_COMMS_COMMANDS \
+{belts_core_comms_setDesState, "belts-des-state", 1}, \
+{belts_core_comms_setSteps, "belts-steps", 2}         \
+
+#endif // APP_BELTS
