@@ -134,7 +134,7 @@ class IsolationImager:
         fastener_isolated = True
 
         self.isolated = fastener_isolated
-        self.belt_top_steps = 499
+        self.belt_top_steps = 1000
         self.belt_bottom_steps = 1000
         time.sleep(3)
         print("Done isolation imaging/processing")
