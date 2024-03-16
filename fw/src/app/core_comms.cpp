@@ -113,11 +113,11 @@ static void core_comms_parseLine(char* message)
     core_comms_cmd_s* cmds = core_comms_data.cmds;
     while (j < i)
     {
+        uint8_t k = 0;
         while (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) != 0) 
         {
             if (strcmp(cmds[k].command, core_comms_data.tokLine[j]) == 0)
             {
-                Serial.println(core_comms_data.tokLine[j]);
                 // Package the args into a char* array
                 for (uint8_t e=0; e<cmds[k].params; e++)
                 {
@@ -145,7 +145,6 @@ static PT_THREAD(run10ms(struct pt* thread))
     PT_BEGIN(thread);
     PT_WAIT_UNTIL(thread, 
                   scheduler_taskReleased(PERIOD_10ms, (uint8_t) CORE_COMMS));
-
     // wait until there is serial data
     while (serial_available(PORT_RPI))
     {
@@ -154,9 +153,9 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
-            sprintf(resp, 
-                    "{\"system_state\": %d, \"belts_state\": %d}\n", 
-                    system_state_getState(), 
+            sprintf(resp,
+                    "{\"system_state\": %d, \"belts_state\": %d}\n",
+                    system_state_getState(),
                     belts_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);

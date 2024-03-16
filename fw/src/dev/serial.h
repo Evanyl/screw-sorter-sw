@@ -12,7 +12,7 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define SERIAL_MESSAGE_SIZE (100)
+#define SERIAL_MESSAGE_SIZE SERIAL_RX_BUFFER_SIZE
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *

@@ -19,7 +19,7 @@
 
 typedef struct
 {
-    uint8_t index;
+    uint16_t index;
     char line[SERIAL_MESSAGE_SIZE];
 } port_buffer_s;
 
