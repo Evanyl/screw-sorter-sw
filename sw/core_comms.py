@@ -75,6 +75,8 @@ class CoreComms:
             self.connection.write(outstr)
 
     def updateOutData(self, name, val):
+        if name not in self.out_data:
+            raise KeyError(f"Key not found in self.out_data: {name}, {self.out_data}")
         self.out_data[name] = val
 
     def toString(self):

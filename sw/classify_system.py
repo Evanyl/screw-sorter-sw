@@ -108,6 +108,6 @@ class ClassifySystem:
             # get last station_state
             self.station_state = self.core_comms.getInData()["curr_imaging_state"]
             # send next desired state
-            self.core_comms.updateOutData("des_state", self.des_station_state)
+            self.core_comms.updateOutData("classify_des_state", self.des_station_state)
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
