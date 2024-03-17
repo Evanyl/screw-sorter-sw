@@ -1,5 +1,4 @@
 from os.path import join, isfile
-import patch
 
 Import("env")
 
@@ -13,9 +12,7 @@ if not isfile(join(FRAMEWORK_DIR, ".patching-done")):
 
     assert isfile(original_file) and isfile(patched_file)
 
-    env.Execute("patch.py %s %s" % (original_file, patched_file))
-    # env.Execute("touch " + patchflag_path)
-
+    env.Execute("patch %s %s" % (original_file, patched_file))
 
     def _touch(path):
         with open(path, "w") as fp:
