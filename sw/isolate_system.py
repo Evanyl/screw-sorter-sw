@@ -26,6 +26,7 @@ class IsolateSystem:
             # create an imaging thread and switch states
             self.thread = Thread(target=time.sleep,
                                  args=[5])
+            self.thread.start()
             next_state = "image-and-process"
         else:
             # do nothing, wait for the belts to finish

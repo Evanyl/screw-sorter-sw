@@ -79,12 +79,11 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             if (belts_data.des_state == BELTS_STATE_ACTIVE)
             {
                 // only go to active once per write from SW to des_state
-                belts_data.des_state = BELTS_STATE_IDLE;
                 next_state = BELTS_STATE_ACTIVE;
             }
             else
             {
-                // do nothing, not commanding belts
+                // do nothing, waiting for new belt command
             }
             break;
         case BELTS_STATE_ACTIVE:
@@ -106,13 +105,13 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             }
             else
             {
-                // reset step counting of both belts
-                stepper_calibSteps(STEPPER_BELT_TOP);
-                stepper_calibSteps(STEPPER_BELT_BOTTOM);
-                // check if desired state is idle before switcing back?????
+                // check that RPi side has returned to "idle" before acting on
+                //     another command to move belts
                 if (belts_data.des_state == BELTS_STATE_IDLE)
                 {
-                    // garunteed that SW is commanding another set of steps
+                    // reset step counting of both belts
+                    stepper_calibSteps(STEPPER_BELT_TOP);
+                    stepper_calibSteps(STEPPER_BELT_BOTTOM);
                     next_state = BELTS_STATE_IDLE;
                 }
             }
