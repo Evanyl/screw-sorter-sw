@@ -134,6 +134,18 @@ static void core_comms_parseLine(char* message)
             }
             k++;
         }
+        if (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) == 0) {
+            if (DEBUG_COMMS) {
+                // send a debug msg to PC port in event of invalid msg
+                char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE + 50);
+                sprintf(resp, "invalid command: %s", core_comms_data.tokLine[j]);
+                serial_send_nl(PORT_COMPUTER, resp);
+                free(resp);
+                serial_send_nl(PORT_COMPUTER, message);
+            }
+            // break out so we don't infinite-loop in an invalid command
+            break;
+        }
     }
 
     // Reset the args and command arrays
