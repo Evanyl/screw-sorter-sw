@@ -25,11 +25,11 @@ class IsolateSystem:
         if self.belts_state == "idle":
             # create an imaging thread and switch states
             self.thread = Thread(target=time.sleep,
-                                 args=[2])
+                                 args=[5])
             next_state = "image-and-process"
         else:
             # do nothing, wait for the belts to finish
-            pass
+            self.des_belt_state = "idle"
         return next_state
 
     def __init__(self, core_comms):
