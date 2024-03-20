@@ -170,9 +170,6 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
     }
     else if (s->curr_steps == s->des_steps)
     {
-        s->des_steps = 0;
-        s->curr_steps = 0;
-        s->rate = rate;
         ret = true;
     }     
     else
@@ -263,6 +260,12 @@ void stepper_calibAngle(stepper_id_E stepper, float angle)
     stepper_data.steppers[stepper].curr_angle = angle;
     stepper_data.steppers[stepper].last_des_angle = angle;
     stepper_data.steppers[stepper].des_angle = angle;
+}
+
+void stepper_calibSteps(stepper_id_E stepper)
+{
+    stepper_data.steppers[stepper].curr_steps = 0;
+    stepper_data.steppers[stepper].des_steps = 0;
 }
 
 void stepper_update(stepper_id_E stepper)

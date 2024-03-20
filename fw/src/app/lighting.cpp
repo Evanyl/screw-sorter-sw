@@ -89,6 +89,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             }
             else
             {
+                stepper_calibSteps(STEPPER_SIDELIGHT);
                 next_state = LIGHTING_STATE_IDLE;
             }
             break;
@@ -129,6 +130,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             }
             else
             {
+                stepper_calibSteps(STEPPER_SIDELIGHT);
                 light_command(LIGHT_SIDE, LIGHTING_SIDELIGHT_ON);
                 next_state = LIGHTING_STATE_SIDEON;
             }

@@ -1,40 +1,49 @@
 
-#ifndef DEV_SERIAL
-#define DEV_SERIAL
+#ifndef APP_BELTS
+#define APP_BELTS
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
 #include <Arduino.h>
+#include <pt.h>
+
+#include "dev/stepper.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define SERIAL_MESSAGE_SIZE SERIAL_RX_BUFFER_SIZE
-
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
-*******************************************************************************/
+*******************************************************************************/ 
 
-typedef enum {
-    PORT_COMPUTER,
-    PORT_RPI,
-    PORT_COUNT
-} serial_port_E;
+typedef enum 
+{
+    BELTS_STATE_IDLE,
+    BELTS_STATE_ACTIVE,
+    BELTS_STATE_COUNT
+} belts_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void serial_init(serial_port_E port);
-bool serial_available(serial_port_E port);
-char serial_readByte(serial_port_E port);
-bool serial_handleByte(serial_port_E port, char byte);
-void serial_send_nl(serial_port_E port, char* line);
-void serial_send(serial_port_E port, char* line);
-void serial_echo(serial_port_E port);
-void serial_getLine(serial_port_E port, char* lineBuffer);
+void belts_init(void);
+void belts_run10ms(void);
+belts_state_E belts_getState(void);
+void belts_cli_setDesState(uint8_t argNumber, char* args[]);
+void belts_cli_setSteps(uint8_t argNumber, char* args[]);
+void belts_core_comms_setDesState(uint8_t argNumber, char* args[]);
+void belts_core_comms_setSteps(uint8_t argNumber, char* args[]);
 
-#endif // DEV_SERIAL 
+#define BELTS_CLI_COMMANDS \
+{belts_cli_setDesState, "belts-des-state", NULL, NULL, 1, 1}, \
+{belts_cli_setSteps, "belts-steps", NULL, NULL, 2, 2}
+
+#define BELTS_CORE_COMMS_COMMANDS \
+{belts_core_comms_setDesState, "belts-des-state", 1}, \
+{belts_core_comms_setSteps, "belts-steps", 2}         \
+
+#endif // APP_BELTS

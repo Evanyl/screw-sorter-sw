@@ -35,6 +35,7 @@ typedef enum
     DEPOSITOR,
     ARM,
     PLANE,
+    BELTS,
     CORE_COMMS, 
     TASK_10ms_COUNT
 } tasks_10ms_E;

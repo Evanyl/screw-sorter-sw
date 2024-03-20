@@ -68,7 +68,7 @@ static plane_state_E plane_update_state(plane_state_E curr_state)
             break;
         case PLANE_STATE_ENTERING_ACTIVE:
             if (stepper_commandAngle(STEPPER_PLANE,
-                                     plane_data.corr_angle,
+                                     -plane_data.corr_angle,
                                      abs(plane_data.corr_angle * 0.1), 
                                      PLANE_NAV_RATE,
                                      PLANE_STARTING_RATE) == false)
