@@ -2,6 +2,7 @@
 from threading import Thread
 from picamera2 import Picamera2
 import time
+from imaging import IsolateImager
 
 WAITING_LIMIT = 10
 
@@ -12,8 +13,8 @@ class IsolateSystem:
         next_state = self.curr_state
         if self.thread.is_alive() == False:
             # populate data with results of imaging
-            self.top_belt_steps = 2000
-            self.bottom_belt_steps = 2000
+            self.top_belt_steps = self.imager.belt_top_steps
+            self.bottom_belt_steps = self.imager.belt_bottom_steps
             self.des_belt_state = "active"
             self.count = 0
             next_state = "waiting-for-belts-to-start"
@@ -27,8 +28,7 @@ class IsolateSystem:
         # wait until belts_state is idle
         if self.belts_state == "idle":
             # create an imaging thread and switch states
-            self.thread = Thread(target=time.sleep,
-                                 args=[5])
+            self.thread = Thread(target=self.imager.isolation_image_and_process)
             self.thread.start()
             next_state = "image-and-process"
         return next_state
@@ -59,6 +59,7 @@ class IsolateSystem:
 
         self.top_belt_steps = 100
         self.bottom_belt_steps = 100
+        self.imager = IsolateImager()
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):

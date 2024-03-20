@@ -3,6 +3,7 @@ import sys
 import cv2
 import numpy as np
 from vimba import *
+from picamera2 import Picamera2
 
 sys.path.append("./../lib/")
 from image_transformer import transform_top_image, \
@@ -115,3 +116,28 @@ class Imager:
             self.composed_path = out_path / "composed.tiff"
             cv2.imwrite(str(self.composed_path), img_concat)
             print(f"Ready for inference at {str(self.composed_path)}")
+
+class IsolateImager:
+    def __init__(self):
+        self.cam = Picamera2()
+        camera_config = self.cam.create_preview_configuration()
+        self.cam.configure(camera_config)
+        self.cam.start()
+        self.top_belt_steps = 0
+        self.bottom_belt_steps = 0
+        self.isolated = False
+
+    ############################################################################
+    #                 P U B L I C    C L A S S    M E T H O D S                #
+    ############################################################################ 
+
+    def isolation_image_and_process(self):
+        print("Performing isolation imaging/processing...")
+        im = self.cam.capture_array(wait=True)
+        # im is processed in some other function
+        print("Done getting obj")
+
+        self.top_belt_steps = 499
+        self.bottom_belt_steps = 1000
+        time.sleep(3)
+        print("Done isolation imaging/processing")
