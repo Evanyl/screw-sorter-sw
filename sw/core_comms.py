@@ -22,7 +22,7 @@ class CoreComms:
             "curr_state": "idle",
             "belts_curr_state": "idle"
         }
-        self.belt_state_decode = \
+        self.belts_state_decode = \
         {
             0: "idle",
             1: "active"
@@ -48,12 +48,15 @@ class CoreComms:
             if self.connection.in_waiting > 0:
                 s = self.connection.read_until(b"\n").decode('utf-8')
                 self.in_data = self.fromString(s)
+                print(self.in_data)
             else:
                 # no new data, don't read from the serial buffer
                 pass
             
             # Send an updated version of out_data
-            self.connection.write(self.toString())
+            out_str = self.toString()
+            # print(out_str)
+            self.connection.write(out_str)
 
     def updateOutData(self, name, val):
         self.out_data[name] = val
@@ -64,7 +67,7 @@ class CoreComms:
         bottom_belt_steps = self.out_data["bottom_belt_steps"]
         return  str.encode(                                                 \
                     "des-state " + self.out_data["des_state"] +             \
-                    f" corr-angle {angle} " +                               \
+                    f" corr-angle {angle:.2f} " +                               \
                     "belts-des-state " + self.out_data["belts_des_state"] + \
                     f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"  \
                 )
