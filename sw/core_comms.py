@@ -1,11 +1,10 @@
- 
 from datetime import datetime
 import serial
 import json
 
 class CoreComms:
 
-    def __init__(self):
+    def __init__(self, out_dir_path):
         self.id = "core_comms"
         self.connection = serial.Serial("/dev/ttyUSB0", 115200)
         self.out_data = \
@@ -40,6 +39,9 @@ class CoreComms:
             8: "entering-idle",
             9: "count"
         }
+
+        self.out_dir_path = out_dir_path
+        self.ui_comms_path = self.out_dir_path / "comms.json"
 
     def run50ms(self, scheduler):
         if scheduler.taskReleased(self.id):
