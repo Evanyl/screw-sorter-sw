@@ -18,6 +18,7 @@
 
 typedef enum
 {
+    PERIOD_500us,
     PERIOD_1ms,
     PERIOD_10ms,
     PERIOD_100ms,
@@ -26,6 +27,11 @@ typedef enum
 typedef enum
 {
     MOTOR_RUNNER,
+    TASK_500us_COUNT
+} task_500us;
+
+typedef enum
+{
     TASK_1ms_COUNT
 } tasks_1ms_E;
 
@@ -52,7 +58,7 @@ typedef enum
 *******************************************************************************/ 
 
 void scheduler_init(void);
-void scheduler_run500us(void);
+void scheduler_run100us(void);
 bool scheduler_taskReleased(task_period_E period, uint8_t task_id);
 
 #endif // APP_SCHEDULER

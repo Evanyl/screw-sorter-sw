@@ -17,6 +17,8 @@
 #define LIGHTING_SIDELIGHT_HOMING_RATE 250
 #define LIGHTING_SIDELIGHT_IDLE_HEIGHT_STEPS 6000
 
+#define LIGHTING_NAV_RATE 1500
+
 #define LIGHTING_BACKLIGHT_ON  0
 #define LIGHTING_BACKLIGHT_OFF 65535
 #define LIGHTING_SIDELIGHT_ON  0
@@ -81,7 +83,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             if (stepper_command(STEPPER_SIDELIGHT,
                                 LIGHTING_SIDELIGHT_IDLE_HEIGHT_STEPS,
                                 LIGHTING_SIDELIGHT_UP,
-                                750,
+                                LIGHTING_NAV_RATE,
                                 750,
                                 50) == false)
             {
@@ -122,7 +124,7 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             if (stepper_command(STEPPER_SIDELIGHT, 
                                 LIGHTING_SIDELIGHT_IDLE_HEIGHT_STEPS, 
                                 LIGHTING_SIDELIGHT_DOWN, 
-                                750,
+                                LIGHTING_NAV_RATE,
                                 750,
                                 50) == false)
             {
