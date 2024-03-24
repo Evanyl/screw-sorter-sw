@@ -35,10 +35,11 @@ class IsolatorDirective:
     to change the world based on its WorldView and Mission
     """
 
-    def __init__(self, b1steps: int, b2steps: int):
+    def __init__(self, b1steps: int, b2steps: int, start_imaging: bool):
 
         self.b1steps = b1steps  # how many steps to move belt 1
         self.b2steps = b2steps  # how many steps to move belt 2
+        self.start_imaging = start_imaging  # should you start moving the depositor
 
 
 class Isolator:
@@ -75,14 +76,14 @@ class Isolator:
 
     def __init__(self):
 
-        self.b1 = self.Locale("Belt 1", self.B1_CV)
-        self.b2 = self.Locale("Belt 2", self.B2_CV)
+        # self.b1 = self.Locale("Belt 1", self.B1_CV)
+        # self.b2 = self.Locale("Belt 2", self.B2_CV)
         self.cam = Picamera2()
         camera_config = self.cam.create_still_configuration(
             main={"size": (self.FRAME_WIDTH, self.FRAME_HEIGHT)}
         )
         self.cam.configure(camera_config)
-        self.cam.set_controls({"ExposureTime": 10000, "AnalogueGain": 1.0})
+        self.cam.set_controls({"ExposureTime": 20000})
         self.cam.start()
 
     def spin(
@@ -90,12 +91,12 @@ class Isolator:
     ) -> IsolatorDirective:
 
         if mission == IsolatorMission.IDLE:
-            return IsolatorDirective(None, None)
+            return IsolatorDirective(None, None, None)
 
         # sense the world
         self.frame = self.cam.capture_array("main")
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
-        # self.frame = cv2.imread("black-felt-1.jpg")
+        # self.frame = cv2.imread("testing.jpg")
 
         # update state
         self.b1.spin(self.frame)
@@ -114,87 +115,93 @@ class Isolator:
         print(f"B1 DIST: {b1_dist_to_drop}")
         print("=====")
 
-        # if self.b2.N > 0:
+        if self.b2.last_N > self.b2_N:
 
-        #     """
-        #     ASSUMPTIONS:
-        #     * B2 has at least 1 fastener on board
-        #     """
-        #     self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
-        #     b2_isolated = self._b2_is_isolated(right_sorted=True)
+            return IsolatorDirective(0, 0, True)
 
-        #     if not b2_isolated:
+        if self.b2.N > 0:
 
-        #         """
-        #         ASSUMPTIONS:
-        #         * B2 has at least 1 fastener on board
-        #         * B2 fasteners are NOT well-isolated
-        #         """
-        #         return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR)
+            """
+            ASSUMPTIONS:
+            * B2 has at least 1 fastener on board
+            """
+            # self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
+            # b2_isolated = self._b2_is_isolated(right_sorted=True)
 
-        #     """
-        #     ASSUMPTIONS:
-        #     * B2 has at least 1 fastener on board
-        #     * B2 fasteners are well-isolated
-        #     """
-        #     b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
-        #     if b2_dist_to_depositor < self.B2_DEPOSITOR_CLOSE_DIST:
+            if not b2_isolated:
 
-        #         """
-        #         ASSUMPTIONS:
-        #         * B2 has at least 1 fastener on board
-        #         * B2 fasteners are well-isolated
-        #         * B2 rightmost fastener is very close to dropping on to depositor
-        #         """
-        #         return IsolatorDirective(0, self.B2_MICRO_STEP)
+                """
+                ASSUMPTIONS:
+                * B2 has at least 1 fastener on board
+                * B2 fasteners are NOT well-isolated
+                """
+                return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
 
-        #     """
-        #     ASSUMPTIONS:
-        #     * B2 has at least 1 fastener on board
-        #     * B2 fasteners are well-isolated
-        #     * B2 rightmost fastener is still far away from dropping on to depositor
-        #     """
+            """
+            ASSUMPTIONS:
+            * B2 has at least 1 fastener on board
+            * B2 fasteners are well-isolated
+            """
+            # b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
+            if b2_dist_to_depositor < self.B2_DEPOSITOR_CLOSE_DIST:
 
-        #     return IsolatorDirective(
-        #         0,
-        #         max(
-        #             b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST,
-        #             self.B2_MICRO_STEP,
-        #         ),
-        #     )
+                """
+                ASSUMPTIONS:
+                * B2 has at least 1 fastener on board
+                * B2 fasteners are well-isolated
+                * B2 rightmost fastener is very close to dropping on to depositor
+                """
+                return IsolatorDirective(0, self.B2_MICRO_STEP, False)
 
-        # if self.b1.N > 0:
+            """
+            ASSUMPTIONS:
+            * B2 has at least 1 fastener on board
+            * B2 fasteners are well-isolated
+            * B2 rightmost fastener is still far away from dropping on to depositor
+            """
 
-        #     """
-        #     ASSUMPTIONS:
-        #     * B1 has at least 1 fastener on board
-        #     """
+            return IsolatorDirective(
+                0,
+                max(
+                    b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST,
+                    self.B2_MICRO_STEP,
+                ),
+                False,
+            )
 
-        #     self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
-        #     b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
+        if self.b1.N > 0:
 
-        #     if b1_dist_to_drop < self.B1_DROP_CLOSE_DIST:
+            """
+            ASSUMPTIONS:
+            * B1 has at least 1 fastener on board
+            """
 
-        #         """
-        #         ASSUMPTIONS:
-        #         * B1 has at least 1 fastener on board
-        #         * B1 topmost fastener is very close to dropping on to B2
-        #         """
-        #         return IsolatorDirective(self.B1_MICRO_STEP, 0)
+            # self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
+            # b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
 
-        #     """
-        #     ASSUMPTIONS:
-        #     * B1 has at least 1 fastener on board
-        #     * B1 topmost fastener is still far away from dropping on to depositor
-        #     """
+            if b1_dist_to_drop < self.B1_DROP_CLOSE_DIST:
 
-        #     return IsolatorDirective(
-        #         max(
-        #             b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
-        #             self.B1_MICRO_STEP,
-        #         ),
-        #         0,
-        #     )
+                """
+                ASSUMPTIONS:
+                * B1 has at least 1 fastener on board
+                * B1 topmost fastener is very close to dropping on to B2
+                """
+                return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
+
+            """
+            ASSUMPTIONS:
+            * B1 has at least 1 fastener on board
+            * B1 topmost fastener is still far away from dropping on to depositor
+            """
+
+            return IsolatorDirective(
+                max(
+                    b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
+                    self.B1_MICRO_STEP,
+                ),
+                0,
+                False,
+            )
 
     def show(self):
 
@@ -245,6 +252,7 @@ class Isolator:
 
         def spin(self, img):
 
+            self.last_N = self.N
             self.img = img.copy()[self.y1 : self.y2, self.x1 : self.x2, :]
             self.lab = cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB)
             self.mask = self._generate_mask()
