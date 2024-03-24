@@ -39,26 +39,6 @@ class IsolatorDirective:
         self.b2steps = b2steps  # how many steps to move belt 2
 
 
-class Fastener:
-
-    def __init__(self, contour, bbox, area=None):
-
-        self.c = contour
-        self.x1, self.y1, self.w, self.h = bbox
-        self.x2 = self.x1 + self.w
-        self.y2 = self.y1
-        self.x3 = self.x1
-        self.y3 = self.y1 + self.h
-        self.x4 = self.x2
-        self.y4 = self.y3
-        self.area = cv2.contourArea(contour) if area is None else area
-
-    @staticmethod
-    def xdist(fleft, fright):
-
-        return fright.x1 - fleft.x2
-
-
 class Isolator:
 
     FRAME_WIDTH = 4056
@@ -219,7 +199,7 @@ class Isolator:
         for i in range(self.b2.N - 1):
             fright = self.b2.fasteners[i]
             fleft = self.b2.fasteners[i + 1]
-            dist = Fastener.xdist(fleft, fright)
+            dist = Isolator.Fastener.xdist(fleft, fright)
             if dist < self.B2_MIN_SEP:
                 iso = False
                 break
@@ -290,5 +270,24 @@ class Isolator:
                     x += self.x1
                     y += self.y1
                     bbox = (x, y, w, h)
-                    fasteners.append(Fastener(contour, bbox, area=area))
+                    fasteners.append(Isolator.Fastener(contour, bbox, area=area))
             return fasteners
+
+    class Fastener:
+
+        def __init__(self, contour, bbox, area=None):
+
+            self.c = contour
+            self.x1, self.y1, self.w, self.h = bbox
+            self.x2 = self.x1 + self.w
+            self.y2 = self.y1
+            self.x3 = self.x1
+            self.y3 = self.y1 + self.h
+            self.x4 = self.x2
+            self.y4 = self.y3
+            self.area = cv2.contourArea(contour) if area is None else area
+
+        @staticmethod
+        def xdist(fleft, fright):
+
+            return fright.x1 - fleft.x2
