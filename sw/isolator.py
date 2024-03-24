@@ -50,8 +50,8 @@ class Isolator:
     B1_CV = {
         "bbox-top-left": (229, 1273),
         "bbox-bot-right": (960, 2204),
-        "background-lab-mask-lower": [0, 120, 120],
-        "background-lab-mask-upper": [75, 131, 131],
+        "background-lab-mask-lower": [0, 113, 113],
+        "background-lab-mask-upper": [75, 139, 139],
         "background-mask-ksize": (10, 10),
         "fastener-contour-min-area": 250,
     }
@@ -62,8 +62,8 @@ class Isolator:
     B2_CV = {
         "bbox-top-left": (98, 562),
         "bbox-bot-right": (2430, 1200),
-        "background-lab-mask-lower": [0, 120, 120],
-        "background-lab-mask-upper": [75, 131, 131],
+        "background-lab-mask-lower": [0, 113, 113],
+        "background-lab-mask-upper": [75, 139, 139],
         "background-mask-ksize": (10, 10),
         "fastener-contour-min-area": 250,
     }
@@ -104,6 +104,7 @@ class Isolator:
 
         self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
         b2_isolated = self._b2_is_isolated(right_sorted=True)
+        self.b2.show_fasteners([0,1])
         b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
         self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
         b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
@@ -207,8 +208,8 @@ class Isolator:
 
         self.b1.show()
         self.b2.show()
-        # cv2.imshow('sys', cv2.resize(self.frame, (0,0), fx=0.5, fy=0.5))
-        # cv2.imwrite('now.jpg', self.frame)
+        #cv2.imshow('sys', cv2.resize(self.frame, (0,0), fx=0.5, fy=0.5))
+        #cv2.imwrite('testing.jpg', self.frame)
 
     def _b1_dist_to_drop(self, top_sorted=False):
         if not top_sorted:
@@ -232,6 +233,7 @@ class Isolator:
             fright = self.b2.fasteners[i]
             fleft = self.b2.fasteners[i + 1]
             dist = Isolator.Fastener.xdist(fleft, fright)
+            print(dist)
             if dist < self.B2_MIN_SEP:
                 iso = False
                 break
