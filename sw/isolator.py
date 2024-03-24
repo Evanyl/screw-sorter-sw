@@ -82,6 +82,7 @@ class Isolator:
             main={"size": (self.FRAME_WIDTH, self.FRAME_HEIGHT)}
         )
         self.cam.configure(camera_config)
+        self.cam.set_controls({"ExposureTime": 10000, "AnalogueGain": 1.0})
         self.cam.start()
 
     def spin(
@@ -199,9 +200,9 @@ class Isolator:
 
         self.b1.show()
         self.b2.show()
-        #cv2.imshow('sys', cv2.resize(self.frame, (0,0), fx=0.5, fy=0.5))
-        #cv2.imwrite('now.jpg', self.frame)
-        
+        # cv2.imshow('sys', cv2.resize(self.frame, (0,0), fx=0.5, fy=0.5))
+        # cv2.imwrite('now.jpg', self.frame)
+
     def _b1_dist_to_drop(self, top_sorted=False):
         if not top_sorted:
             self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
@@ -260,7 +261,10 @@ class Isolator:
                 x4 = f.x4 - self.x1
                 y4 = f.y4 - self.y1
                 cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
-            cv2.imshow(f"Fastener Isolation System - {self.name}", cv2.resize(show, (0,0), fx=0.5, fy=0.5))
+            cv2.imshow(
+                f"Fastener Isolation System - {self.name}",
+                cv2.resize(show, (0, 0), fx=0.5, fy=0.5),
+            )
 
         def show_fasteners(self, indices):
 
