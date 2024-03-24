@@ -78,6 +78,10 @@ class Isolator:
         self.b1 = self.Locale("Belt 1", self.B1_CV)
         self.b2 = self.Locale("Belt 2", self.B2_CV)
         self.cam = Picamera2()
+        camera_config = self.cam.create_still_configuration(
+            main={"size": (self.FRAME_WIDTH, self.FRAME_HEIGHT)}
+        )
+        self.cam.configure(camera_config)
         self.cam.start()
 
     def spin(
@@ -88,7 +92,7 @@ class Isolator:
             return IsolatorDirective(None, None)
 
         # sense the world
-        self.frame = self.cam.capture_array()
+        self.frame = self.cam.capture_array("main", format="bgr")
         # self.frame = cv2.imread("black-felt-1.jpg")
 
         # update state
