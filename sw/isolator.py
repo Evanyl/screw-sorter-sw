@@ -56,7 +56,7 @@ class Isolator:
         "fastener-contour-min-area": 250,
     }
     B1_DROP = B1_CV["bbox-top-left"][1]
-    B1_DROP_CLOSE_DIST = 50
+    B1_DROP_CLOSE_DIST = 100
     B1_MICRO_STEP = 10
 
     B2_CV = {
@@ -71,7 +71,7 @@ class Isolator:
     B2_DEPOSITOR_DROP = B2_CV["bbox-bot-right"][0]
     B2_STEPS_PER_REV = 1000
     B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV / 2
-    B2_DEPOSITOR_CLOSE_DIST = 25
+    B2_DEPOSITOR_CLOSE_DIST = 100
     B2_MICRO_STEP = 10
 
     def __init__(self):
@@ -108,7 +108,7 @@ class Isolator:
 
         self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
         b2_isolated = self._b2_is_isolated(right_sorted=True)
-        self.b2.show_fasteners([0,1])
+        #self.b2.show_fasteners([0,1])
         b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
         self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
         b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
@@ -120,9 +120,8 @@ class Isolator:
         print(f"B1 DIST: {b1_dist_to_drop}")
         print("=====")
 
-        if self.b2.last_N > self.b2.N:
-            # TODO: update directive
-            self.belts_command = IsolatorDirective(0, 0, True)
+        if self.b2.last_N != None and self.b2.last_N > self.b2.N:
+
             return IsolatorDirective(0, 0, True)
 
         if self.b2.N > 0:
@@ -229,15 +228,21 @@ class Isolator:
     def _b1_dist_to_drop(self, top_sorted=False):
         if not top_sorted:
             self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
-        topmost = self.b1.fasteners[0]
-        return topmost.y1 - self.B1_DROP
+        if len(self.b1.fasteners) > 0:
+            topmost = self.b1.fasteners[0]
+            return topmost.y1 - self.B1_DROP
+        else:
+            return float('inf')
 
     def _b2_dist_to_depositor(self, right_sorted=False):
 
         if not right_sorted:
             self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
-        rightmost = self.b2.fasteners[0]
-        return self.B2_DEPOSITOR_DROP - rightmost.x2
+        if len(self.b2.fasteners) > 0:
+            rightmost = self.b2.fasteners[0]
+            return self.B2_DEPOSITOR_DROP - rightmost.x2
+        else:
+            return float('inf')
 
     def _b2_is_isolated(self, right_sorted=False):
 
@@ -266,7 +271,7 @@ class Isolator:
             self.ub = np.array(cv["background-lab-mask-upper"])
             self.ksize = cv["background-mask-ksize"]
             self.fastener_min_area = cv["fastener-contour-min-area"]
-            self.N = 0
+            self.N = None
 
         def spin(self, img):
 
