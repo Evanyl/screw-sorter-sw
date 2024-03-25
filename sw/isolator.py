@@ -86,11 +86,15 @@ class Isolator:
         self.cam.set_controls({"ExposureTime": 20000})
         self.cam.start()
 
+        self.belts_command = IsolatorDirective(0,0,True)
+
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
     ) -> IsolatorDirective:
 
         if mission == IsolatorMission.IDLE:
+            # TODO: update directive
+            self.belts_command = IsolatorDirective(None, None, None)
             return IsolatorDirective(None, None, None)
 
         # sense the world
@@ -117,7 +121,8 @@ class Isolator:
         print("=====")
 
         if self.b2.last_N > self.b2_N:
-
+            # TODO: update directive
+            self.belts_command = IsolatorDirective(0, 0, True)
             return IsolatorDirective(0, 0, True)
 
         if self.b2.N > 0:
@@ -136,6 +141,7 @@ class Isolator:
                 * B2 has at least 1 fastener on board
                 * B2 fasteners are NOT well-isolated
                 """
+                self.belts_command = IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
                 return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
 
             """
@@ -152,6 +158,7 @@ class Isolator:
                 * B2 fasteners are well-isolated
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
+                self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
                 return IsolatorDirective(0, self.B2_MICRO_STEP, False)
 
             """
@@ -160,7 +167,7 @@ class Isolator:
             * B2 fasteners are well-isolated
             * B2 rightmost fastener is still far away from dropping on to depositor
             """
-
+            self.belts_command = IsolatorDirective(0, max(b2_dist_to_depositor-self.B2_DEPOSITOR_CLOSE_DIST,self.B2_MICRO_STEP), False)
             return IsolatorDirective(
                 0,
                 max(
@@ -187,6 +194,7 @@ class Isolator:
                 * B1 has at least 1 fastener on board
                 * B1 topmost fastener is very close to dropping on to B2
                 """
+                self.belts_command = IsolatorDirective(self.B1_MICRO_STEP, 0, False)
                 return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
 
             """
@@ -194,7 +202,14 @@ class Isolator:
             * B1 has at least 1 fastener on board
             * B1 topmost fastener is still far away from dropping on to depositor
             """
-
+            self.belts_command = IsolatorDirective(
+                max(
+                    b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
+                    self.B1_MICRO_STEP,
+                ),
+                0,
+                False,
+            )
             return IsolatorDirective(
                 max(
                     b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
@@ -271,10 +286,10 @@ class Isolator:
                 x4 = f.x4 - self.x1
                 y4 = f.y4 - self.y1
                 cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
-            cv2.imshow(
-                f"Fastener Isolation System - {self.name}",
-                cv2.resize(show, (0, 0), fx=0.5, fy=0.5),
-            )
+            # cv2.imshow(
+            #     f"Fastener Isolation System - {self.name}",
+            #     cv2.resize(show, (0, 0), fx=0.5, fy=0.5),
+            # )
 
         def show_fasteners(self, indices):
 
@@ -294,7 +309,7 @@ class Isolator:
                     colors[indices.index(i) % len(colors)],
                     3,
                 )
-            cv2.imshow(f"Fastener Isolation System - {self.name}", show)
+            # cv2.imshow(f"Fastener Isolation System - {self.name}", show)
 
         def _generate_mask(self):
 
