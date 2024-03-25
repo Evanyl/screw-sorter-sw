@@ -16,6 +16,8 @@ class IsolateSystem:
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b1steps
             self.bottom_belt_steps = self.isolator.belts_command.b2steps
+            print(f"*******belt top: {self.top_belt_steps}")
+            print(f"*******belt bottom: {self.bottom_belt_steps}")
             self.des_belt_state = "active"
             self.count = 0
             next_state = "waiting-for-belts-to-start"
@@ -66,8 +68,8 @@ class IsolateSystem:
         self.des_belt_state = "idle"
         self.curr_state = "idle"
 
-        self.top_belt_steps = 100
-        self.bottom_belt_steps = 100
+        self.top_belt_steps = 0
+        self.bottom_belt_steps = 0
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):

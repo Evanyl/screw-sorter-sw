@@ -76,8 +76,8 @@ class Isolator:
 
     def __init__(self):
 
-        # self.b1 = self.Locale("Belt 1", self.B1_CV)
-        # self.b2 = self.Locale("Belt 2", self.B2_CV)
+        self.b1 = self.Locale("Belt 1", self.B1_CV)
+        self.b2 = self.Locale("Belt 2", self.B2_CV)
         self.cam = Picamera2()
         camera_config = self.cam.create_still_configuration(
             main={"size": (self.FRAME_WIDTH, self.FRAME_HEIGHT)}
@@ -120,9 +120,10 @@ class Isolator:
         print(f"B1 DIST: {b1_dist_to_drop}")
         print("=====")
 
-        if self.b2.last_N > self.b2_N:
+        if self.b2.last_N > self.b2.N:
             # TODO: update directive
             self.belts_command = IsolatorDirective(0, 0, True)
+            print("*********HERE**********")
             return IsolatorDirective(0, 0, True)
 
         if self.b2.N > 0:
@@ -266,6 +267,7 @@ class Isolator:
             self.ub = np.array(cv["background-lab-mask-upper"])
             self.ksize = cv["background-mask-ksize"]
             self.fastener_min_area = cv["fastener-contour-min-area"]
+            self.N = 0
 
         def spin(self, img):
 

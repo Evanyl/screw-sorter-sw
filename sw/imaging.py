@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 from vimba import *
 
-sys.path.append("./../lib/")
 sys.path.append("./lib/")
 from image_transformer import transform_top_image, \
                               transform_side_image
