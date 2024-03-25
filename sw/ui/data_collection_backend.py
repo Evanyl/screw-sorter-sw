@@ -2,6 +2,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+import os
 import cv2
 import sys
 import shutil
@@ -113,6 +114,7 @@ class My_App(DataCollectionCoreUi):
 
 
 def start_ui(operator_name, img_dir_path):
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = QtCore.QLibraryInfo.location(QtCore.QLibraryInfo.PluginsPath)
     app = QtWidgets.QApplication([])
     myApp = My_App(operator_name, img_dir_path)
     myApp.show()
