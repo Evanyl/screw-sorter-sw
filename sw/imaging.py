@@ -125,7 +125,8 @@ class IsolateImager:
         self.cam.start()
         self.top_belt_steps = 0
         self.bottom_belt_steps = 0
-        self.isolated = False
+        self.fastener_isolated = False # informs the classify_system that a screw is in the depositor
+        self.fastener_ready = False # informs the isolate_system that a screw is ready so the belts should stop
 
     ############################################################################
     #                 P U B L I C    C L A S S    M E T H O D S                #
@@ -139,5 +140,7 @@ class IsolateImager:
 
         self.top_belt_steps = 499
         self.bottom_belt_steps = 1000
+        self.fastener_isolated = False
+        self.fastener_ready = False
         time.sleep(3)
         print("Done isolation imaging/processing")
