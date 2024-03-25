@@ -247,6 +247,7 @@ void depositor_init(void)
     PT_INIT(&depositor_data.thread);
 
     servo_init(SERVO_DEPOSITOR, DEPOSITOR_CLOSE_ANGLE);
+    servo_init(SERVO_COVER, 15);
     switch_init(SWITCH_DEPOSITOR);
     stepper_init(STEPPER_DEPOSITOR);
 }

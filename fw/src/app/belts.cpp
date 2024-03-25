@@ -10,8 +10,8 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define BELTS_NAV_RATE 750
-#define BELTS_STARTING_RATE 100
+#define BELTS_NAV_RATE 1500
+#define BELTS_STARTING_RATE 200
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -23,7 +23,9 @@ typedef struct
     belts_state_E state;
     belts_state_E des_state;
     uint16_t top_belt_steps;
+    uint8_t top_belt_dir;
     uint16_t bottom_belt_steps;
+    uint8_t bottom_belt_dir;
 } belts_data_S;
 
 /*******************************************************************************
@@ -41,7 +43,9 @@ static belts_data_S belts_data =
     .state = BELTS_STATE_IDLE,
     .des_state = BELTS_STATE_IDLE,
     .top_belt_steps = 0,
+    .top_belt_dir = 1,
     .bottom_belt_steps = 0,
+    .bottom_belt_dir = 1,
 
 };
 
@@ -89,13 +93,13 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
         case BELTS_STATE_ACTIVE:
             top = stepper_command(STEPPER_BELT_TOP,  
                                 belts_data.top_belt_steps, 
-                                1, 
+                                belts_data.top_belt_dir, 
                                 750, 
                                 belts_data.top_belt_steps*0.1, 
                                 100);
             bottom = stepper_command(STEPPER_BELT_BOTTOM,  
                                 belts_data.bottom_belt_steps, 
-                                1, 
+                                belts_data.bottom_belt_dir, 
                                 750, 
                                 belts_data.bottom_belt_steps*0.1, 
                                 100);
@@ -173,6 +177,16 @@ void belts_core_comms_setDesState(uint8_t argNumber, char* args[])
 
 void belts_core_comms_setSteps(uint8_t argNumber, char* args[])
 {
-    belts_data.top_belt_steps = atoi(args[0]);
-    belts_data.bottom_belt_steps = atoi(args[1]);
+    belts_data.top_belt_steps = abs(atoi(args[0]));
+    belts_data.bottom_belt_steps = abs(atoi(args[1]));
+    belts_data.top_belt_dir = 1;
+    belts_data.bottom_belt_dir = 1;
+    if (atoi(args[0]) < 0)
+    {
+        belts_data.top_belt_dir = 0;
+    }
+    if (atoi(args[1]) < 0)
+    {
+        belts_data.bottom_belt_dir = 0;   
+    }
 }

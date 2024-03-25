@@ -62,6 +62,16 @@ servo_data_s servo_data =
     {
         [SERVO_DEPOSITOR] = 
         {
+            .pwm_pin = PA_7,
+            .dig_pin = PA7,
+            .curr_angle = 0.0,
+            .des_angle = 0.0,
+            .delta = 0.0,
+            .counter = 0,
+            .rate = 100
+        },
+        [SERVO_COVER] = 
+        {
             .pwm_pin = PB_0,
             .dig_pin = PB0,
             .curr_angle = 0.0,
@@ -157,16 +167,30 @@ void servo_update(servo_id_E servo)
 
 void servo_cli_move(uint8_t argNumber, char* args[])
 {
-    if (strcmp(args[0], "depositor") == 0)
+    servo_id_E s = SERVO_COUNT;
+    if (strcmp(args[0], "cover") == 0)
+    {
+        s = SERVO_COVER;
+    }
+    else if (strcmp(args[0], "depositor") == 0)
     {   
-        float angle = atof(args[1]);
-        uint8_t steps = atoi(args[2]);
-        uint16_t rate = atoi(args[3]);
-        servo_command(SERVO_DEPOSITOR, angle, steps, rate);
+        s = SERVO_DEPOSITOR;
     }
     else
     {
         serial_send_nl(PORT_COMPUTER, "invalid servo");
+    }
+
+    if (s != SERVO_COUNT)
+    {
+        float angle = atof(args[1]);
+        uint8_t steps = atoi(args[2]);
+        uint16_t rate = atoi(args[3]);
+        servo_command(s, angle, steps, rate);
+    }
+    else
+    {
+         // do nohting
     }
 }
 

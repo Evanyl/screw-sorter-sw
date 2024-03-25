@@ -151,7 +151,7 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
 {
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
-    if (s->curr_steps == 0)
+    if (s->curr_steps == 0 && steps != 0)
     {
         s->des_steps = steps;
         s->rate = rate;

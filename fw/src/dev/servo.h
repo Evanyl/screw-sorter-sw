@@ -18,6 +18,7 @@
 typedef enum
 {
     SERVO_DEPOSITOR,
+    SERVO_COVER,
     SERVO_COUNT
 } servo_id_E;
 
