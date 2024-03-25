@@ -123,7 +123,6 @@ class Isolator:
         if self.b2.last_N > self.b2.N:
             # TODO: update directive
             self.belts_command = IsolatorDirective(0, 0, True)
-            print("*********HERE**********")
             return IsolatorDirective(0, 0, True)
 
         if self.b2.N > 0:

@@ -14,8 +14,10 @@ class IsolateSystem:
         next_state = self.curr_state
         if self.thread.is_alive() == False:
             # populate data with results of imaging
-            self.top_belt_steps = self.isolator.belts_command.b1steps
-            self.bottom_belt_steps = self.isolator.belts_command.b2steps
+            self.top_belt_steps = self.isolator.belts_command.b2steps
+            self.bottom_belt_steps = self.isolator.belts_command.b1steps
+            # self.top_belt_steps = 2000
+            # self.bottom_belt_steps = 2000
             print(f"*******belt top: {self.top_belt_steps}")
             print(f"*******belt bottom: {self.bottom_belt_steps}")
             self.des_belt_state = "active"
