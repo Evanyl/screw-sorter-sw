@@ -272,6 +272,7 @@ class Isolator:
             self.ksize = cv["background-mask-ksize"]
             self.fastener_min_area = cv["fastener-contour-min-area"]
             self.N = None
+            self.img = None
 
         def spin(self, img):
 
@@ -292,6 +293,7 @@ class Isolator:
                 x4 = f.x4 - self.x1
                 y4 = f.y4 - self.y1
                 cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
+            return show
             # cv2.imshow(
             #     f"Fastener Isolation System - {self.name}",
             #     cv2.resize(show, (0, 0), fx=0.5, fy=0.5),

@@ -64,7 +64,7 @@ def main(out_dir_path, model_path, decoder_path, operator_name):
     control_thread.start()
 
     # Pyqt needs to be on main thread... bruh moment
-    start_ui(operator_name, out_dir_path)
+    start_ui(operator_name, out_dir_path, s.isolate_system)
 
         
 if __name__ == "__main__":
