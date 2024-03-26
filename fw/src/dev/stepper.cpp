@@ -170,7 +170,7 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
         s->condition = NULL;
         s->cond_met = true;
     }
-    else if (s->curr_steps == s->des_steps)
+    else if (s->curr_steps == s->des_steps || steps == 0)
     {
         ret = true;
     }     
