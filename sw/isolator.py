@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import time
 from enum import Enum
 
 from picamera2 import Picamera2
@@ -57,7 +58,7 @@ class Isolator:
     }
     B1_DROP = B1_CV["bbox-top-left"][1]
     B1_DROP_CLOSE_DIST = 100
-    B1_MICRO_STEP = 10
+    B1_MICRO_STEP = 100
 
     B2_CV = {
         "bbox-top-left": (98, 562),
@@ -69,10 +70,10 @@ class Isolator:
     }
     B2_MIN_SEP = 10
     B2_DEPOSITOR_DROP = B2_CV["bbox-bot-right"][0]
-    B2_STEPS_PER_REV = 1000
+    B2_STEPS_PER_REV = 10000
     B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV / 2
     B2_DEPOSITOR_CLOSE_DIST = 100
-    B2_MICRO_STEP = 10
+    B2_MICRO_STEP = 100
 
     def __init__(self):
 
@@ -87,6 +88,7 @@ class Isolator:
         self.cam.start()
 
         self.belts_command = IsolatorDirective(0,0,True)
+        self.x = 0
 
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
@@ -120,9 +122,23 @@ class Isolator:
         print(f"B1 DIST: {b1_dist_to_drop}")
         print("=====")
 
+        # self.x += 1
+        # print(f'x={self.x}')
+
+        # if (self.x % 5) == 0:
+        #     print('Move')
+        #     self.belts_command = IsolatorDirective(0,100,True)
+        # else:
+        #     print('No Move')
+        #     self.belts_command = IsolatorDirective(0,0,True)
+        
+        
+
         if self.b2.last_N != None and self.b2.last_N > self.b2.N:
 
-            return IsolatorDirective(0, 0, True)
+            print('ISOLATED***********************************')
+            self.belts_command = IsolatorDirective(0, 0, True)
+            return
 
         if self.b2.N > 0:
 
@@ -141,7 +157,9 @@ class Isolator:
                 * B2 fasteners are NOT well-isolated
                 """
                 self.belts_command = IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
-                return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
+                print('booting.....')
+                return
+                # return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
 
             """
             ASSUMPTIONS:
@@ -158,7 +176,8 @@ class Isolator:
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
                 self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
-                return IsolatorDirective(0, self.B2_MICRO_STEP, False)
+                return
+                # return IsolatorDirective(0, self.B2_MICRO_STEP, False)
 
             """
             ASSUMPTIONS:
@@ -167,14 +186,15 @@ class Isolator:
             * B2 rightmost fastener is still far away from dropping on to depositor
             """
             self.belts_command = IsolatorDirective(0, max(b2_dist_to_depositor-self.B2_DEPOSITOR_CLOSE_DIST,self.B2_MICRO_STEP), False)
-            return IsolatorDirective(
-                0,
-                max(
-                    b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST,
-                    self.B2_MICRO_STEP,
-                ),
-                False,
-            )
+            return
+            # return IsolatorDirective(
+            #     0,
+            #     max(
+            #         b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST,
+            #         self.B2_MICRO_STEP,
+            #     ),
+            #     False,
+            # )
 
         if self.b1.N > 0:
 
@@ -194,7 +214,8 @@ class Isolator:
                 * B1 topmost fastener is very close to dropping on to B2
                 """
                 self.belts_command = IsolatorDirective(self.B1_MICRO_STEP, 0, False)
-                return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
+                return
+                # return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
 
             """
             ASSUMPTIONS:
@@ -209,14 +230,15 @@ class Isolator:
                 0,
                 False,
             )
-            return IsolatorDirective(
-                max(
-                    b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
-                    self.B1_MICRO_STEP,
-                ),
-                0,
-                False,
-            )
+            return
+            # return IsolatorDirective(
+            #     max(
+            #         b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
+            #         self.B1_MICRO_STEP,
+            #     ),
+            #     0,
+            #     False,
+            # )
 
     def show(self):
 
@@ -292,10 +314,10 @@ class Isolator:
                 x4 = f.x4 - self.x1
                 y4 = f.y4 - self.y1
                 cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
-            # cv2.imshow(
-            #     f"Fastener Isolation System - {self.name}",
-            #     cv2.resize(show, (0, 0), fx=0.5, fy=0.5),
-            # )
+            cv2.imshow(
+                f"Fastener Isolation System - {self.name}",
+                cv2.resize(show, (0, 0), fx=0.5, fy=0.5),
+            )
 
         def show_fasteners(self, indices):
 

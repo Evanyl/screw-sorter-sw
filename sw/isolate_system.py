@@ -75,7 +75,7 @@ class IsolateSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            print(self.curr_state)
+            # print(self.curr_state)
             # get last station_state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             # send next desired state
