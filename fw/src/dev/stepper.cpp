@@ -10,7 +10,9 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define MILLI_SEC_TO_SEC 1000
+#define MICROSEC_TO_SEC (uint32_t)  1000000
+#define MOTOR_RUNNER_CYCLE_us       500
+#define MOTOR_RUNNER_PERIOD_PER_SEC MICROSEC_TO_SEC / MOTOR_RUNNER_CYCLE_us
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -149,7 +151,7 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
 {
     bool ret = false;
     stepper_s* s = &stepper_data.steppers[stepper];
-    if (s->curr_steps == 0)
+    if (s->curr_steps == 0 && steps != 0)
     {
         s->des_steps = steps;
         s->rate = rate;
@@ -168,7 +170,7 @@ bool stepper_command(stepper_id_E stepper, uint16_t steps, uint8_t dir,
         s->condition = NULL;
         s->cond_met = true;
     }
-    else if (s->curr_steps == s->des_steps)
+    else if (s->curr_steps == s->des_steps || steps == 0)
     {
         ret = true;
     }     
@@ -275,7 +277,7 @@ void stepper_update(stepper_id_E stepper)
     switch (s->mode)
     {
         case STEPPER_MODE_STEPS:
-            if (s->counter >= MILLI_SEC_TO_SEC/s->curr_rate)
+            if (s->counter >= MOTOR_RUNNER_PERIOD_PER_SEC/s->curr_rate)
             {
                 digitalWrite(s->pin_dir, s->dir);
                 delayMicroseconds(10); // Ensure direction is registered
@@ -334,7 +336,7 @@ void stepper_update(stepper_id_E stepper)
             }
             break;
         case STEPPER_MODE_CONDITION:
-            if (s->counter >= MILLI_SEC_TO_SEC/s->rate)
+            if (s->counter >= MOTOR_RUNNER_PERIOD_PER_SEC/s->rate)
             {
                 digitalWrite(s->pin_dir, s->dir);
                 delayMicroseconds(10); // Ensure direction is registered
@@ -360,7 +362,7 @@ void stepper_update(stepper_id_E stepper)
             break;
 
         case STEPPER_MODE_ANGLE:
-            if (s->counter >= MILLI_SEC_TO_SEC/s->curr_rate)
+            if (s->counter >= MOTOR_RUNNER_PERIOD_PER_SEC/s->curr_rate)
             {
                 digitalWrite(s->pin_dir, s->dir);
                 delayMicroseconds(10); // Ensure direction is registered

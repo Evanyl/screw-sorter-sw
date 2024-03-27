@@ -10,7 +10,9 @@
 *                               C O N S T A N T S                              *
 *******************************************************************************/ 
 
-#define MILLI_SEC_TO_SEC          (1000)
+#define MICROSEC_TO_SEC (uint32_t)  1000000
+#define MOTOR_RUNNER_CYCLE_us       500
+#define MOTOR_RUNNER_PERIOD_PER_SEC MICROSEC_TO_SEC / MOTOR_RUNNER_CYCLE_us
 
 #define SERVO_PWM_PERIOD_MICROSEC (20000)
 #define SERVO_PWM_FREQ_HZ         (1 / (SERVO_PWM_PERIOD_MICROSEC * pow(10,-6)))
@@ -59,6 +61,16 @@ servo_data_s servo_data =
     .servos = 
     {
         [SERVO_DEPOSITOR] = 
+        {
+            .pwm_pin = PA_7,
+            .dig_pin = PA7,
+            .curr_angle = 0.0,
+            .des_angle = 0.0,
+            .delta = 0.0,
+            .counter = 0,
+            .rate = 100
+        },
+        [SERVO_COVER] = 
         {
             .pwm_pin = PB_0,
             .dig_pin = PB0,
@@ -118,7 +130,7 @@ bool servo_command(servo_id_E servo, float angle, uint8_t steps, uint16_t rate) 
 void servo_update(servo_id_E servo)
 {
     servo_s* s = &servo_data.servos[servo];
-    if (s->counter >= MILLI_SEC_TO_SEC/s->rate)
+    if (s->counter >= MOTOR_RUNNER_PERIOD_PER_SEC/s->rate)
     {
         if (abs(s->des_angle - s->curr_angle) < abs(s->delta) && 
             s->curr_angle != s->des_angle)
@@ -155,16 +167,30 @@ void servo_update(servo_id_E servo)
 
 void servo_cli_move(uint8_t argNumber, char* args[])
 {
-    if (strcmp(args[0], "depositor") == 0)
+    servo_id_E s = SERVO_COUNT;
+    if (strcmp(args[0], "cover") == 0)
+    {
+        s = SERVO_COVER;
+    }
+    else if (strcmp(args[0], "depositor") == 0)
     {   
-        float angle = atof(args[1]);
-        uint8_t steps = atoi(args[2]);
-        uint16_t rate = atoi(args[3]);
-        servo_command(SERVO_DEPOSITOR, angle, steps, rate);
+        s = SERVO_DEPOSITOR;
     }
     else
     {
         serial_send_nl(PORT_COMPUTER, "invalid servo");
+    }
+
+    if (s != SERVO_COUNT)
+    {
+        float angle = atof(args[1]);
+        uint8_t steps = atoi(args[2]);
+        uint16_t rate = atoi(args[3]);
+        servo_command(s, angle, steps, rate);
+    }
+    else
+    {
+         // do nohting
     }
 }
 

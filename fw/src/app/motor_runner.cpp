@@ -28,7 +28,7 @@ typedef struct
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/ 
 
-void run1ms(void);
+void run500us(void);
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -44,10 +44,10 @@ static motor_runner_data_s motor_runner_data =
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
 
-static PT_THREAD(run1ms(struct pt* thread))
+static PT_THREAD(run500us(struct pt* thread))
 {
     PT_BEGIN(thread);
-    PT_WAIT_UNTIL(thread, scheduler_taskReleased(PERIOD_1ms, (uint8_t) MOTOR_RUNNER));
+    PT_WAIT_UNTIL(thread, scheduler_taskReleased(PERIOD_500us, (uint8_t) MOTOR_RUNNER));
     
     // call all the update functions of all motors
     for (uint8_t servo = 0; servo < SERVO_COUNT; servo++)
@@ -72,7 +72,7 @@ void motor_runner_init(void)
     PT_INIT(&motor_runner_data.thread);
 }
 
-void motor_runner_run1ms(void)
+void motor_runner_run500us(void)
 {
-    run1ms(&motor_runner_data.thread);
+    run500us(&motor_runner_data.thread);
 }

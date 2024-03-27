@@ -2,6 +2,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+import os
 import cv2
 import sys
 import shutil
@@ -20,7 +21,7 @@ IMAGING_STATION_CONFIGURATION="A1"
 
 
 class My_App(DataCollectionCoreUi):
-    def __init__(self, operator_name, img_dir_path):
+    def __init__(self, operator_name, img_dir_path, isolate_system):
         super().__init__()
         # Set the date for this session
         self.session_date = datetime.now()
@@ -30,10 +31,11 @@ class My_App(DataCollectionCoreUi):
         self.comms_in = {}
         self.session_path = None
         self.workings_imgs_path = self.working_files_path / "imgs"
+        self.isolate_system = isolate_system
+
         self.setup_working_files_dir()
-
         self.setup_camera_worker()
-
+        self.setup_isolate_feed()
         self.setup_labelling()
 
     def setup_camera_worker(self):
@@ -46,6 +48,12 @@ class My_App(DataCollectionCoreUi):
 
         self.inference_button.clicked.connect(self.camera_worker.run_inference)
         self.labelling_button.clicked.connect(self.camera_worker.run_labelling)
+
+    def setup_isolate_feed(self):
+        self.isolate_timer = QtCore.QTimer(self)
+        self.isolate_timer.timeout.connect(self.draw_isolate_feed)
+        self.isolate_timer.setInterval(100)
+        self.isolate_timer.start()
 
     @QtCore.pyqtSlot(str)
     def handle_images(self, action_finished):
@@ -66,6 +74,16 @@ class My_App(DataCollectionCoreUi):
         else:
             print(f"{self.mode} should never be this")
 
+    @QtCore.pyqtSlot()
+    def draw_isolate_feed(self):
+        belt1_img = self.isolate_system.isolator.b1.img
+        belt2_img = self.isolate_system.isolator.b2.img
+        if belt1_img is not None:
+            belt1_with_fasteners = self.isolate_system.isolator.b1.show()
+            self.belt_1_feed.setPixmap(self.convert_cv_to_pixmap(belt1_with_fasteners).scaled(1454, 442, QtCore.Qt.KeepAspectRatio))
+        if belt2_img is not None:
+            belt2_with_fasteners = self.isolate_system.isolator.b2.show()
+            self.belt_2_feed.setPixmap(self.convert_cv_to_pixmap(belt2_with_fasteners).scaled(1454, 442, QtCore.Qt.KeepAspectRatio))
 
     def setup_working_files_dir(self):
         # replace all potential bad filename characters with underscores
@@ -111,9 +129,18 @@ class My_App(DataCollectionCoreUi):
                              bytesPerLine, QtGui.QImage.Format_RGB888)
         return QtGui.QPixmap.fromImage(q_img)
 
+    def convert_cv_to_pixmap(self, cv_img):
+        cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        height, width, channel = cv_img.shape
+        bytesPerLine = channel * width
+        q_img = QtGui.QImage(cv_img.data, width, height,
+                            bytesPerLine, QtGui.QImage.Format_RGB888)
+        return QtGui.QPixmap.fromImage(q_img)
 
-def start_ui(operator_name, img_dir_path):
+
+def start_ui(operator_name, img_dir_path, isolate_system):
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = QtCore.QLibraryInfo.location(QtCore.QLibraryInfo.PluginsPath)
     app = QtWidgets.QApplication([])
-    myApp = My_App(operator_name, img_dir_path)
+    myApp = My_App(operator_name, img_dir_path, isolate_system)
     myApp.show()
     app.exec_()

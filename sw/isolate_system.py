@@ -3,7 +3,10 @@ from threading import Thread
 from picamera2 import Picamera2
 import time
 
+from isolator import Isolator, IsolatorMission, IsolatorWorldView
+
 WAITING_LIMIT = 10
+IDLE_WAITING_COUNT = 5
 
 class IsolateSystem:
 
@@ -12,8 +15,8 @@ class IsolateSystem:
         next_state = self.curr_state
         if self.thread.is_alive() == False:
             # populate data with results of imaging
-            self.top_belt_steps = 2000
-            self.bottom_belt_steps = 2000
+            self.top_belt_steps = self.isolator.belts_command.b2steps
+            self.bottom_belt_steps = self.isolator.belts_command.b1steps
             self.des_belt_state = "active"
             self.count = 0
             next_state = "waiting-for-belts-to-start"
@@ -24,11 +27,20 @@ class IsolateSystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
+        self.idle_count += 1
         # wait until belts_state is idle
-        if self.belts_state == "idle":
+        if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT:
+            # reset the idle counter, makes sure we don't check camera too quick
+            self.idle_counter = 0
             # create an imaging thread and switch states
-            self.thread = Thread(target=time.sleep,
-                                 args=[5])
+            self.thread = Thread(target=self.isolator.spin,
+                                 args=[
+                                    IsolatorWorldView(b1_moving=False,
+                                                      b2_moving=False,
+                                                      depositor_accepting=True),
+                                    IsolatorMission.ISOLATE
+                                 ]
+                                )
             self.thread.start()
             next_state = "image-and-process"
         return next_state
@@ -51,18 +63,20 @@ class IsolateSystem:
             "image-and-process": self.__image_and_process_state_func,
             "waiting-for-belts-to-start": self.__waiting_for_belts_to_start_state_func
         }
+        self.isolator = Isolator()
         self.core_comms = core_comms
         self.thread = Thread()
         self.belts_state = "idle"
         self.des_belt_state = "idle"
         self.curr_state = "idle"
+        self.idle_count = 0
 
-        self.top_belt_steps = 100
-        self.bottom_belt_steps = 100
+        self.top_belt_steps = 0
+        self.bottom_belt_steps = 0
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            print(self.curr_state)
+            # print(self.curr_state)
             # get last station_state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             # send next desired state

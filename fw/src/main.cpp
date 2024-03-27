@@ -27,11 +27,13 @@ void setup()
 
 void loop()
 {
+    // 100us tasks
+    scheduler_run100us();
+
     // 500us tasks
-    scheduler_run500us();
+    motor_runner_run500us();
 
     // 1ms tasks
-    motor_runner_run1ms();
 
     // 10ms tasks
     depositor_run10ms();
