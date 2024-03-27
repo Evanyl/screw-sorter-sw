@@ -293,7 +293,7 @@ class Isolator:
             self.ub = np.array(cv["background-lab-mask-upper"])
             self.ksize = cv["background-mask-ksize"]
             self.fastener_min_area = cv["fastener-contour-min-area"]
-            self.N = None
+            self.N = 0
             self.img = None
 
         def spin(self, img):

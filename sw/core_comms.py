@@ -57,7 +57,7 @@ class CoreComms:
             
             # Send an updated version of out_data
             out_str = self.toString()
-            print(out_str)
+            # print(out_str)
             self.connection.write(out_str)
 
     def updateOutData(self, name, val):
