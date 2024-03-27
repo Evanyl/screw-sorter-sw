@@ -6,6 +6,7 @@ import time
 from isolator import Isolator, IsolatorMission, IsolatorWorldView
 
 WAITING_LIMIT = 10
+IDLE_WAITING_COUNT = 5
 
 class IsolateSystem:
 
@@ -16,10 +17,6 @@ class IsolateSystem:
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b2steps
             self.bottom_belt_steps = self.isolator.belts_command.b1steps
-            # self.top_belt_steps = 2000
-            # self.bottom_belt_steps = 2000
-            print(f"*******belt top: {self.top_belt_steps}")
-            print(f"*******belt bottom: {self.bottom_belt_steps}")
             self.des_belt_state = "active"
             self.count = 0
             next_state = "waiting-for-belts-to-start"
@@ -30,8 +27,11 @@ class IsolateSystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
+        self.idle_count += 1
         # wait until belts_state is idle
-        if self.belts_state == "idle":
+        if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT:
+            # reset the idle counter, makes sure we don't check camera too quick
+            self.idle_counter = 0
             # create an imaging thread and switch states
             self.thread = Thread(target=self.isolator.spin,
                                  args=[
@@ -69,6 +69,7 @@ class IsolateSystem:
         self.belts_state = "idle"
         self.des_belt_state = "idle"
         self.curr_state = "idle"
+        self.idle_count = 0
 
         self.top_belt_steps = 0
         self.bottom_belt_steps = 0

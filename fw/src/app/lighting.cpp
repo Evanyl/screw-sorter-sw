@@ -7,6 +7,7 @@
 #include "system_state.h"
 
 #include "dev/light.h"
+#include "dev/servo.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -172,6 +173,7 @@ void lighting_init(void)
 {
     PT_INIT(&lighting_data.thread);
 
+    servo_init(SERVO_COVER, 0);
     stepper_init(STEPPER_SIDELIGHT);
     switch_init(SWITCH_SIDELIGHT);
     light_init(LIGHT_BACK, LIGHTING_BACKLIGHT_OFF);
