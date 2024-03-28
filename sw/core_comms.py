@@ -19,7 +19,8 @@ class CoreComms:
         self.in_data = \
         {
             "curr_state": "idle",
-            "belts_curr_state": "idle"
+            "belts_curr_state": "idle",
+            "depositor_curr_state": "idle"
         }
         self.belts_state_decode = \
         {

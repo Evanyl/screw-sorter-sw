@@ -36,10 +36,10 @@ class IsolateSystem:
             # create an imaging thread and switch states
             self.thread = Thread(target=self.isolator.spin,
                                  args=[
+                                    IsolatorMission.ISOLATE,
                                     IsolatorWorldView(b1_moving=False,
                                                       b2_moving=False,
-                                                      depositor_accepting=self.depositor_state=="idle"),
-                                    IsolatorMission.ISOLATE
+                                                      depositor_accepting=self.depositor_state=="idle"), # also need to track if screw has dropped
                                  ]
                                 )
             self.thread.start()
