@@ -19,7 +19,8 @@ class CoreComms:
         self.in_data = \
         {
             "curr_state": "idle",
-            "belts_curr_state": "idle"
+            "belts_curr_state": "idle",
+            "depositor_curr_state": "idle"
         }
         self.belts_state_decode = \
         {
@@ -38,6 +39,16 @@ class CoreComms:
             7: "side-on",
             8: "entering-idle",
             9: "count"
+        }
+        self.depositor_state_decode = \
+        {
+            0: "homing",
+            1: "idle",
+            2: "sweeping",
+            3: "centering",
+            4: "dropping",
+            5: "entering_idle",
+            6: "count"
         }
 
         self.out_dir_path = out_dir_path
@@ -69,7 +80,7 @@ class CoreComms:
         bottom_belt_steps = self.out_data["bottom_belt_steps"]
         return  str.encode(                                                 \
                     "des-state " + self.out_data["des_state"] +             \
-                    f" corr-angle {angle:.2f} " +                               \
+                    f" corr-angle {angle:.2f} " +                           \
                     "belts-des-state " + self.out_data["belts_des_state"] + \
                     f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"  \
                 )
@@ -78,7 +89,8 @@ class CoreComms:
         d = json.loads(s.strip("\n"))
         return {
                    "curr_state": self.state_decode[d["system_state"]],
-                   "belts_curr_state": self.belts_state_decode[d["belts_state"]]
+                   "belts_curr_state": self.belts_state_decode[d["belts_state"]],
+                   "depositor_curr_state": self.depositor_state_decode[d["depositor_state"]]
                }
 
     def getInData(self):

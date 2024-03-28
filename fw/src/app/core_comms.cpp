@@ -6,6 +6,7 @@
 #include "plane.h"
 #include "system_state.h"
 #include "belts.h"
+#include "depositor.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -166,9 +167,12 @@ static PT_THREAD(run10ms(struct pt* thread))
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
             sprintf(resp,
-                    "{\"system_state\": %d, \"belts_state\": %d}\n",
+                    "{\"system_state\": %d, \
+                      \"belts_state\": %d,  \
+                      \"depositor_state\": %d}\n",
                     system_state_getState(),
-                    belts_getState());
+                    belts_getState(),
+                    depositor_getState());
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

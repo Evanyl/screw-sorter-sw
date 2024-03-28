@@ -61,8 +61,8 @@ class Isolator:
     B1_MICRO_STEP = 100
 
     B2_CV = {
-        "bbox-top-left": (98, 562),
-        "bbox-bot-right": (2430, 1200),
+        "bbox-top-left": (98, 585), #562
+        "bbox-bot-right": (2430, 1200), #2430
         "background-lab-mask-lower": [0, 113, 113],
         "background-lab-mask-upper": [75, 139, 139],
         "background-mask-ksize": (10, 10),
@@ -87,22 +87,19 @@ class Isolator:
         self.cam.set_controls({"ExposureTime": 20000})
         self.cam.start()
 
-        self.belts_command = IsolatorDirective(0,0,True)
+        self.belts_command = IsolatorDirective(0,0,False)
         self.x = 0
 
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
     ) -> IsolatorDirective:
-
         if mission == IsolatorMission.IDLE:
-            # TODO: update directive
-            self.belts_command = IsolatorDirective(None, None, None)
-            return IsolatorDirective(None, None, None)
+            self.belts_command = IsolatorDirective(0, 0, False)
+            return
 
         # sense the world
         self.frame = self.cam.capture_array("main")
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
-        # self.frame = cv2.imread("testing.jpg")
 
         # update state
         self.b1.spin(self.frame)
@@ -110,10 +107,11 @@ class Isolator:
 
         self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
         b2_isolated = self._b2_is_isolated(right_sorted=True)
-        #self.b2.show_fasteners([0,1])
         b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
         self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
         b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
+
+        self.belts_command = IsolatorDirective(0, 0, False)
 
         print("SPIN")
         print("---")
@@ -122,35 +120,17 @@ class Isolator:
         print(f"B1 DIST: {b1_dist_to_drop}")
         print("=====")
 
-        # self.x += 1
-        # print(f'x={self.x}')
-
-        # if (self.x % 5) == 0:
-        #     print('Move')
-        #     self.belts_command = IsolatorDirective(0,100,True)
-        # else:
-        #     print('No Move')
-        #     self.belts_command = IsolatorDirective(0,0,True)
-        
-        
-
         if self.b2.last_N != None and self.b2.last_N > self.b2.N:
-
             print('ISOLATED***********************************')
             self.belts_command = IsolatorDirective(0, 0, True)
             return
 
         if self.b2.N > 0:
-
             """
             ASSUMPTIONS:
             * B2 has at least 1 fastener on board
             """
-            # self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
-            # b2_isolated = self._b2_is_isolated(right_sorted=True)
-
             if not b2_isolated:
-
                 """
                 ASSUMPTIONS:
                 * B2 has at least 1 fastener on board
@@ -159,25 +139,26 @@ class Isolator:
                 self.belts_command = IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
                 print('booting.....')
                 return
-                # return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
 
             """
             ASSUMPTIONS:
             * B2 has at least 1 fastener on board
             * B2 fasteners are well-isolated
             """
-            # b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
             if b2_dist_to_depositor < self.B2_DEPOSITOR_CLOSE_DIST:
-
                 """
                 ASSUMPTIONS:
                 * B2 has at least 1 fastener on board
                 * B2 fasteners are well-isolated
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
-                self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
+                if world.depositor_accepting == True:
+                    # depositor is free, we can microstep
+                    self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
+                else:
+                    # don't start micro-stepping until we can put fastner in depositor
+                    self.belts_command = IsolatorDirective(0,0,False)
                 return
-                # return IsolatorDirective(0, self.B2_MICRO_STEP, False)
 
             """
             ASSUMPTIONS:
@@ -187,25 +168,12 @@ class Isolator:
             """
             self.belts_command = IsolatorDirective(0, max(b2_dist_to_depositor-self.B2_DEPOSITOR_CLOSE_DIST,self.B2_MICRO_STEP), False)
             return
-            # return IsolatorDirective(
-            #     0,
-            #     max(
-            #         b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST,
-            #         self.B2_MICRO_STEP,
-            #     ),
-            #     False,
-            # )
 
         if self.b1.N > 0:
-
             """
             ASSUMPTIONS:
             * B1 has at least 1 fastener on board
             """
-
-            # self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
-            # b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
-
             if b1_dist_to_drop < self.B1_DROP_CLOSE_DIST:
 
                 """
@@ -215,7 +183,6 @@ class Isolator:
                 """
                 self.belts_command = IsolatorDirective(self.B1_MICRO_STEP, 0, False)
                 return
-                # return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
 
             """
             ASSUMPTIONS:
@@ -231,21 +198,10 @@ class Isolator:
                 False,
             )
             return
-            # return IsolatorDirective(
-            #     max(
-            #         b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
-            #         self.B1_MICRO_STEP,
-            #     ),
-            #     0,
-            #     False,
-            # )
 
     def show(self):
-
         self.b1.show()
         self.b2.show()
-        #cv2.imshow('sys', cv2.resize(self.frame, (0,0), fx=0.5, fy=0.5))
-        #cv2.imwrite('testing.jpg', self.frame)
 
     def _b1_dist_to_drop(self, top_sorted=False):
         if not top_sorted:
@@ -284,7 +240,6 @@ class Isolator:
     class Locale:
 
         def __init__(self, name: str, cv: dict):
-
             # unpack and set config
             self.name = name
             self.x1, self.y1 = cv["bbox-top-left"]
@@ -297,7 +252,6 @@ class Isolator:
             self.img = None
 
         def spin(self, img):
-
             self.last_N = self.N
             self.img = img.copy()[self.y1 : self.y2, self.x1 : self.x2, :]
             self.lab = cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB)
@@ -306,7 +260,6 @@ class Isolator:
             self.N = len(self.fasteners)
 
         def show(self):
-
             show = self.img.copy()
             for i in range(self.N):
                 f = self.fasteners[i]
@@ -316,13 +269,8 @@ class Isolator:
                 y4 = f.y4 - self.y1
                 cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
             return show
-            # cv2.imshow(
-            #     f"Fastener Isolation System - {self.name}",
-            #     cv2.resize(show, (0, 0), fx=0.5, fy=0.5),
-            # )
-
+        
         def show_fasteners(self, indices):
-
             show = self.img.copy()
             colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 255)]
 
@@ -339,17 +287,14 @@ class Isolator:
                     colors[indices.index(i) % len(colors)],
                     3,
                 )
-            # cv2.imshow(f"Fastener Isolation System - {self.name}", show)
 
         def _generate_mask(self):
-
             out = cv2.blur(self.lab, self.ksize)
             out = cv2.inRange(out, self.lb, self.ub)
             out = cv2.bitwise_not(out)
             return out
 
         def _find_fasteners(self):
-
             contours, _ = cv2.findContours(
                 image=self.mask, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE
             )
@@ -367,7 +312,6 @@ class Isolator:
     class Fastener:
 
         def __init__(self, contour, bbox, area=None):
-
             self.c = contour
             self.x1, self.y1, self.w, self.h = bbox
             self.x2 = self.x1 + self.w
@@ -380,5 +324,4 @@ class Isolator:
 
         @staticmethod
         def xdist(fleft, fright):
-
             return fright.x1 - fleft.x2
