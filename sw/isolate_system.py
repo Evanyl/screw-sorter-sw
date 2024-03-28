@@ -17,6 +17,7 @@ class IsolateSystem:
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b2steps
             self.bottom_belt_steps = self.isolator.belts_command.b1steps
+            self.isolated = self.isolator.belts_command.start_imaging
             self.des_belt_state = "active"
             self.count = 0
             next_state = "waiting-for-belts-to-start"
@@ -37,7 +38,7 @@ class IsolateSystem:
                                  args=[
                                     IsolatorWorldView(b1_moving=False,
                                                       b2_moving=False,
-                                                      depositor_accepting=True),
+                                                      depositor_accepting=self.depositor_state=="idle"),
                                     IsolatorMission.ISOLATE
                                  ]
                                 )
@@ -56,13 +57,14 @@ class IsolateSystem:
         return next_state
         
 
-    def __init__(self, core_comms):
+    def __init__(self, core_comms, shared_data):
         self.switch_dict = \
         {
             "idle":              self.__idle_state_func,
             "image-and-process": self.__image_and_process_state_func,
             "waiting-for-belts-to-start": self.__waiting_for_belts_to_start_state_func
         }
+        self.shared_data = shared_data
         self.isolator = Isolator()
         self.core_comms = core_comms
         self.thread = Thread()
@@ -70,18 +72,22 @@ class IsolateSystem:
         self.des_belt_state = "idle"
         self.curr_state = "idle"
         self.idle_count = 0
+        self.depositor_state = "startup"
+        self.isolated = False
 
         self.top_belt_steps = 0
         self.bottom_belt_steps = 0
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            # print(self.curr_state)
             # get last station_state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
+            self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
             # send next desired state
             self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps)
             self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps)
             self.core_comms.updateOutData("belts_des_state", self.des_belt_state)
+            # updated shared data between controller modules
+            self.shared_data["isolated"] = self.isolated
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()

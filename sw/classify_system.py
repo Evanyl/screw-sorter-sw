@@ -17,7 +17,8 @@ class ClassifySystem:
         next_state = self.curr_state
         with open(self.core_comms.ui_comms_path) as f:
             ui_comms = json.load(f)
-        if self.station_state == "idle" and ui_comms['action'] == "image":
+        if self.station_state == "idle" and self.shared_data["isolated"] == True:
+        # if self.station_state == "idle" and ui_comms['action'] == "image":
             next_state = "top-down"
             self.des_station_state = "top-down"
         else:
@@ -97,7 +98,7 @@ class ClassifySystem:
     #                 P U B L I C    C L A S S    M E T H O D S                #
     ############################################################################
 
-    def __init__(self, core_comms, out_dir_path, model_path, decoder_path):
+    def __init__(self, core_comms, out_dir_path, model_path, decoder_path, shared_data):
         # state machine definition
         self.switch_dict = \
         {
@@ -108,6 +109,7 @@ class ClassifySystem:
             "inference":         self.__inference_state_func,
         }
         # instance variables
+        self.shared_data = shared_data
         self.curr_state = "idle"
         self.des_station_state = "idle"
         self.station_state = "startup"

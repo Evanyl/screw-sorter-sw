@@ -21,11 +21,16 @@ class SorterControl:
             "isolate_system":  100,
             "core_comms":      50,
         }
+        self.shared_data = \
+        {
+            "isolated": False,
+        }
         self.scheduler = Scheduler(self.task_periods)
         self.core_comms = CoreComms(out_dir_path)
-        self.isolate_system = IsolateSystem(self.core_comms)
+        self.isolate_system = IsolateSystem(self.core_comms, self.shared_data)
         self.classify_system = ClassifySystem(self.core_comms, out_dir_path, 
-                                              model_path, decoder_path)
+                                              model_path, decoder_path, 
+                                              self.shared_data)
 
     def control(self):
         # execute the runXms functions of all task modules
