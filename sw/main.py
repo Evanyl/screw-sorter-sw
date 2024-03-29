@@ -23,7 +23,7 @@ class SorterControl:
         }
         self.shared_data = \
         {
-            "isolated": False,
+            "start-imaging": False,
         }
         self.scheduler = Scheduler(self.task_periods)
         self.core_comms = CoreComms(out_dir_path)
@@ -70,7 +70,6 @@ def main(out_dir_path, model_path, decoder_path, operator_name):
 
     # Pyqt needs to be on main thread... bruh moment
     start_ui(operator_name, out_dir_path, s.isolate_system)
-
         
 if __name__ == "__main__":
     main()

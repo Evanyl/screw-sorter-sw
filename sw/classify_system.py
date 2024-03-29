@@ -15,10 +15,9 @@ class ClassifySystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
-        with open(self.core_comms.ui_comms_path) as f:
-            ui_comms = json.load(f)
-        if self.station_state == "idle" and self.shared_data["isolated"] == True:
-        # if self.station_state == "idle" and ui_comms['action'] == "image":
+        if self.station_state == "idle" and self.shared_data["start-imaging"] == True:
+            # indicate that we are processing the isolated fastener
+            self.shared_data["start-imaging"] = False
             next_state = "top-down"
             self.des_station_state = "top-down"
         else:
