@@ -61,8 +61,8 @@ class Isolator:
     B1_MICRO_STEP = 100
 
     B2_CV = {
-        "bbox-top-left": (98, 562),
-        "bbox-bot-right": (2430, 1200),
+        "bbox-top-left": (98, 585), #562
+        "bbox-bot-right": (2430, 1200), #2430
         "background-lab-mask-lower": [0, 113, 113],
         "background-lab-mask-upper": [75, 139, 139],
         "background-mask-ksize": (10, 10),
@@ -87,7 +87,7 @@ class Isolator:
         self.cam.set_controls({"ExposureTime": 20000})
         self.cam.start()
 
-        self.belts_command = IsolatorDirective(0,0,True)
+        self.belts_command = IsolatorDirective(0,0,False)
         self.x = 0
 
     def spin(
@@ -110,6 +110,8 @@ class Isolator:
         b2_dist_to_depositor = self._b2_dist_to_depositor(right_sorted=True)
         self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
         b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
+
+        self.belts_command = IsolatorDirective(0, 0, False)
 
         print("SPIN")
         print("---")

@@ -15,6 +15,9 @@ class ClassifySystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
+        b = self.shared_data["start-imaging"]
+        print(f"start_imaging (classify): {b}")
+        print(f"station_state: {self.station_state}")
         if self.station_state == "idle" and self.shared_data["start-imaging"] == True:
             # indicate that we are processing the isolated fastener
             self.shared_data["start-imaging"] = False

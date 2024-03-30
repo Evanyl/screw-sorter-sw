@@ -4,7 +4,7 @@ from threading import Thread
 from isolator import Isolator, IsolatorMission, IsolatorWorldView
 
 BELT_WAITING_COUNT = 10
-IDLE_WAITING_COUNT = 5
+IDLE_WAITING_COUNT = 10
 
 class IsolateSystem:
 
@@ -15,7 +15,13 @@ class IsolateSystem:
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b2steps
             self.bottom_belt_steps = self.isolator.belts_command.b1steps
-            self.start_imaging = self.isolator.belts_command.start_imaging
+            if self.shared_data["start-imaging"] == False:
+                # only update start-imaging flag if prev consumed
+                self.shared_data["start-imaging"] = self.isolator.belts_command.start_imaging
+            else:
+                # prev flag hasn't been consumed
+                pass
+            # self.start_imaging = self.isolator.belts_command.start_imaging
             self.des_belt_state = "active"
             self.belt_count = 0
             next_state = "waiting-for-belts"
@@ -38,10 +44,10 @@ class IsolateSystem:
             self.thread = \
                 Thread(target=self.isolator.spin,
                        args=[
+                           IsolatorMission.ISOLATE,
                            IsolatorWorldView(b1_moving=False,
                                              b2_moving=False,
-                                             depositor_accepting=accepting),
-                           IsolatorMission.ISOLATE
+                                             depositor_accepting=accepting)
                            ]
                 )
             self.thread.start()
@@ -76,24 +82,29 @@ class IsolateSystem:
         self.idle_count = 0
         self.belt_count = 0 
         self.depositor_state = "startup"
-        self.start_imaging = False
+        # self.start_imaging = False
 
         self.top_belt_steps = 0
         self.bottom_belt_steps = 0
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
+            a = self.shared_data["start-imaging"]
+            print(f"start-imaging (shared): {a}")
             # get last station_state and depositor state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
+            print(f"depositor_state: {self.depositor_state}")
             # send next desired state
             self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps)
             self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps)
             self.core_comms.updateOutData("belts_des_state", self.des_belt_state)
             # update shared data between controller modules
-            if self.start_imaging == True:
-                self.shared_data["start-imaging"] = self.start_imaging
-            else:
-                pass
+            # if self.shared_data["start-imaging"] == False:
+            #     self.shared_data["start-imaging"] = self.start_imaging
+            # else:
+            #     pass
+            # print(f"start_imaging (machine): {self.start_imaging}")
+            print(f"start_imaging (belts): {self.isolator.belts_command.start_imaging}")
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
