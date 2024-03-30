@@ -1,11 +1,9 @@
 
 from threading import Thread
-from picamera2 import Picamera2
-import time
 
 from isolator import Isolator, IsolatorMission, IsolatorWorldView
 
-WAITING_LIMIT = 10
+BELT_WAITING_COUNT = 10
 IDLE_WAITING_COUNT = 5
 
 class IsolateSystem:
@@ -17,10 +15,10 @@ class IsolateSystem:
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b2steps
             self.bottom_belt_steps = self.isolator.belts_command.b1steps
-            self.isolated = self.isolator.belts_command.start_imaging
+            self.start_imaging = self.isolator.belts_command.start_imaging
             self.des_belt_state = "active"
-            self.count = 0
-            next_state = "waiting-for-belts-to-start"
+            self.belt_count = 0
+            next_state = "waiting-for-belts"
         else:
             # do nothing, waiting for imaging and processing to finsh
             pass
@@ -31,27 +29,31 @@ class IsolateSystem:
         self.idle_count += 1
         # wait until belts_state is idle
         if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT:
-            # reset the idle counter, makes sure we don't check camera too quick
+            # reset the idle counter, don't check the camera too quick after
+            #     belt movement.
             self.idle_counter = 0
             # create an imaging thread and switch states
-            self.thread = Thread(target=self.isolator.spin,
-                                 args=[
-                                    IsolatorMission.ISOLATE,
-                                    IsolatorWorldView(b1_moving=False,
-                                                      b2_moving=False,
-                                                      depositor_accepting=self.depositor_state=="idle"), # also need to track if screw has dropped
-                                 ]
-                                )
+            accepting = self.depositor_state=="idle" and \
+                        self.shared_data["start-imaging"] == False
+            self.thread = \
+                Thread(target=self.isolator.spin,
+                       args=[
+                           IsolatorWorldView(b1_moving=False,
+                                             b2_moving=False,
+                                             depositor_accepting=accepting),
+                           IsolatorMission.ISOLATE
+                           ]
+                )
             self.thread.start()
             next_state = "image-and-process"
         return next_state
     
-    def __waiting_for_belts_to_start_state_func(self):
+    def __waiting_for_belts_state_func(self):
         # dealing with belts taking multiple cycles to report "active" state
         self.des_belt_state = "idle"
         next_state = self.curr_state
-        if self.belts_state == "idle" and self.count < WAITING_LIMIT:
-            self.count += 1
+        if self.belts_state == "idle" and self.belt_count < BELT_WAITING_COUNT:
+            self.belt_count += 1
         else:
             next_state = "idle"
         return next_state
@@ -62,7 +64,7 @@ class IsolateSystem:
         {
             "idle":              self.__idle_state_func,
             "image-and-process": self.__image_and_process_state_func,
-            "waiting-for-belts-to-start": self.__waiting_for_belts_to_start_state_func
+            "waiting-for-belts": self.__waiting_for_belts_state_func
         }
         self.shared_data = shared_data
         self.isolator = Isolator()
@@ -72,22 +74,26 @@ class IsolateSystem:
         self.des_belt_state = "idle"
         self.curr_state = "idle"
         self.idle_count = 0
+        self.belt_count = 0 
         self.depositor_state = "startup"
-        self.isolated = False
+        self.start_imaging = False
 
         self.top_belt_steps = 0
         self.bottom_belt_steps = 0
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            # get last station_state
+            # get last station_state and depositor state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
             # send next desired state
             self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps)
             self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps)
             self.core_comms.updateOutData("belts_des_state", self.des_belt_state)
-            # updated shared data between controller modules
-            self.shared_data["isolated"] = self.isolated
+            # update shared data between controller modules
+            if self.start_imaging == True:
+                self.shared_data["start-imaging"] = self.start_imaging
+            else:
+                pass
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
