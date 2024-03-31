@@ -16,8 +16,8 @@
 #define DEPOSITOR_CLOSE_RATE   255
 #define DEPOSITOR_CLOSE_ANGLE  62.0 // Fully closed
 
-#define DEPOSITOR_OPEN_STEPS   200
-#define DEPOSITOR_OPEN_RATE    25
+#define DEPOSITOR_OPEN_STEPS   1
+#define DEPOSITOR_OPEN_RATE    500
 #define DEPOSITOR_OPEN_ANGLE   0.0 //-90.0 achieves full open
 
 #define DEPOSITOR_SLIT_ANGLE   DEPOSITOR_CLOSE_ANGLE - 12.0
@@ -35,7 +35,7 @@
 
 #define DEPOSITOR_ARM_CW 1
 
-#define DEPOSITOR_JOSTLE_MOVEMENTS 20
+#define DEPOSITOR_JOSTLE_MOVEMENTS 40
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -65,7 +65,7 @@ static depositor_data_S depositor_data =
 {
     .state = DEPOSITOR_STATE_HOMING,
     .jostle_counter = 0,
-    .jostle_routine = {0,1,-1,0,0,0,-1,1,0,0,0,1,-1,0,0,0,-1,1,0,0},
+    .jostle_routine = {0,1,-1,1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 };
 
 /*******************************************************************************
@@ -166,10 +166,10 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 uint8_t j = depositor_data.jostle_counter;
                 float dtheta = depositor_data.jostle_routine[j];
                 bool stepper = stepper_commandAngle(STEPPER_DEPOSITOR, 
-                                         DEPOSITOR_ARM_CENTER_ANGLE + dtheta,
-                                         0.0,
-                                         DEPOSITOR_ARM_NAV_RATE,
-                                         DEPOSITOR_ARM_NAV_RATE);
+                                        DEPOSITOR_ARM_CENTER_ANGLE + dtheta,
+                                        0.0,
+                                        DEPOSITOR_ARM_NAV_RATE,
+                                        DEPOSITOR_ARM_NAV_RATE);
                 if (stepper == false)
                 {
                     // wait for current motion to finish
