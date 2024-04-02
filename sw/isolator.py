@@ -63,8 +63,8 @@ class Isolator:
     B2_CV = {
         "bbox-top-left": (98, 585), #562
         "bbox-bot-right": (2430, 1200), #2430
-        "background-lab-mask-lower": [0, 113, 113],
-        "background-lab-mask-upper": [75, 139, 139],
+        "background-lab-mask-lower": [0, 114, 114],
+        "background-lab-mask-upper": [95, 139, 139],
         "background-mask-ksize": (10, 10),
         "fastener-contour-min-area": 250,
     }
