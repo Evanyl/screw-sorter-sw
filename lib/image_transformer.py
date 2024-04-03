@@ -366,7 +366,7 @@ def transform_top_image(read_fpath):
     return img, correction_thetas[1]
 
 def transform_side_image(read_fpath, crop_w=800/2, crop_h=800/2, 
-                         top_plane_y=1600, bot_plane_y=2450, left_plane_x=1696, 
+                         top_plane_y=1100, bot_plane_y=2450, left_plane_x=1696, 
                          right_plane_x=3800): # 5496
     """
     in:  path to raw image data to read read_fpath

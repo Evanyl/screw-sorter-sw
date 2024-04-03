@@ -34,7 +34,7 @@ class IsolateSystem:
         next_state = self.curr_state
         self.idle_count += 1
         # wait until belts_state is idle
-        if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT:
+        if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT and self.shared_data["classifying"] == False:
             # reset the idle counter, don't check the camera too quick after
             #     belt movement.
             self.idle_counter = 0

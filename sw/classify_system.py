@@ -31,6 +31,7 @@ class ClassifySystem:
             # branch off a thread to handle imaging, processing, storage...
             self.thread = Thread(target=self.imager.image_and_process,
                                  args=[self.curr_state])
+            self.shared_data["classifying"] = True
             self.thread.start()
             next_state = "image-and-process"
         else:
@@ -42,10 +43,12 @@ class ClassifySystem:
         next_state = self.curr_state
         if self.station_state == "top-down" and self.thread.is_alive() == False:
             # imaging and processing is finished, pass corr-angle to core_comms
+            self.shared_data["classifying"] = False
             self.core_comms.updateOutData("corr_angle", self.imager.corr_angle)
             self.des_station_state = "side-on"
             next_state = "side-on"
         if self.station_state == "side-on" and self.thread.is_alive() == False:
+            self.shared_data["classifying"] = False
             self.thread = Thread(target=self.predictor.predict, 
                                  args=[self.imager.composed_path])
             self.thread.start()
@@ -62,6 +65,7 @@ class ClassifySystem:
             # break off a new thread for side-on imaging
             self.thread = Thread(target=self.imager.image_and_process, 
                                  args=[self.curr_state])
+            self.shared_data["classifying"] = True
             self.thread.start()
             next_state = "image-and-process"
         else:
@@ -76,6 +80,8 @@ class ClassifySystem:
             preds = self.predictor.decode(self.predictor.predictions)
             next_state = "idle"
 
+            self.run_number += 1
+
             ui_comms_out = {
                 "action": "process_results",
                 "top_img_path": str(self.imager.top_down_path),
@@ -84,10 +90,12 @@ class ClassifySystem:
                 "raw_side_img_path": str(self.imager.raw_side_on_path),
                 "composed_path": str(self.imager.composed_path),
                 "inference_results": preds,
+                "run_number": self.run_number,
             }
 
             with open(self.core_comms.ui_comms_path, 'w') as f:
                 json.dump(ui_comms_out, f)
+
         else:
             # performing inference, wait for thread to finish
             pass
@@ -116,6 +124,8 @@ class ClassifySystem:
         self.thread = Thread()
         self.imager = Imager(out_dir_path)
         self.predictor = Predictor(model_path, decoder_path) 
+
+        self.run_number = 0
 
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):

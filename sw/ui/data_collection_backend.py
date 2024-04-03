@@ -42,12 +42,12 @@ class My_App(DataCollectionCoreUi):
         self.camera_worker = CameraWorker(self.comms_path)
         self.camera_worker_thread = QtCore.QThread()
         self.camera_worker.moveToThread(self.camera_worker_thread)
+        self.camera_worker_thread.started.connect(self.camera_worker.run_loop)
         self.camera_worker_thread.start()
 
         self.camera_worker.action_finished.connect(self.handle_images)
 
-        self.inference_button.clicked.connect(self.camera_worker.run_inference)
-        self.labelling_button.clicked.connect(self.camera_worker.run_labelling)
+        #self.labelling_button.clicked.connect(self.camera_worker.run_labelling)
 
     def setup_isolate_feed(self):
         self.isolate_timer = QtCore.QTimer(self)
@@ -67,10 +67,13 @@ class My_App(DataCollectionCoreUi):
             self.tabWidget.setCurrentIndex(1)
         elif action_finished == "inference":
             processed_preds = process_decoded_predictions(self.comms_in['inference_results'])
+            self.setup_inference_results(processed_preds['head'][0], processed_preds['drive'][0])
             self.display_inference_results(processed_preds)
+            self.tabWidget.setCurrentIndex(2)
+
             composed = self.pixmap_from_path(self.comms_in['composed_path']).scaled(800, 800, QtCore.Qt.KeepAspectRatio)
             self.photo1.setPixmap(composed)
-            self.tabWidget.setCurrentIndex(2)
+
         else:
             print(f"{self.mode} should never be this")
 

@@ -24,6 +24,7 @@ class SorterControl:
         self.shared_data = \
         {
             "start-imaging": False,
+            "classifying": False,
         }
         self.scheduler = Scheduler(self.task_periods)
         self.core_comms = CoreComms(out_dir_path)
