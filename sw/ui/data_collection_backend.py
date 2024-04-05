@@ -16,8 +16,8 @@ from ui.screw_utils import create_label, process_decoded_predictions
 
 from pathlib import Path
 
-IMAGING_STATION_VERSION="1.0"
-IMAGING_STATION_CONFIGURATION="A1"
+IMAGING_STATION_VERSION = "1.0"
+IMAGING_STATION_CONFIGURATION = "A1"
 
 
 class My_App(DataCollectionCoreUi):
@@ -47,7 +47,7 @@ class My_App(DataCollectionCoreUi):
 
         self.camera_worker.action_finished.connect(self.handle_images)
 
-        #self.labelling_button.clicked.connect(self.camera_worker.run_labelling)
+        # self.labelling_button.clicked.connect(self.camera_worker.run_labelling)
 
     def setup_isolate_feed(self):
         self.isolate_timer = QtCore.QTimer(self)
@@ -60,19 +60,27 @@ class My_App(DataCollectionCoreUi):
         with open(self.comms_path) as f:
             self.comms_in = json.load(f)
         if action_finished == "labelling":
-            photo1 = self.pixmap_from_path(self.comms_in['raw_top_img_path']).scaled(800, 800, QtCore.Qt.KeepAspectRatio)
-            photo2 = self.pixmap_from_path(self.comms_in['raw_side_img_path']).scaled(800, 800, QtCore.Qt.KeepAspectRatio)
+            photo1 = self.pixmap_from_path(self.comms_in["raw_top_img_path"]).scaled(
+                800, 800, QtCore.Qt.KeepAspectRatio
+            )
+            photo2 = self.pixmap_from_path(self.comms_in["raw_side_img_path"]).scaled(
+                800, 800, QtCore.Qt.KeepAspectRatio
+            )
             self.photo1.setPixmap(photo1)
             self.photo2.setPixmap(photo2)
             self.tabWidget.setCurrentIndex(1)
         elif action_finished == "inference":
-            processed_preds = process_decoded_predictions(self.comms_in['inference_results'])
-            self.display_inference_results(processed_preds,
-                                           processed_preds['head'][0], 
-                                           processed_preds['drive'][0])
+            processed_preds = process_decoded_predictions(
+                self.comms_in["inference_results"]
+            )
+            self.display_inference_results(
+                processed_preds, processed_preds["head"][0], processed_preds["drive"][0]
+            )
             self.tabWidget.setCurrentIndex(2)
 
-            composed = self.pixmap_from_path(self.comms_in['composed_path']).scaled(800, 800, QtCore.Qt.KeepAspectRatio)
+            composed = self.pixmap_from_path(self.comms_in["composed_path"]).scaled(
+                800, 800, QtCore.Qt.KeepAspectRatio
+            )
             self.photo1.setPixmap(composed)
 
         else:
@@ -80,14 +88,20 @@ class My_App(DataCollectionCoreUi):
 
     @QtCore.pyqtSlot()
     def draw_isolate_feed(self):
-        belt1_img = self.isolate_system.isolator.b1.img
-        belt2_img = self.isolate_system.isolator.b2.img
+        belt1_img = self.isolate_system.isolator.b1.show()
+        belt2_img = self.isolate_system.isolator.b2.show()
         if belt1_img is not None:
-            belt1_with_fasteners = self.isolate_system.isolator.b1.show()
-            self.belt_1_feed.setPixmap(self.convert_cv_to_pixmap(belt1_with_fasteners).scaled(1454, 442, QtCore.Qt.KeepAspectRatio))
+            self.belt_1_feed.setPixmap(
+                self.convert_cv_to_pixmap(belt1_img).scaled(
+                    1454, 442, QtCore.Qt.KeepAspectRatio
+                )
+            )
         if belt2_img is not None:
-            belt2_with_fasteners = self.isolate_system.isolator.b2.show()
-            self.belt_2_feed.setPixmap(self.convert_cv_to_pixmap(belt2_with_fasteners).scaled(1454, 442, QtCore.Qt.KeepAspectRatio))
+            self.belt_2_feed.setPixmap(
+                self.convert_cv_to_pixmap(belt2_img).scaled(
+                    1454, 442, QtCore.Qt.KeepAspectRatio
+                )
+            )
 
     def setup_working_files_dir(self):
         # replace all potential bad filename characters with underscores
@@ -100,8 +114,8 @@ class My_App(DataCollectionCoreUi):
         # Folder should not already exist!
         self.session_path.mkdir(parents=True)
 
-        with open(self.comms_path, 'w') as f:
-            json.dump({'action': 'idle'}, f)
+        with open(self.comms_path, "w") as f:
+            json.dump({"action": "idle"}, f)
 
     def setup_labelling(self):
         self.save_images_button.clicked.connect(self.save_images)
@@ -109,15 +123,15 @@ class My_App(DataCollectionCoreUi):
 
     def save_images(self):
         label = create_label(self.filename_variables)
-        uuid = label['uuid']
+        uuid = label["uuid"]
         images_dir = self.session_path / f"real_{self.fastener_filename.text()}_{uuid}"
         images_dir.mkdir()
 
         with open(images_dir / f"{uuid}.json", "w") as f:
             json.dump(label, f)
 
-        shutil.copyfile(self.comms_in['top_img_path'], images_dir / f"0_{uuid}.tiff")
-        shutil.copyfile(self.comms_in['side_img_path'], images_dir / f"1_{uuid}.tiff")
+        shutil.copyfile(self.comms_in["top_img_path"], images_dir / f"0_{uuid}.tiff")
+        shutil.copyfile(self.comms_in["side_img_path"], images_dir / f"1_{uuid}.tiff")
 
         self.tabWidget.setCurrentIndex(0)
 
@@ -129,21 +143,25 @@ class My_App(DataCollectionCoreUi):
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         height, width, channel = cv_img.shape
         bytesPerLine = channel * width
-        q_img = QtGui.QImage(cv_img.data, width, height,
-                             bytesPerLine, QtGui.QImage.Format_RGB888)
+        q_img = QtGui.QImage(
+            cv_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888
+        )
         return QtGui.QPixmap.fromImage(q_img)
 
     def convert_cv_to_pixmap(self, cv_img):
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         height, width, channel = cv_img.shape
         bytesPerLine = channel * width
-        q_img = QtGui.QImage(cv_img.data, width, height,
-                            bytesPerLine, QtGui.QImage.Format_RGB888)
+        q_img = QtGui.QImage(
+            cv_img.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888
+        )
         return QtGui.QPixmap.fromImage(q_img)
 
 
 def start_ui(operator_name, img_dir_path, isolate_system):
-    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = QtCore.QLibraryInfo.location(QtCore.QLibraryInfo.PluginsPath)
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = QtCore.QLibraryInfo.location(
+        QtCore.QLibraryInfo.PluginsPath
+    )
     app = QtWidgets.QApplication([])
     myApp = My_App(operator_name, img_dir_path, isolate_system)
     myApp.show()

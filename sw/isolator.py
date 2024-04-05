@@ -61,8 +61,8 @@ class Isolator:
     B1_MICRO_STEP = 100
 
     B2_CV = {
-        "bbox-top-left": (98, 585), #562
-        "bbox-bot-right": (2430, 1200), #2430
+        "bbox-top-left": (98, 585),  # 562
+        "bbox-bot-right": (2430, 1200),  # 2430
         "background-lab-mask-lower": [0, 114, 114],
         "background-lab-mask-upper": [95, 139, 139],
         "background-mask-ksize": (10, 10),
@@ -87,7 +87,7 @@ class Isolator:
         self.cam.set_controls({"ExposureTime": 20000})
         self.cam.start()
 
-        self.belts_command = IsolatorDirective(0,0,False)
+        self.belts_command = IsolatorDirective(0, 0, False)
         self.x = 0
 
     def spin(
@@ -121,7 +121,7 @@ class Isolator:
         print("=====")
 
         if self.b2.last_N != None and self.b2.last_N > self.b2.N:
-            print('ISOLATED***********************************')
+            print("ISOLATED***********************************")
             self.belts_command = IsolatorDirective(0, 0, True)
             return
 
@@ -136,8 +136,10 @@ class Isolator:
                 * B2 has at least 1 fastener on board
                 * B2 fasteners are NOT well-isolated
                 """
-                self.belts_command = IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
-                print('booting.....')
+                self.belts_command = IsolatorDirective(
+                    0, -self.B2_STEPS_TO_CLEAR, False
+                )
+                print("booting.....")
                 return
 
             """
@@ -157,7 +159,7 @@ class Isolator:
                     self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
                 else:
                     # don't start micro-stepping until we can put fastner in depositor
-                    self.belts_command = IsolatorDirective(0,0,False)
+                    self.belts_command = IsolatorDirective(0, 0, False)
                 return
 
             """
@@ -166,7 +168,14 @@ class Isolator:
             * B2 fasteners are well-isolated
             * B2 rightmost fastener is still far away from dropping on to depositor
             """
-            self.belts_command = IsolatorDirective(0, max(b2_dist_to_depositor-self.B2_DEPOSITOR_CLOSE_DIST,self.B2_MICRO_STEP), False)
+            self.belts_command = IsolatorDirective(
+                0,
+                max(
+                    b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST,
+                    self.B2_MICRO_STEP,
+                ),
+                False,
+            )
             return
 
         if self.b1.N > 0:
@@ -210,7 +219,7 @@ class Isolator:
             topmost = self.b1.fasteners[0]
             return topmost.y1 - self.B1_DROP
         else:
-            return float('inf')
+            return float("inf")
 
     def _b2_dist_to_depositor(self, right_sorted=False):
 
@@ -220,7 +229,7 @@ class Isolator:
             rightmost = self.b2.fasteners[0]
             return self.B2_DEPOSITOR_DROP - rightmost.x2
         else:
-            return float('inf')
+            return float("inf")
 
     def _b2_is_isolated(self, right_sorted=False):
 
@@ -248,6 +257,7 @@ class Isolator:
             self.ub = np.array(cv["background-lab-mask-upper"])
             self.ksize = cv["background-mask-ksize"]
             self.fastener_min_area = cv["fastener-contour-min-area"]
+            self.bounded = None
             self.N = 0
             self.img = None
 
@@ -258,18 +268,11 @@ class Isolator:
             self.mask = self._generate_mask()
             self.fasteners = self._find_fasteners()
             self.N = len(self.fasteners)
+            self.bounded = self._generate_show()
 
         def show(self):
-            show = self.img.copy()
-            for i in range(self.N):
-                f = self.fasteners[i]
-                x1 = f.x1 - self.x1
-                y1 = f.y1 - self.y1
-                x4 = f.x4 - self.x1
-                y4 = f.y4 - self.y1
-                cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
-            return show
-        
+            return self.bounded.copy()
+
         def show_fasteners(self, indices):
             show = self.img.copy()
             colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 255)]
@@ -287,6 +290,18 @@ class Isolator:
                     colors[indices.index(i) % len(colors)],
                     3,
                 )
+
+        def _generate_show(self):
+
+            show = self.img.copy()
+            for i in range(self.N):
+                f = self.fasteners[i]
+                x1 = f.x1 - self.x1
+                y1 = f.y1 - self.y1
+                x4 = f.x4 - self.x1
+                y4 = f.y4 - self.y1
+                cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
+            return show
 
         def _generate_mask(self):
             out = cv2.blur(self.lab, self.ksize)
