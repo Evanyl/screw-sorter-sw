@@ -75,10 +75,17 @@ class Isolator:
     B2_DEPOSITOR_CLOSE_DIST = 100
     B2_MICRO_STEP = 100
 
+    B21_CV = B2_CV.copy()
+    B21_CV["bbox-top-left"] = (
+        B2_CV["bbox-bot-right"][0] - B2_DEPOSITOR_CLOSE_DIST * 1.5,
+        B2_CV["bbox-top-left"][1],
+    )
+
     def __init__(self):
 
         self.b1 = self.Locale("Belt 1", self.B1_CV)
         self.b2 = self.Locale("Belt 2", self.B2_CV)
+        self.b21 = self.Locale("Belt 2 - Drop Zone", self.B21_CV)
         self.cam = Picamera2()
         camera_config = self.cam.create_still_configuration(
             main={"size": (self.FRAME_WIDTH, self.FRAME_HEIGHT)}
@@ -104,6 +111,7 @@ class Isolator:
         # update state
         self.b1.spin(self.frame)
         self.b2.spin(self.frame)
+        self.b21.spin(self.frame)
 
         self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
         b2_isolated = self._b2_is_isolated(right_sorted=True)
@@ -120,7 +128,11 @@ class Isolator:
         print(f"B1 DIST: {b1_dist_to_drop}")
         print("=====")
 
-        if self.b2.last_N != None and self.b2.last_N > self.b2.N:
+        if (
+            self.last_intention == self.Intention.B2_ATTEMPT_DROP
+            and self.b21.last_N != None
+            and self.b21.last_N > self.b21.N
+        ):
             print("ISOLATED***********************************")
             self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
             return
