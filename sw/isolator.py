@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import time
+from math import floor
 from enum import Enum
 
 from picamera2 import Picamera2
@@ -71,13 +72,13 @@ class Isolator:
     B2_MIN_SEP = 10
     B2_DEPOSITOR_DROP = B2_CV["bbox-bot-right"][0]
     B2_STEPS_PER_REV = 10000
-    B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV / 2
+    B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV
     B2_DEPOSITOR_CLOSE_DIST = 100
     B2_MICRO_STEP = 100
 
     B21_CV = B2_CV.copy()
     B21_CV["bbox-top-left"] = (
-        B2_CV["bbox-bot-right"][0] - B2_DEPOSITOR_CLOSE_DIST * 1.5,
+        int(floor(B2_CV["bbox-bot-right"][0] - B2_DEPOSITOR_CLOSE_DIST * 1.5)),
         B2_CV["bbox-top-left"][1],
     )
 
@@ -126,6 +127,7 @@ class Isolator:
         print(f"B2 ISOLATED: {b2_isolated}")
         print(f"B2 DIST: {b2_dist_to_depositor}")
         print(f"B1 DIST: {b1_dist_to_drop}")
+        print(f"LAST SPIN INTENTION: {self.last_intention}")
         print("=====")
 
         if (
@@ -306,7 +308,10 @@ class Isolator:
             self.bounded = self._generate_show()
 
         def show(self):
-            return self.bounded.copy()
+            if self.bounded is None:
+                return None
+            else:
+                return self.bounded.copy()
 
         def show_fasteners(self, indices):
             show = self.img.copy()
