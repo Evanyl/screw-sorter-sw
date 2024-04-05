@@ -87,14 +87,14 @@ class Isolator:
         self.cam.set_controls({"ExposureTime": 20000})
         self.cam.start()
 
-        self.belts_command = IsolatorDirective(0, 0, False)
+        self._update_intention_command(Isolator.Intention.NULL)
         self.x = 0
 
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
     ) -> IsolatorDirective:
         if mission == IsolatorMission.IDLE:
-            self.belts_command = IsolatorDirective(0, 0, False)
+            self._update_intention_command(self.Intention.NULL)
             return
 
         # sense the world
@@ -111,7 +111,7 @@ class Isolator:
         self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
         b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
 
-        self.belts_command = IsolatorDirective(0, 0, False)
+        self.belts_command = self._intention_to_directive(self.Intention.NULL)
 
         print("SPIN")
         print("---")
@@ -122,7 +122,7 @@ class Isolator:
 
         if self.b2.last_N != None and self.b2.last_N > self.b2.N:
             print("ISOLATED***********************************")
-            self.belts_command = IsolatorDirective(0, 0, True)
+            self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
             return
 
         if self.b2.N > 0:
@@ -136,9 +136,7 @@ class Isolator:
                 * B2 has at least 1 fastener on board
                 * B2 fasteners are NOT well-isolated
                 """
-                self.belts_command = IsolatorDirective(
-                    0, -self.B2_STEPS_TO_CLEAR, False
-                )
+                self._update_intention_command(self.Intention.B2_REJECT_ALL)
                 print("booting.....")
                 return
 
@@ -156,10 +154,10 @@ class Isolator:
                 """
                 if world.depositor_accepting == True:
                     # depositor is free, we can microstep
-                    self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
+                    self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
                 else:
                     # don't start micro-stepping until we can put fastner in depositor
-                    self.belts_command = IsolatorDirective(0, 0, False)
+                    self._update_intention_command(self.Intention.NULL)
                 return
 
             """
@@ -168,6 +166,7 @@ class Isolator:
             * B2 fasteners are well-isolated
             * B2 rightmost fastener is still far away from dropping on to depositor
             """
+            self.last_intention = self.Intention.B2_ADVANCE_TO_DROP
             self.belts_command = IsolatorDirective(
                 0,
                 max(
@@ -190,7 +189,7 @@ class Isolator:
                 * B1 has at least 1 fastener on board
                 * B1 topmost fastener is very close to dropping on to B2
                 """
-                self.belts_command = IsolatorDirective(self.B1_MICRO_STEP, 0, False)
+                self._update_intention_command(self.Intention.B1_ATTEMPT_DROP)
                 return
 
             """
@@ -198,6 +197,7 @@ class Isolator:
             * B1 has at least 1 fastener on board
             * B1 topmost fastener is still far away from dropping on to depositor
             """
+            self.last_intention = self.Intention.B1_ADVANCE_DROP
             self.belts_command = IsolatorDirective(
                 max(
                     b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
@@ -211,6 +211,24 @@ class Isolator:
     def show(self):
         self.b1.show()
         self.b2.show()
+
+    def _intention_to_directive(self, intention):
+
+        if intention == self.Intention.NULL:
+            return IsolatorDirective(0, 0, False)
+        if intention == self.Intention.SIGNAL_START_IMAGING:
+            return IsolatorDirective(0, 0, True)
+        if intention == self.Intention.B2_REJECT_ALL:
+            return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
+        if intention == self.Intention.B2_ATTEMPT_DROP:
+            return IsolatorDirective(0, self.B2_MICRO_STEP, False)
+        if intention == self.Intention.B1_ATTEMPT_DROP:
+            return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
+
+    def _update_intention_command(self, intention):
+
+        self.last_intention = intention
+        self.belts_command = self._intention_to_directive(intention)
 
     def _b1_dist_to_drop(self, top_sorted=False):
         if not top_sorted:
@@ -340,3 +358,16 @@ class Isolator:
         @staticmethod
         def xdist(fleft, fright):
             return fright.x1 - fleft.x2
+
+    class Intention(Enum):
+        """
+        enum class for isolator to track its internal intention with a directive
+        """
+
+        NULL = 0
+        SIGNAL_START_IMAGING = 1
+        B2_REJECT_ALL = 2
+        B2_ATTEMPT_DROP = 3
+        B2_ADVANCE_TO_DROP = 4
+        B1_ATTEMPT_DROP = 5
+        B1_ADVANCE_DROP = 6
