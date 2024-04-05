@@ -67,8 +67,9 @@ class My_App(DataCollectionCoreUi):
             self.tabWidget.setCurrentIndex(1)
         elif action_finished == "inference":
             processed_preds = process_decoded_predictions(self.comms_in['inference_results'])
-            self.setup_inference_results(processed_preds['head'][0], processed_preds['drive'][0])
-            self.display_inference_results(processed_preds)
+            self.display_inference_results(processed_preds,
+                                           processed_preds['head'][0], 
+                                           processed_preds['drive'][0])
             self.tabWidget.setCurrentIndex(2)
 
             composed = self.pixmap_from_path(self.comms_in['composed_path']).scaled(800, 800, QtCore.Qt.KeepAspectRatio)

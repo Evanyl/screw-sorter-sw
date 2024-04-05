@@ -35,15 +35,9 @@ class DataCollectionCoreUi(QtWidgets.QMainWindow):
         self.setup_data_collection_ui()
 
         self.inference_features_map = {}
+        self.setup_inference_results()
 
-    def setup_inference_results(self, head, drive):
-        img_name = f"{head}_{drive}.png"
-        img_path = IMG_DIR_PATH / img_name
-
-        if not img_path.exists():
-            print(f"{str(img_path)} does not exist")
-
-        self.inference_results_img.setPixmap(QtGui.QPixmap(str(img_path)))
+    def setup_inference_results(self):
         inference_features_to_locations = {
             "pitch": [368, 190],
             "width": [56, 224],
@@ -59,7 +53,16 @@ class DataCollectionCoreUi(QtWidgets.QMainWindow):
             label.setStyleSheet("font: 18pt")
             self.inference_features_map[feature] = label
 
-    def display_inference_results(self, processed_preds):
+    def display_inference_results(self, processed_preds, head=None, drive=None):
+        if head and drive:
+            img_name = f"{head}_{drive}.png"
+            img_path = IMG_DIR_PATH / img_name
+
+            if not img_path.exists():
+                print(f"{str(img_path)} does not exist")
+
+            self.inference_results_img.setPixmap(QtGui.QPixmap(str(img_path)))
+
         for feature, label in self.inference_features_map.items():
             pred, conf = processed_preds[feature]
             label.setText(f"{feature.title()}: {pred}")
