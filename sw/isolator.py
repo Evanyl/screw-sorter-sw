@@ -221,8 +221,13 @@ class Isolator:
             return
 
     def show(self):
-        self.b1.show()
-        self.b2.show()
+        _1 = self.b1.show()
+        _2 = self.b2.show()
+        _3 = self.b21.show()
+
+        cv2.imshow(self.b1.name, _1)
+        cv2.imshow(self.b2.name, _2)
+        cv2.imshow(self.b21.name, _3)
 
     def _intention_to_directive(self, intention):
 
