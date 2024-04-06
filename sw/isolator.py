@@ -78,8 +78,12 @@ class Isolator:
 
     B21_CV = B2_CV.copy()
     B21_CV["bbox-top-left"] = (
-        int(floor(B2_CV["bbox-bot-right"][0] - B2_DEPOSITOR_CLOSE_DIST * 1.5)),
+        int(floor(B2_CV["bbox-bot-right"][0] - 75)),
         B2_CV["bbox-top-left"][1],
+    )
+    B21_CV["bbox-bot-right"] = (
+        int(floor(B2_CV["bbox-bot-right"][0])),
+        B2_CV["bbox-bot-right"][1],
     )
 
     def __init__(self):
@@ -101,12 +105,18 @@ class Isolator:
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
     ) -> IsolatorDirective:
+        print("SPIN")
+        print("---")
         if mission == IsolatorMission.IDLE:
+            print('IDLING')
+            print("=====")
             self._update_intention_command(self.Intention.NULL)
             return
 
         # sense the world
+        print('CAMERA_START')
         self.frame = self.cam.capture_array("main")
+        print('CAMERA_END')
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
 
         # update state
@@ -122,12 +132,14 @@ class Isolator:
 
         self.belts_command = self._intention_to_directive(self.Intention.NULL)
 
-        print("SPIN")
-        print("---")
+
         print(f"B2 ISOLATED: {b2_isolated}")
         print(f"B2 DIST: {b2_dist_to_depositor}")
         print(f"B1 DIST: {b1_dist_to_drop}")
+        print(f"ACCEPTING: {world.depositor_accepting}")
         print(f"LAST SPIN INTENTION: {self.last_intention}")
+        print(f"21LAST: {self.b21.last_N}")
+        print(f"21NOW: {self.b21.N}")
         print("=====")
 
         if (
@@ -166,7 +178,7 @@ class Isolator:
                 * B2 fasteners are well-isolated
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
-                if world.depositor_accepting == True:
+                if world.depositor_accepting == True and self.last_intention != self.Intention.SIGNAL_START_IMAGING:
                     # depositor is free, we can microstep
                     self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
                 else:

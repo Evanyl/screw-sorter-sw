@@ -34,23 +34,39 @@ class IsolateSystem:
         next_state = self.curr_state
         self.idle_count += 1
         # wait until belts_state is idle
-        if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT and self.shared_data["classifying"] == False:
+        if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT:
+            print("here")
             # reset the idle counter, don't check the camera too quick after
             #     belt movement.
             self.idle_counter = 0
             # create an imaging thread and switch states
             accepting = self.depositor_state=="idle" and \
                         self.shared_data["start-imaging"] == False
-            self.thread = \
-                Thread(target=self.isolator.spin,
-                       args=[
-                           IsolatorMission.ISOLATE,
-                           IsolatorWorldView(b1_moving=False,
-                                             b2_moving=False,
-                                             depositor_accepting=accepting)
-                           ]
-                )
+
+            if self.shared_data["classifying"] == False:
+                self.thread = \
+                    Thread(target=self.isolator.spin,
+                        args=[
+                            IsolatorMission.ISOLATE,
+                            IsolatorWorldView(b1_moving=False,
+                                                b2_moving=False,
+                                                depositor_accepting=accepting)
+                            ]
+                    )
+                print("here--iso")
+            else:
+                self.thread = \
+                    Thread(target=self.isolator.spin,
+                        args=[
+                            IsolatorMission.IDLE,
+                            IsolatorWorldView(b1_moving=False,
+                                                b2_moving=False,
+                                                depositor_accepting=accepting)
+                            ]
+                    )
+                print("here--idle")
             self.thread.start()
+            print("here--started")
             next_state = "image-and-process"
         return next_state
     
@@ -89,6 +105,7 @@ class IsolateSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
+            print(f"isoltion state: {self.curr_state}")
             # get last station_state and depositor state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
