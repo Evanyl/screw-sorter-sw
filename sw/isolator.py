@@ -180,7 +180,20 @@ class Isolator:
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
                 cv = self.B2_CV.copy()
-                width = min(25+(self.B2_DEPOSITOR_DROP - self.b2.fasteners[-1].x1), 1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[-1].x1))
+                if self.b2.N > 1:
+                    for i in range(self.b2.N - 1):
+                        fl = self.b2.fasteners[i + 1]
+                        fr = self.b2.fasteners[i]
+                        disty = self.Fastener.xdist(fl, fr)
+                        if disty > 50:
+                            idx = i
+                            break
+                else:
+                    idx = -1
+                width = min(
+                    25 + (self.B2_DEPOSITOR_DROP - self.b2.fasteners[idx].x1),
+                    1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[idx].x1),
+                )
                 cv["bbox-top-left"] = (
                     int(floor(self.B2_CV["bbox-bot-right"][0] - width)),
                     self.B2_CV["bbox-top-left"][1],
@@ -189,9 +202,7 @@ class Isolator:
                 self.bdrop_cv = cv
                 self.bdrop = self.Locale("Belt 2 - Drop", cv=cv)
                 self.bdrop.spin(self.frame)
-                if (
-                    world.depositor_accepting == True
-                ):
+                if world.depositor_accepting == True:
                     # depositor is free, we can microstep
                     self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
                 else:
