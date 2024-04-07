@@ -180,6 +180,7 @@ class Isolator:
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
                 cv = self.B2_CV.copy()
+                idx = -1
                 if self.b2.N > 1:
                     for i in range(self.b2.N - 1):
                         fl = self.b2.fasteners[i + 1]
@@ -188,9 +189,7 @@ class Isolator:
                         if disty > 50:
                             idx = i
                             break
-                else:
-                    idx = -1
-                width = min(
+                width = max(
                     25 + (self.B2_DEPOSITOR_DROP - self.b2.fasteners[idx].x1),
                     1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[idx].x1),
                 )
