@@ -101,6 +101,7 @@ class Isolator:
 
         self._update_intention_command(Isolator.Intention.NULL)
         self.x = 0
+        self.last_drop_count = None
 
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
@@ -108,15 +109,15 @@ class Isolator:
         print("SPIN")
         print("---")
         if mission == IsolatorMission.IDLE:
-            print('IDLING')
+            print("IDLING")
             print("=====")
             self._update_intention_command(self.Intention.NULL)
             return
 
         # sense the world
-        print('CAMERA_START')
+        print("CAMERA_START")
         self.frame = self.cam.capture_array("main")
-        print('CAMERA_END')
+        print("CAMERA_END")
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
 
         # update state
@@ -132,7 +133,6 @@ class Isolator:
 
         self.belts_command = self._intention_to_directive(self.Intention.NULL)
 
-
         print(f"B2 ISOLATED: {b2_isolated}")
         print(f"B2 DIST: {b2_dist_to_depositor}")
         print(f"B1 DIST: {b1_dist_to_drop}")
@@ -142,13 +142,11 @@ class Isolator:
         print(f"21NOW: {self.b21.N}")
         print("=====")
 
-        if (
-            self.last_intention == self.Intention.B2_ATTEMPT_DROP
-            and self.b21.last_N != None
-            and self.b21.last_N > self.b21.N
-        ):
-            print("ISOLATED***********************************")
-            self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
+        if self.last_intention == self.Intention.B2_ATTEMPT_DROP:
+            self.bdrop.spin()
+            if self.bdrop.N < self.bdrop.last_N:
+                print("ISOLATED***********************************")
+                self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
             return
 
         if self.b2.N > 0:
@@ -178,7 +176,19 @@ class Isolator:
                 * B2 fasteners are well-isolated
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
-                if world.depositor_accepting == True and self.last_intention != self.Intention.SIGNAL_START_IMAGING:
+                cv = self.B2_CV.copy()
+                width = 1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[-1].x1)
+                cv["bbox-top-left"] = (
+                    int(floor(self.B2_CV["bbox-bot-right"][0] - width)),
+                    self.B2_CV["bbox-top-left"][1],
+                )
+                self.bdrop_cv = cv
+                self.bdrop = self.Locale("Belt 2 - Drop", cv=cv)
+                self.bdrop.spin()
+                if (
+                    world.depositor_accepting == True
+                    and self.last_intention != self.Intention.SIGNAL_START_IMAGING
+                ):
                     # depositor is free, we can microstep
                     self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
                 else:
