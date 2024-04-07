@@ -102,6 +102,7 @@ class Isolator:
         self._update_intention_command(Isolator.Intention.NULL)
         self.x = 0
         self.last_drop_count = None
+        self.bdrop = None
 
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
@@ -142,12 +143,13 @@ class Isolator:
         print(f"21NOW: {self.b21.N}")
         print("=====")
 
-        if self.last_intention == self.Intention.B2_ATTEMPT_DROP:
-            self.bdrop.spin()
+        if self.last_intention == self.Intention.B2_ATTEMPT_DROP and self.bdrop != None:
+            self.bdrop.spin(self.frame)
             if self.bdrop.N < self.bdrop.last_N:
                 print("ISOLATED***********************************")
+                self.bdrop = None
                 self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
-            return
+                return
 
         if self.b2.N > 0:
             """
@@ -169,6 +171,7 @@ class Isolator:
             * B2 has at least 1 fastener on board
             * B2 fasteners are well-isolated
             """
+            print(f"dist = {b2_dist_to_depositor}")
             if b2_dist_to_depositor < self.B2_DEPOSITOR_CLOSE_DIST:
                 """
                 ASSUMPTIONS:
@@ -177,17 +180,17 @@ class Isolator:
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
                 cv = self.B2_CV.copy()
-                width = 1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[-1].x1)
+                width = min(25+(self.B2_DEPOSITOR_DROP - self.b2.fasteners[-1].x1), 1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[-1].x1))
                 cv["bbox-top-left"] = (
                     int(floor(self.B2_CV["bbox-bot-right"][0] - width)),
                     self.B2_CV["bbox-top-left"][1],
                 )
+                print(f"width = {width}")
                 self.bdrop_cv = cv
                 self.bdrop = self.Locale("Belt 2 - Drop", cv=cv)
-                self.bdrop.spin()
+                self.bdrop.spin(self.frame)
                 if (
                     world.depositor_accepting == True
-                    and self.last_intention != self.Intention.SIGNAL_START_IMAGING
                 ):
                     # depositor is free, we can microstep
                     self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
@@ -248,10 +251,12 @@ class Isolator:
         _1 = self.b1.show()
         _2 = self.b2.show()
         _3 = self.b21.show()
+        if self.bdrop != None:
+            cv2.imshow(self.bdrop.name, self.bdrop.show())
 
         cv2.imshow(self.b1.name, _1)
         cv2.imshow(self.b2.name, _2)
-        cv2.imshow(self.b21.name, _3)
+        # cv2.imshow(self.b21.name, _3)
 
     def _intention_to_directive(self, intention):
 
