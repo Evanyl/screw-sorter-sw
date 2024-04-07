@@ -27,7 +27,8 @@ class ClassifySystem:
     
     def __top_down_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "top-down" and self.thread.is_alive() == False:
+        if self.station_state == "top-down" and self.thread.is_alive() == False \
+           and self.shared_data["isolating"] == False:
             # branch off a thread to handle imaging, processing, storage...
             self.thread = Thread(target=self.imager.image_and_process,
                                  args=[self.curr_state])
@@ -61,7 +62,8 @@ class ClassifySystem:
     
     def __side_on_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "side-on" and self.thread.is_alive() == False:
+        if self.station_state == "side-on" and self.thread.is_alive() == False \
+           and self.shared_data["isolating"] == False:
             # break off a new thread for side-on imaging
             self.thread = Thread(target=self.imager.image_and_process, 
                                  args=[self.curr_state])

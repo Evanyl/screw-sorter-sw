@@ -12,6 +12,7 @@ class IsolateSystem:
         # take picture and process
         next_state = self.curr_state
         if self.thread.is_alive() == False:
+            self.shared_data["isolating"] = False
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b2steps
             self.bottom_belt_steps = self.isolator.belts_command.b1steps
@@ -65,6 +66,7 @@ class IsolateSystem:
                             ]
                     )
                 print("here--idle")
+            self.shared_data["isolating"] = True
             self.thread.start()
             print("here--started")
             next_state = "image-and-process"

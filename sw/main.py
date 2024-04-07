@@ -25,6 +25,7 @@ class SorterControl:
         {
             "start-imaging": False,
             "classifying": False,
+            "isolating": False,
         }
         self.scheduler = Scheduler(self.task_periods)
         self.core_comms = CoreComms(out_dir_path)
