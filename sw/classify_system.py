@@ -17,9 +17,8 @@ class ClassifySystem:
         next_state = self.curr_state
         if self.station_state == "idle" and self.shared_data["start-imaging"] == True:
             # indicate that we are processing the isolated fastener
-            self.shared_data["start-imaging"] = False
-            next_state = "top-down"
             self.des_station_state = "top-down"
+            next_state = "top-down"
         else:
             # do nothing, the station is homing still...
             pass
@@ -37,7 +36,11 @@ class ClassifySystem:
             next_state = "image-and-process"
         else:
             # do nothing, station assuming top-down position
-            pass
+            if self.depositor_state == "idle":
+                # wait to exit idle
+                pass
+            else:
+                self.shared_data["start-imaging"] = False
         return next_state
     
     def __image_and_process_state_func(self):
@@ -49,7 +52,6 @@ class ClassifySystem:
             self.des_station_state = "side-on"
             next_state = "side-on"
         if self.station_state == "side-on" and self.thread.is_alive() == False:
-            self.shared_data["classifying"] = False
             self.thread = Thread(target=self.predictor.predict, 
                                  args=[self.imager.composed_path])
             self.thread.start()
@@ -79,6 +81,7 @@ class ClassifySystem:
         next_state = self.curr_state
         if self.station_state == "idle" and self.thread.is_alive() == False:
             # finished inference, print it out for now
+            self.shared_data["classifying"] = False
             preds = self.predictor.decode(self.predictor.predictions)
             next_state = "idle"
 
@@ -122,6 +125,7 @@ class ClassifySystem:
         self.curr_state = "idle"
         self.des_station_state = "idle"
         self.station_state = "startup"
+        self.depositor_state = "startup"
         self.core_comms = core_comms
         self.thread = Thread()
         self.imager = Imager(out_dir_path)
@@ -132,6 +136,8 @@ class ClassifySystem:
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):
             print(f"Classifier: {self.curr_state}")
+            # get depositor_state
+            self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
             # get last station_state
             self.station_state = self.core_comms.getInData()["curr_state"]
             # send next desired state

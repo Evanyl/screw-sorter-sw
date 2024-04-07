@@ -63,17 +63,17 @@ class Isolator:
 
     B2_CV = {
         "bbox-top-left": (98, 585),  # 562
-        "bbox-bot-right": (2430, 1200),  # 2430
+        "bbox-bot-right": (2435, 1200),  # 2430
         "background-lab-mask-lower": [0, 114, 114],
         "background-lab-mask-upper": [95, 139, 139],
         "background-mask-ksize": (10, 10),
         "fastener-contour-min-area": 250,
     }
-    B2_MIN_SEP = 10
+    B2_MIN_SEP = 15
     B2_DEPOSITOR_DROP = B2_CV["bbox-bot-right"][0]
     B2_STEPS_PER_REV = 10000
     B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV
-    B2_DEPOSITOR_CLOSE_DIST = 100
+    B2_DEPOSITOR_CLOSE_DIST = 150
     B2_MICRO_STEP = 100
 
     B21_CV = B2_CV.copy()
@@ -201,7 +201,7 @@ class Isolator:
                 self.bdrop_cv = cv
                 self.bdrop = self.Locale("Belt 2 - Drop", cv=cv)
                 self.bdrop.spin(self.frame)
-                if world.depositor_accepting == True:
+                if world.depositor_accepting == True and self.last_intention != self.Intention.SIGNAL_START_IMAGING:
                     # depositor is free, we can microstep
                     self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
                 else:
