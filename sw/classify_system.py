@@ -80,7 +80,7 @@ class ClassifySystem:
     def __inference_state_func(self):
         next_state = self.curr_state
         if self.station_state == "idle" and self.thread.is_alive() == False:
-            # finished inference, print it out for now
+            # finished inference, ##print it out for now
             self.shared_data["classifying"] = False
             preds = self.predictor.decode(self.predictor.predictions)
             next_state = "idle"
@@ -135,8 +135,8 @@ class ClassifySystem:
 
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):
-            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
-            print(f"Classify System State: {self.curr_state}")
+            ##print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+            #print(f"Classify System State: {self.curr_state}")
             # get depositor_state
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
             # get last station_state
@@ -145,4 +145,4 @@ class ClassifySystem:
             self.core_comms.updateOutData("des_state", self.des_station_state)
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
-            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n")
+            #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n\n\n")
