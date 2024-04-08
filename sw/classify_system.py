@@ -135,7 +135,8 @@ class ClassifySystem:
 
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):
-            print(f"Classifier: {self.curr_state}")
+            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
+            print(f"Classify System State: {self.curr_state}")
             # get depositor_state
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
             # get last station_state
@@ -144,3 +145,4 @@ class ClassifySystem:
             self.core_comms.updateOutData("des_state", self.des_station_state)
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
+            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n")

@@ -108,10 +108,10 @@ class Isolator:
         self, mission: IsolatorMission, world: IsolatorWorldView
     ) -> IsolatorDirective:
         print("SPIN")
-        print("---")
+        print("------------------------------------------------")
         if mission == IsolatorMission.IDLE:
             print("IDLING")
-            print("=====")
+            print("================================================")
             self._update_intention_command(self.Intention.NULL)
             return
 
@@ -137,11 +137,11 @@ class Isolator:
         print(f"B2 ISOLATED: {b2_isolated}")
         print(f"B2 DIST: {b2_dist_to_depositor}")
         print(f"B1 DIST: {b1_dist_to_drop}")
-        print(f"ACCEPTING: {world.depositor_accepting}")
         print(f"LAST SPIN INTENTION: {self.last_intention}")
         print(f"21LAST: {self.b21.last_N}")
         print(f"21NOW: {self.b21.N}")
-        print("=====")
+        print(f"ACCEPTING: {world.depositor_accepting}")
+        print("================================================")
 
         if self.last_intention == self.Intention.B2_ATTEMPT_DROP and self.bdrop != None:
             self.bdrop.spin(self.frame)

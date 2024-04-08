@@ -36,7 +36,6 @@ class IsolateSystem:
         self.idle_count += 1
         # wait until belts_state is idle
         if self.belts_state == "idle" and self.idle_count >= IDLE_WAITING_COUNT:
-            print("here")
             # reset the idle counter, don't check the camera too quick after
             #     belt movement.
             self.idle_counter = 0
@@ -54,7 +53,6 @@ class IsolateSystem:
                                                 depositor_accepting=accepting)
                             ]
                     )
-                print("here--iso")
             else:
                 self.thread = \
                     Thread(target=self.isolator.spin,
@@ -65,10 +63,8 @@ class IsolateSystem:
                                                 depositor_accepting=accepting)
                             ]
                     )
-                print("here--idle")
             self.shared_data["isolating"] = True
             self.thread.start()
-            print("here--started")
             next_state = "image-and-process"
         return next_state
     
@@ -107,7 +103,10 @@ class IsolateSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            print(f"isoltion state: {self.curr_state}")
+            print("##########################################################\n")
+            b = self.shared_data["start-imaging"]
+            print(f"++++++++++START IMAGING++++++++++: {b}")
+            print(f"Isolation System State: {self.curr_state}")
             # get last station_state and depositor state
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
@@ -117,3 +116,4 @@ class IsolateSystem:
             self.core_comms.updateOutData("belts_des_state", self.des_belt_state)
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
+            print("##########################################################\n\n")

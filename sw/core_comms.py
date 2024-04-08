@@ -56,7 +56,6 @@ class CoreComms:
 
     def run50ms(self, scheduler):
         if scheduler.taskReleased(self.id):
-
             # Read in new serial data
             if self.connection.in_waiting > 0:
                 s = self.connection.read_until(b"\n").decode('utf-8')
