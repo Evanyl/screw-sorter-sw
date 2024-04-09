@@ -99,7 +99,7 @@ class Isolator:
         )
         self.cam.configure(camera_config)
         self.cam.set_controls({"ExposureTime": 20000})
-        self.cam.start()
+        # self.cam.start()
 
         self._update_intention_command(Isolator.Intention.NULL)
         self.x = 0
@@ -125,7 +125,9 @@ class Isolator:
 
         # sense the world
         #print("CAMERA_START")
+        self.cam.start()
         self.frame = self.cam.capture_array("main")
+        self.cam.stop()
         #print("CAMERA_END")
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
 
