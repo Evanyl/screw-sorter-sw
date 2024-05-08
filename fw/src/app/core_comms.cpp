@@ -3,10 +3,16 @@
 *******************************************************************************/ 
 
 #include "core_comms.h"
+#ifdef DEPOSIT
+#include "boxes.h"
+#elif ISOLATE_CLASSIFY
 #include "plane.h"
 #include "system_state.h"
 #include "belts.h"
 #include "depositor.h"
+#else
+// nothing
+#endif
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -30,18 +36,30 @@ typedef struct
 
 typedef struct
 {
+#ifdef DEPOSIT
+    uint8_t placeholder;
+#elif ISOLATE_CLASSIFY
     system_state_E des_state;
     float corr_angle;
 
     belts_state_E belts_des_state;
     uint16_t top_belt_steps;
     uint16_t bottom_belt_steps;
+#else
+    // nothing
+#endif
 } core_comms_in_s;
 
 typedef struct
 {
+#ifdef DEPOSIT
+    uint8_t placeholder;
+#elif ISOLATE_CLASSIFY
     system_state_E curr_state;
     belts_state_E belts_curr_state;
+#else
+    // nothing
+#endif
 } core_comms_out_s;
 
 typedef struct 
@@ -72,24 +90,42 @@ static core_comms_s core_comms_data =
 {
     .in_data =
     {
+#ifdef DEPOSIT
+        .placeholder = 0,
+#elif ISOLATE_CLASSIFY
         .des_state = SYSTEM_STATE_IDLE,
         .corr_angle = 0.0,
 
         .belts_des_state = BELTS_STATE_IDLE,
         .top_belt_steps = 0,
         .bottom_belt_steps = 0,
+#else
+        // nothing
+#endif
     },
     .out_data =
     {
+#ifdef DEPOSIT
+        .placeholder = 0,
+#elif ISOLATE_CLASSIFY
         .curr_state = SYSTEM_STATE_STARTUP,
 
         .belts_curr_state = BELTS_STATE_IDLE,
+#else
+        // nothing
+#endif
     },
     .cmds = 
     {
+#ifdef DEPOSIT
+        // placeholder
+#elif ISOLATE_CLASSIFY
         SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
         BELTS_CORE_COMMS_COMMANDS,
+#else
+        // nothing
+#endif
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
 };
@@ -166,6 +202,11 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
+#ifdef DEPOSIT
+            sprintf(resp,
+                    "{\"boxes_state\": %d}\n",
+                    0);
+#elif ISOLATE_CLASSIFY
             sprintf(resp,
                     "{\"system_state\": %d, \
                       \"belts_state\": %d,  \
@@ -173,6 +214,9 @@ static PT_THREAD(run10ms(struct pt* thread))
                     system_state_getState(),
                     belts_getState(),
                     depositor_getState());
+#else
+            // nothing
+#endif
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

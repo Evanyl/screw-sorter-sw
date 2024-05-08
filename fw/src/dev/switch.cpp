@@ -30,11 +30,16 @@ typedef struct
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
+#ifdef DEPOSIT
+void switch_boxes_ISR(void);
+#elif ISOLATE_CLASSIFY
 void switch_depositor_ISR(void);
 void switch_arm_bottom_ISR(void);
 void switch_arm_ISR(void);
 void switch_lights_ISR(void);
 void switch_sidelight_ISR(void);
+#else
+#endif
 
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
@@ -44,6 +49,14 @@ switch_data_S switch_data =
 {
     .switches = 
     {
+#ifdef DEPOSIT
+        [SWITCH_BOXES] = 
+        {
+            .activated = false,
+            .pin = PB15,
+            .ISR = switch_boxes_ISR
+        }
+#elif ISOLATE_CLASSIFY
         [SWITCH_DEPOSITOR] =
         {
             .activated = false, 
@@ -62,6 +75,9 @@ switch_data_S switch_data =
             .pin = PC13,
             .ISR = switch_sidelight_ISR
         }
+#else
+        // nothing
+#endif
     }
 };
 
@@ -69,6 +85,13 @@ switch_data_S switch_data =
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
 
+#ifdef DEPOSIT
+void switch_boxes_ISR(void)
+{
+    switch_S* sw = &switch_data.switches[SWITCH_BOXES];
+    sw->activated = true ^ sw->activated;
+}
+#elif ISOLATE_CLASSIFY
 void switch_depositor_ISR(void)
 {
     switch_S* sw = &switch_data.switches[SWITCH_DEPOSITOR];
@@ -86,6 +109,9 @@ void switch_sidelight_ISR(void)
     switch_S* sw = &switch_data.switches[SWITCH_SIDELIGHT];
     sw->activated = true ^ sw->activated;
 }
+#else
+// nothing
+#endif
 
 /*******************************************************************************
 *                       P U B L I C    F U N C T I O N S                       *
@@ -115,6 +141,12 @@ bool switch_state(switch_id_E switch_id)
 void switch_cli_state(uint8_t argNumber, char* args[])
 {
     switch_S* sw = NULL;
+#ifdef DEPOSIT
+    if (strcmp(args[0], "boxes") == 0)
+    {   
+        sw = &switch_data.switches[SWITCH_BOXES];
+    }
+#elif ISOLATE_CLASSIFY
     if (strcmp(args[0], "depositor") == 0)
     {   
         sw = &switch_data.switches[SWITCH_DEPOSITOR];
@@ -127,6 +159,9 @@ void switch_cli_state(uint8_t argNumber, char* args[])
     {
         sw = &switch_data.switches[SWITCH_SIDELIGHT];
     }
+#else
+    // nothing
+#endif
 
     if (sw == NULL)
     {

@@ -4,14 +4,21 @@
 *******************************************************************************/ 
 
 #include "cli.h"
-#include "dev/servo.h"
 #include "dev/stepper.h"
 #include "dev/switch.h"
+
+#ifdef DEPOSIT
+// nothing
+#elif ISOLATE_CLASSIFY
+#include "dev/servo.h"
 #include "app/depositor.h"
 #include "app/lighting.h"
 #include "app/arm.h"
 #include "app/belts.h"
 #include "app/system_state.h"
+#else
+// nothing
+#endif
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -55,20 +62,24 @@ static char run100ms(struct pt* thread);
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
 *******************************************************************************/ 
 
-// char line[SERIAL_MESSAGE_SIZE] = {' '};
-
 static cli_data_s cli_data = 
 {
     .cmds = 
     {
-        SERVO_COMMANDS,
         STEPPER_COMMANDS,
         SWITCH_COMMANDS,
+#ifdef DEPOSIT
+        // nothing
+#elif ISOLATE_CLASSIFY
+        SERVO_COMMANDS,
         DEPOSITOR_COMMANDS,
         LIGHTING_COMMANDS,
         ARM_COMMANDS,
         BELTS_CLI_COMMANDS,
         SYSTEM_STATE_COMMANDS,
+#else
+        // nothing
+#endif
         {NULL, CLI_CMD_LIST_TERMINATOR, NULL, NULL, 0, 0}
     }
 };

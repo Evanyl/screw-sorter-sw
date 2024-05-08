@@ -20,12 +20,17 @@ typedef bool (*stepper_cond_f) (void);
 
 typedef enum
 {
+#ifdef DEPOSIT
+    STEPPER_BOXES,
+#elif ISOLATE_CLASSIFY
     STEPPER_DEPOSITOR,
     STEPPER_PLANE,
     STEPPER_ARM,
     STEPPER_SIDELIGHT,
     STEPPER_BELT_TOP,
     STEPPER_BELT_BOTTOM,
+#else
+#endif
     STEPPER_COUNT
 } stepper_id_E;
 

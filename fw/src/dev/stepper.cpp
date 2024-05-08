@@ -70,6 +70,14 @@ stepper_data_s stepper_data =
 {
     .steppers = 
     {
+#ifdef DEPOSIT
+        [STEPPER_BOXES] = 
+        {
+            .pin_dir = PA2,
+            .pin_pul = PA1,
+            .pin_ena = PA3
+        },
+#elif ISOLATE_CLASSIFY
         [STEPPER_DEPOSITOR] =
         {
             .pin_dir = PB7,
@@ -118,12 +126,54 @@ stepper_data_s stepper_data =
             .pin_pul = PB14,
             .pin_ena = PB12
         }
+#else
+        // nothing
+#endif
     },
 };
 
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
-*******************************************************************************/ 
+*******************************************************************************/
+
+stepper_id_E _stepper_which(char* name)
+{
+    stepper_id_E s = STEPPER_COUNT;
+#ifdef DEPOSIT
+    if (strcmp(name, "boxes") == 0)
+    {
+        s = STEPPER_BOXES;
+    }
+#elif ISOLATE_CLASSIFY
+    if (strcmp(name, "depositor") == 0)
+    {
+        s = STEPPER_DEPOSITOR;
+    }
+    else if (strcmp(name, "plane") == 0)
+    {
+        s = STEPPER_PLANE;
+    }
+    else if (strcmp(name, "arm") == 0)
+    {
+        s = STEPPER_ARM;
+    }
+    else if (strcmp(name, "sidelight") == 0)
+    {
+        s = STEPPER_SIDELIGHT;
+    }
+    else if (strcmp(name, "belt_top") == 0)
+    {
+        s = STEPPER_BELT_TOP;
+    }
+    else if (strcmp(name, "belt_bottom") == 0)
+    {
+        s = STEPPER_BELT_BOTTOM;
+    }
+#else
+    // nothing
+#endif
+    return s;
+}
 
 /*******************************************************************************
 *                       P U B L I C    F U N C T I O N S                       *
@@ -449,23 +499,7 @@ void stepper_update(stepper_id_E stepper)
 
 void stepper_cli_zero(uint8_t argNumber, char* args[])
 {
-    stepper_id_E s = STEPPER_COUNT;
-    if (strcmp(args[0], "depositor") == 0)
-    {
-        s = STEPPER_DEPOSITOR;
-    }
-    else if (strcmp(args[0], "plane") == 0)
-    {
-        s = STEPPER_PLANE;
-    }
-    else if (strcmp(args[0], "arm") == 0)
-    {
-        s = STEPPER_ARM;
-    }
-    else if (strcmp(args[0], "sidelight") == 0)
-    {
-        s = STEPPER_SIDELIGHT;
-    }
+    stepper_id_E s = _stepper_which(args[0]);
 
     if (s == STEPPER_COUNT)
     {
@@ -479,32 +513,7 @@ void stepper_cli_zero(uint8_t argNumber, char* args[])
 
 void stepper_cli_move(uint8_t argNumber, char* args[])
 {
-
-    stepper_id_E s = STEPPER_COUNT;
-    if (strcmp(args[0], "depositor") == 0)
-    {
-        s = STEPPER_DEPOSITOR;
-    }
-    else if (strcmp(args[0], "plane") == 0)
-    {
-        s = STEPPER_PLANE;
-    }
-    else if (strcmp(args[0], "arm") == 0)
-    {
-        s = STEPPER_ARM;
-    }
-    else if (strcmp(args[0], "sidelight") == 0)
-    {
-        s = STEPPER_SIDELIGHT;
-    }
-    else if (strcmp(args[0], "belt_top") == 0)
-    {
-        s = STEPPER_BELT_TOP;
-    }
-    else if (strcmp(args[0], "belt_bottom") == 0)
-    {
-        s = STEPPER_BELT_BOTTOM;
-    }
+    stepper_id_E s = _stepper_which(args[0]);
 
     if (s == STEPPER_COUNT)
     {
@@ -540,34 +549,15 @@ void stepper_cli_move(uint8_t argNumber, char* args[])
 
 void stepper_cli_dump(uint8_t argNumber, char* args[])
 {
-    stepper_s* s = NULL;
-    if (strcmp(args[0], "depositor") == 0)
-    {
-        s = &stepper_data.steppers[STEPPER_DEPOSITOR];
-    }
-    else if (strcmp(args[0], "plane") == 0)
-    {
-        s = &stepper_data.steppers[STEPPER_PLANE];
-    }
-    else if (strcmp(args[0], "arm") == 0)
-    {
-        s = &stepper_data.steppers[STEPPER_ARM];
-    }
-    else if (strcmp(args[0], "belt_top") == 0)
-    {
-        s = &stepper_data.steppers[STEPPER_BELT_TOP];
-    }
-    else if (strcmp(args[0], "belt_bottom") == 0)
-    {
-        s = &stepper_data.steppers[STEPPER_BELT_BOTTOM];
-    }
+    stepper_id_E s_id = _stepper_which(args[0]);
 
-    if (s == NULL)
+    if (s_id == STEPPER_COUNT)
     {
         serial_send_nl(PORT_COMPUTER, "invalid stepper");
     }
     else
     {
+        stepper_s* s = &stepper_data.steppers[s_id];
         char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
         sprintf(st, 
                 "{\"des_steps\":%d,\"curr_steps\":%d,\"dir\":%d,\"rate\":%d,\ 

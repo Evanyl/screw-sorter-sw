@@ -1,12 +1,13 @@
 
-#ifndef DEV_SWITCH
-#define DEV_SWITCH
+#ifndef APP_BOXES
+#define APP_BOXES
 
 /*******************************************************************************
 *                                I N C L U D E S                               *
 *******************************************************************************/ 
 
 #include <Arduino.h>
+#include <pt.h>
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -16,30 +17,32 @@
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
 
-typedef enum
+typedef enum 
 {
-#ifdef DEPOSIT
-    SWITCH_BOXES,
-#elif ISOLATE_CLASSIFY
-    SWITCH_DEPOSITOR,
-    SWITCH_ARM,
-    SWITCH_SIDELIGHT,
-#else
-    // nothing
-#endif
-    SWITCH_COUNT
-} switch_id_E;
+    BOXES_STATE_STARTUP,
+    BOXES_STATE_IDLE,
+    BOXES_STATE_ACTIVE,
+    BOXES_STATE_COUNT
+} boxes_state_E;
 
 /*******************************************************************************
 *            P U B L I C    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/
 
-void switch_init(switch_id_E switch_id);
-bool switch_state(switch_id_E switch_id);
+void boxes_init(void);
+void boxes_run10ms(void);
+boxes_state_E boxes_getState(void);
+void boxes_cli_setDesState(uint8_t argNumber, char* args[]);
+void boxes_cli_setBox(uint8_t argNumber, char* args[]);
+void boxes_core_comms_setDesState(uint8_t argNumber, char* args[]);
+void boxes_core_comms_setBox(uint8_t argNumber, char* args[]);
 
-void switch_cli_state(uint8_t argNumber, char* args[]);
+#define BOXES_CLI_COMMANDS \
+{boxes_cli_setDesState, "boxes-des-state", NULL, NULL, 1, 1}, \
+{boxes_cli_setBox, "boxes-box", NULL, NULL, 2, 2}
 
-#define SWITCH_COMMANDS \
-{switch_cli_state, "switch-state", NULL, NULL, 1, 1}
+#define BOXES_CORE_COMMS_COMMANDS \
+{boxes_core_comms_setDesState, "boxes-des-state", 1}, \
+{boxes_core_comms_setBox, "boxes-box", 2}
 
-#endif
+#endif // APP_BOXES
