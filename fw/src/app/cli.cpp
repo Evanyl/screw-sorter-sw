@@ -8,7 +8,7 @@
 #include "dev/switch.h"
 
 #ifdef DEPOSIT
-// nothing
+#include "app/boxes.h"
 #elif ISOLATE_CLASSIFY
 #include "dev/servo.h"
 #include "app/depositor.h"
@@ -69,7 +69,7 @@ static cli_data_s cli_data =
         STEPPER_COMMANDS,
         SWITCH_COMMANDS,
 #ifdef DEPOSIT
-        // nothing
+        BOXES_CLI_COMMANDS,
 #elif ISOLATE_CLASSIFY
         SERVO_COMMANDS,
         DEPOSITOR_COMMANDS,

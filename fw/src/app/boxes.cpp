@@ -16,10 +16,10 @@
 #define BOXES_NAV_RATE 1500
 #define BOXES_STARTING_RATE 200
 
-#define BOXES_HOMING_RATE 500
+#define BOXES_HOMING_RATE 250
 #define BOXES_HOME_DIR 1
 
-#define BOXES_STEPS_PER_BOX 100
+#define BOXES_STEPS_PER_BOX 325
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -142,10 +142,10 @@ static boxes_state_E boxes_update_state(boxes_state_E curr_state)
             else
             {
                 // check that RPi side has returned to "idle" before acting on
-                //     another command to move belts
+                //     another command to move boxes
                 if (boxes_data.des_state == BOXES_STATE_IDLE)
                 {
-                    // reset step counting of both belts
+                    // reset step counting of both boxes
                     stepper_calibSteps(STEPPER_BOXES);
                     boxes_data.curr_box = boxes_data.des_box;
                     next_state = BOXES_STATE_IDLE;
@@ -201,12 +201,20 @@ void boxes_cli_setBox(uint8_t argNumber, char* args[])
     boxes_data.des_box = atoi(args[0]);
 }
 
+void boxes_cli_home(uint8_t argNumber, char* args[])
+{
+    stepper_commandUntil(STEPPER_BOXES, 
+                         boxes_atHome, 
+                         BOXES_HOME_DIR, 
+                         BOXES_HOMING_RATE);
+}
+
 void boxes_core_comms_setDesState(uint8_t argNumber, char* args[])
 {
     boxes_data.des_state = boxes_parseState(args[0]);
 }
 
-void boxes_core_comms_setSteps(uint8_t argNumber, char* args[])
+void boxes_core_comms_setBox(uint8_t argNumber, char* args[])
 {
     boxes_data.des_box = atoi(args[0]);
 }

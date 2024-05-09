@@ -62,6 +62,8 @@ typedef struct
 *          P R I V A T E    F U N C T I O N    D E C L A R A T I O N S         *
 *******************************************************************************/ 
 
+static stepper_id_E _stepper_which(char* name);
+
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
 *******************************************************************************/ 
@@ -136,7 +138,7 @@ stepper_data_s stepper_data =
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/
 
-stepper_id_E _stepper_which(char* name)
+static stepper_id_E _stepper_which(char* name)
 {
     stepper_id_E s = STEPPER_COUNT;
 #ifdef DEPOSIT
@@ -507,7 +509,18 @@ void stepper_cli_zero(uint8_t argNumber, char* args[])
     }
     else
     {
-        stepper_calibAngle(s, 0.0);
+        if (strcmp(args[1], "angle") == 0)
+        {
+            stepper_calibAngle(s, 0.0);
+        }
+        else if (strcmp(args[1], "steps") == 0)
+        {
+            stepper_calibSteps(s);
+        }
+        else
+        {
+            serial_send_nl(PORT_COMPUTER, "invalid mode");
+        }
     }
 }
 

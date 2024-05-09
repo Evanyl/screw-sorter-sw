@@ -34,12 +34,14 @@ void boxes_run10ms(void);
 boxes_state_E boxes_getState(void);
 void boxes_cli_setDesState(uint8_t argNumber, char* args[]);
 void boxes_cli_setBox(uint8_t argNumber, char* args[]);
+void boxes_cli_home(uint8_t argNumber, char* args[]);
 void boxes_core_comms_setDesState(uint8_t argNumber, char* args[]);
 void boxes_core_comms_setBox(uint8_t argNumber, char* args[]);
 
 #define BOXES_CLI_COMMANDS \
 {boxes_cli_setDesState, "boxes-des-state", NULL, NULL, 1, 1}, \
-{boxes_cli_setBox, "boxes-box", NULL, NULL, 2, 2}
+{boxes_cli_setBox, "boxes-box", NULL, NULL, 1, 1}, \
+{boxes_cli_home, "boxes-home", NULL, NULL, 0, 0}
 
 #define BOXES_CORE_COMMS_COMMANDS \
 {boxes_core_comms_setDesState, "boxes-des-state", 1}, \

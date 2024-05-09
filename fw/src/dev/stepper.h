@@ -60,6 +60,6 @@ void stepper_cli_dump(uint8_t argNumber, char* args[]);
 #define STEPPER_COMMANDS \
 {stepper_cli_move, "stepper-move", NULL, NULL, 6, 7},\
 {stepper_cli_dump, "stepper-dump", NULL, NULL, 1, 1},\
-{stepper_cli_zero, "stepper-zero", NULL, NULL, 1, 1} \
+{stepper_cli_zero, "stepper-zero", NULL, NULL, 2, 2} \
 
 #endif

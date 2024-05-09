@@ -53,7 +53,7 @@ switch_data_S switch_data =
         [SWITCH_BOXES] = 
         {
             .activated = false,
-            .pin = PB15,
+            .pin = PB8,
             .ISR = switch_boxes_ISR
         }
 #elif ISOLATE_CLASSIFY
