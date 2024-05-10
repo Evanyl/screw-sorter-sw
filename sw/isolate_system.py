@@ -123,9 +123,9 @@ class IsolateSystem:
             self.belts_state = self.core_comms.getInData()["belts_curr_state"]
             self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
             # send next desired state
-            self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps)
-            self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps)
-            self.core_comms.updateOutData("belts_des_state", self.des_belt_state)
+            self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps, "isolate_classify")
+            self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps, "isolate_classify")
+            self.core_comms.updateOutData("belts_des_state", self.des_belt_state, "isolate_classify")
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
             #print("##########################################################\n\n\n\n")

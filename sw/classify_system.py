@@ -48,7 +48,7 @@ class ClassifySystem:
         if self.station_state == "top-down" and self.thread.is_alive() == False:
             # imaging and processing is finished, pass corr-angle to core_comms
             self.shared_data["classifying"] = False
-            self.core_comms.updateOutData("corr_angle", self.imager.corr_angle)
+            self.core_comms.updateOutData("corr_angle", self.imager.corr_angle, "isolate_classify")
             self.des_station_state = "side-on"
             next_state = "side-on"
         if self.station_state == "side-on" and self.thread.is_alive() == False:
@@ -142,7 +142,7 @@ class ClassifySystem:
             # get last station_state
             self.station_state = self.core_comms.getInData()["curr_state"]
             # send next desired state
-            self.core_comms.updateOutData("des_state", self.des_station_state)
+            self.core_comms.updateOutData("des_state", self.des_station_state, "isolate_classify")
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
             #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n\n\n")
