@@ -50,7 +50,7 @@ void loop()
 
     // 10ms tasks
 #ifdef DEPOSIT
-    // boxes_run10ms();
+    boxes_run10ms();
 #elif ISOLATE_CLASSIFY 
     depositor_run10ms();
     lighting_run10ms();

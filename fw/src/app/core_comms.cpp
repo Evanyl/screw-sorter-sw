@@ -37,7 +37,7 @@ typedef struct
 typedef struct
 {
 #ifdef DEPOSIT
-    uint8_t placeholder;
+    // nothing
 #elif ISOLATE_CLASSIFY
     system_state_E des_state;
     float corr_angle;
@@ -53,7 +53,7 @@ typedef struct
 typedef struct
 {
 #ifdef DEPOSIT
-    uint8_t placeholder;
+    // nothing
 #elif ISOLATE_CLASSIFY
     system_state_E curr_state;
     belts_state_E belts_curr_state;
@@ -82,6 +82,8 @@ typedef struct
 
 static char run10ms(struct pt* thread);
 
+static void core_comms_calib(uint8_t argNumber, char* args[]);
+
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
 *******************************************************************************/ 
@@ -91,7 +93,7 @@ static core_comms_s core_comms_data =
     .in_data =
     {
 #ifdef DEPOSIT
-        .placeholder = 0,
+        // nothing
 #elif ISOLATE_CLASSIFY
         .des_state = SYSTEM_STATE_IDLE,
         .corr_angle = 0.0,
@@ -106,7 +108,7 @@ static core_comms_s core_comms_data =
     .out_data =
     {
 #ifdef DEPOSIT
-        .placeholder = 0,
+        // nothing
 #elif ISOLATE_CLASSIFY
         .curr_state = SYSTEM_STATE_STARTUP,
 
@@ -118,7 +120,7 @@ static core_comms_s core_comms_data =
     .cmds = 
     {
 #ifdef DEPOSIT
-        // placeholder
+        BOXES_CORE_COMMS_COMMANDS,
 #elif ISOLATE_CLASSIFY
         SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
@@ -126,6 +128,7 @@ static core_comms_s core_comms_data =
 #else
         // nothing
 #endif
+        {core_comms_calib, "calib-serial", 0},
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
 };
@@ -133,6 +136,11 @@ static core_comms_s core_comms_data =
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
+
+static void core_comms_calib(uint8_t argNumber, char* args[])
+{
+    // do nothing, just want to elicit response from firmware for SW calib
+}
 
 static void core_comms_parseLine(char* message)
 {
@@ -205,7 +213,7 @@ static PT_THREAD(run10ms(struct pt* thread))
 #ifdef DEPOSIT
             sprintf(resp,
                     "{\"boxes_state\": %d}\n",
-                    0);
+                    boxes_getState());
 #elif ISOLATE_CLASSIFY
             sprintf(resp,
                     "{\"system_state\": %d, \

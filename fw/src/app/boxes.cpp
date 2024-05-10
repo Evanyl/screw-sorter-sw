@@ -8,6 +8,7 @@
 
 #include "dev/stepper.h"
 #include "dev/switch.h"
+#include "dev/serial.h"
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -19,7 +20,7 @@
 #define BOXES_HOMING_RATE 250
 #define BOXES_HOME_DIR 1
 
-#define BOXES_STEPS_PER_BOX 325
+#define BOXES_STEPS_PER_BOX 320
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -117,23 +118,23 @@ static boxes_state_E boxes_update_state(boxes_state_E curr_state)
             }
             else
             {
-                // do nothing, waiting for new belt command
+                // do nothing, waiting for new boxes command
             }
             break;
         case BOXES_STATE_ACTIVE:
             if (delta > 0)
             {
-                dir = 1;
+                dir = 0;
             }
             else
             {
-                dir = 0;
+                dir = 1;
             }
 
             if (stepper_command(STEPPER_BOXES,  
                                 steps, 
                                 dir, 
-                                1500, 
+                                BOXES_NAV_RATE, 
                                 steps*0.1, 
                                 BOXES_STARTING_RATE) == false)
             {
@@ -199,6 +200,18 @@ void boxes_cli_setDesState(uint8_t argNumber, char* args[])
 void boxes_cli_setBox(uint8_t argNumber, char* args[])
 {
     boxes_data.des_box = atoi(args[0]);
+}
+
+void boxes_cli_boxesDump(uint8_t argNumber, char* args[])
+{
+    boxes_data_S* b = &boxes_data;
+    char* st = (char*) malloc(SERIAL_MESSAGE_SIZE);
+    sprintf(st, 
+            "{\"des_box\":%d,\"curr_box\":%d,\"des_state\":%d,\
+            \"curr_state\":%d}", 
+            b->des_box, b->curr_box, b->des_state, b->state);
+    serial_send_nl(PORT_COMPUTER, st);
+    free(st);
 }
 
 void boxes_cli_home(uint8_t argNumber, char* args[])
