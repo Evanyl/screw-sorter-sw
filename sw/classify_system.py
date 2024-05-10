@@ -138,9 +138,9 @@ class ClassifySystem:
             ##print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             #print(f"Classify System State: {self.curr_state}")
             # get depositor_state
-            self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
+            self.depositor_state = self.core_comms.getInData("isolate_classify")["depositor_curr_state"]
             # get last station_state
-            self.station_state = self.core_comms.getInData()["curr_state"]
+            self.station_state = self.core_comms.getInData("isolate_classify")["curr_state"]
             # send next desired state
             self.core_comms.updateOutData("des_state", self.des_station_state, "isolate_classify")
             # call state updating function
