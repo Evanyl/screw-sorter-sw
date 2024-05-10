@@ -120,8 +120,8 @@ class IsolateSystem:
                 #print(f"BDROP CURRENT N: {self.isolator.bdrop.N}")
                 #print(f"BDROP LAST N: {self.isolator.bdrop.last_N}")
             # get last station_state and depositor state
-            self.belts_state = self.core_comms.getInData()["belts_curr_state"]
-            self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
+            self.belts_state = self.core_comms.getInData("isolate_classify")["belts_curr_state"]
+            self.depositor_state = self.core_comms.getInData("isolate_classify")["depositor_curr_state"]
             # send next desired state
             self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps, "isolate_classify")
             self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps, "isolate_classify")

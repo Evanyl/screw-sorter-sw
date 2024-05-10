@@ -7,7 +7,7 @@ class CoreComms:
     def __init__(self, out_dir_path):
         self.id = "core_comms"
 
-        self.connection = serial.Serial("/dev/ttyUSB0", 115200)
+        self.connection0 = serial.Serial("/dev/ttyUSB0", 115200)
         self.connection1 = serial.Serial("/dev/ttyUSB1", 115200)
         self.serial0_calib = False
         self.serial1_calib = False
@@ -99,6 +99,9 @@ class CoreComms:
                         self.deposit_connection = self.connection0
                         self.serial0_calib = True
                         self.serial1_calib = True
+                
+                self.connection0.write(str.encode("calib-serial\n"))
+                self.connection1.write(str.encode("calib-serial\n"))
                 print("Calibrating Serial Connections")
             else:
                 # process commands in a regular fashion
@@ -123,10 +126,10 @@ class CoreComms:
             #     pass
             
             # Send an updated version of out_data to both connections
-            out_str_isolate_classify = self.toString("isolate_classify")
-            out_str_deposit = self.toString("deposit")
-            self.isolate_classify_connection.write(out_str_isolate_classify)
-            self.deposit_connection.write(out_str_deposit)
+                out_str_isolate_classify = self.toString("isolate_classify")
+                out_str_deposit = self.toString("deposit")
+                self.isolate_classify_connection.write(out_str_isolate_classify)
+                self.deposit_connection.write(out_str_deposit)
 
     def updateOutData(self, name, val, id):
         if id == "isolate_classify":
@@ -139,13 +142,13 @@ class CoreComms:
     def toString(self, id):
         ret = ""
         if id == "isolate_classify":
-            angle = self.out_data["corr_angle"]
-            top_belt_steps = self.out_data["top_belt_steps"]
-            bottom_belt_steps = self.out_data["bottom_belt_steps"]
+            angle = self.out_data_isolate_classify["corr_angle"]
+            top_belt_steps = self.out_data_isolate_classify["top_belt_steps"]
+            bottom_belt_steps = self.out_data_isolate_classify["bottom_belt_steps"]
             ret = str.encode(                                                   \
-                        "des-state " + self.out_data["des_state"] +             \
+                        "des-state " + self.out_data_isolate_classify["des_state"] +             \
                         f" corr-angle {angle:.2f} " +                           \
-                        "belts-des-state " + self.out_data["belts_des_state"] + \
+                        "belts-des-state " + self.out_data_isolate_classify["belts_des_state"] + \
                         f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"  \
                     )
         elif id == "deposit":
