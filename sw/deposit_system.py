@@ -9,9 +9,21 @@ class DepositSystem:
 
     box_map = \
     {
-        "name1": 0,
-        "name2": 1,
-        "name3": 2,
+        "M2:0.40mm:hex:socket:6.00mm": 0,
+        "M2:0.40mm:hex:socket:8.00mm": 1,
+        "M2:0.40mm:hex:socket:10.00mm": 2,
+        "M2:0.40mm:hex:socket:12.00mm": 3,
+        "No. 2:56 threads per inch:hex:socket:1/4 in": 4,
+        "No. 2:56 threads per inch:hex:socket:3/8 in": 5,
+        "No. 2:56 threads per inch:hex:socket:1/2 in": 6,
+        "M2.5:0.45mm:hex:socket:6.00mm": 7,
+        "M2.5:0.45mm:hex:socket:8.00mm": 8,
+        "M2.5:0.45mm:hex:socket:10.00mm": 9,
+        "No. 4:40 threads per inch:hex:socket:1/4 in": 10,
+        "No. 4:40 threads per inch:hex:socket:3/8 in": 11,
+        "No. 4:40 threads per inch:hex:socket:1/2 in": 12,
+        "M3:0.50mm:hex:socket:6.00mm": 13,
+        "M3:0.50mm:hex:socket:8.00mm": 14,
     }
     
     def __change_box_state_func(self):
@@ -40,6 +52,25 @@ class DepositSystem:
                     json.load(f)["inference_results"]
                 )
                 print(processed_preds)
+                # create prediction string
+                pred = ""
+                for key in processed_preds:
+                    processed_preds[key]
+                    pred = pred + processed_preds[key] + ":"
+                # map prediction to box number
+                try:
+                    self.boxes_des_box = self.box_map[pred[:-2]]
+                except Exception:
+                    self.boxes_des_box = 15
+
+                """
+                No. 2:56 threads per inch:hex:socket:1/4 in
+                M3:0.50mm:hex:socket:10.00mm
+
+                {'drive': ['hex', 0.99609375], 'head': ['socket', 0.99609375], 'length': ['1/4 in.', 0.9921875], 'pitch': ['56 threads per inch', 0.984375], 'width': ['No. 2', 0.984375]}
+                {'drive': ['hex', 0.99609375], 'head': ['socket', 0.99609375], 'length': ['10.00mm', 0.96875], 'pitch': ['0.50mm', 0.99609375], 'width': ['M3', 0.99609375]}    
+                """
+
             # just generate random box for now...
             self.boxes_des_box = random.randrange(0,16)
             self.boxes_des_state = "active"
