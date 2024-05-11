@@ -15,7 +15,9 @@ class ClassifySystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "idle" and self.shared_data["start-imaging"] == True:
+        if self.station_state == "idle" and \
+           self.shared_data["start-imaging"] == True and \
+           self.shared_data["start-deposit"] == False:
             # indicate that we are processing the isolated fastener
             self.des_station_state = "top-down"
             next_state = "top-down"

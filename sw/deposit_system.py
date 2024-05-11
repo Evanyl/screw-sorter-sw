@@ -13,15 +13,15 @@ class DepositSystem:
         "M2:0.40mm:hex:socket:8.00mm": 1,
         "M2:0.40mm:hex:socket:10.00mm": 2,
         "M2:0.40mm:hex:socket:12.00mm": 3,
-        "No. 2:56 threads per inch:hex:socket:1/4 in": 4,
-        "No. 2:56 threads per inch:hex:socket:3/8 in": 5,
-        "No. 2:56 threads per inch:hex:socket:1/2 in": 6,
+        "No. 2:56 threads per inch:hex:socket:1/4 in.": 4,
+        "No. 2:56 threads per inch:hex:socket:3/8 in.": 5,
+        "No. 2:56 threads per inch:hex:socket:1/2 in.": 6,
         "M2.5:0.45mm:hex:socket:6.00mm": 7,
         "M2.5:0.45mm:hex:socket:8.00mm": 8,
         "M2.5:0.45mm:hex:socket:10.00mm": 9,
-        "No. 4:40 threads per inch:hex:socket:1/4 in": 10,
-        "No. 4:40 threads per inch:hex:socket:3/8 in": 11,
-        "No. 4:40 threads per inch:hex:socket:1/2 in": 12,
+        "No. 4:40 threads per inch:hex:socket:1/4 in.": 10,
+        "No. 4:40 threads per inch:hex:socket:3/8 in.": 11,
+        "No. 4:40 threads per inch:hex:socket:1/2 in.": 12,
         "M3:0.50mm:hex:socket:6.00mm": 13,
         "M3:0.50mm:hex:socket:8.00mm": 14,
     }
@@ -37,6 +37,7 @@ class DepositSystem:
             elif self.boxes_curr_state == "idle":
                 self.active_switch_counter = 0
                 next_state = "idle"
+                self.shared_data["start-deposit"] = False
         else:
             self.active_switch_counter += 1
         return next_state
@@ -46,20 +47,23 @@ class DepositSystem:
         if self.shared_data["start-deposit"] == True and \
            self.boxes_curr_state == "idle":
             # find desired box by processessing inference results.
-            self.shared_data["start-deposit"] = False
             with open(self.core_comms.ui_comms_path) as f:
                 processed_preds = process_decoded_predictions(
                     json.load(f)["inference_results"]
                 )
                 print(processed_preds)
                 # create prediction string
-                pred = ""
-                for key in processed_preds:
-                    processed_preds[key]
-                    pred = pred + processed_preds[key] + ":"
+
+                d = processed_preds
+                pred = d["width"][0] + ":" + \
+                       d["pitch"][0] + ":" + \
+                       d["drive"][0] + ":" + \
+                       d["head"][0]  + ":" + \
+                       d["length"][0]
+
                 # map prediction to box number
                 try:
-                    self.boxes_des_box = self.box_map[pred[:-2]]
+                    self.boxes_des_box = self.box_map[pred]
                 except Exception:
                     self.boxes_des_box = 15
 
@@ -72,7 +76,7 @@ class DepositSystem:
                 """
 
             # just generate random box for now...
-            self.boxes_des_box = random.randrange(0,16)
+            # self.boxes_des_box = random.randrange(0,16)
             self.boxes_des_state = "active"
             next_state = "change-box"
         else:
