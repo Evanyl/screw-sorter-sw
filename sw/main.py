@@ -11,6 +11,7 @@ from scheduler import Scheduler
 from classify_system import ClassifySystem
 from isolate_system import IsolateSystem
 from core_comms import CoreComms
+from deposit_system import DepositSystem
 
 class SorterControl:
     def __init__(self, out_dir_path, model_path, decoder_path):
@@ -18,18 +19,21 @@ class SorterControl:
         {
             "scheduler":       10,
             "classify_system": 200,
+            "deposit":         200,
             "isolate_system":  100,
             "core_comms":      50,
         }
         self.shared_data = \
         {
             "start-imaging": False,
+            "start-deposit": False,
             "classifying": False,
             "isolating": False,
         }
         self.scheduler = Scheduler(self.task_periods)
         self.core_comms = CoreComms(out_dir_path)
         self.isolate_system = IsolateSystem(self.core_comms, self.shared_data)
+        self.deposit_system = DepositSystem(self.core_comms, self.shared_data)
         self.classify_system = ClassifySystem(self.core_comms, out_dir_path, 
                                               model_path, decoder_path, 
                                               self.shared_data)
@@ -38,6 +42,7 @@ class SorterControl:
         # execute the runXms functions of all task modules
         self.scheduler.run10ms()
         self.classify_system.run200ms(self.scheduler)
+        self.deposit_system.run200ms(self.scheduler)
         self.isolate_system.run100ms(self.scheduler)
         self.core_comms.run50ms(self.scheduler)
 
