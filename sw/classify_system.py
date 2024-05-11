@@ -101,6 +101,7 @@ class ClassifySystem:
             with open(self.core_comms.ui_comms_path, 'w') as f:
                 json.dump(ui_comms_out, f)
 
+            self.shared_data["start-deposit"] = True
         else:
             # performing inference, wait for thread to finish
             pass

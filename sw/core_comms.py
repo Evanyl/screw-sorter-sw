@@ -170,7 +170,7 @@ class CoreComms:
                   }
         elif id == "deposit":
             ret = {
-                   "curr_state": self.boxes_state_decode[d["boxes_state"]],
+                   "boxes_curr_state": self.boxes_state_decode[d["boxes_state"]],
                   }
         else:
             pass
