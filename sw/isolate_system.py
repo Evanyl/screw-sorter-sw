@@ -42,10 +42,8 @@ class IsolateSystem:
             # create an imaging thread and switch states
             accepting = self.depositor_state=="idle" and \
                         self.shared_data["start-imaging"] == False
-            #print(f"Accepting: {accepting}")
 
             if self.shared_data["classifying"] == False:
-                # #print("ISOLATING ISOLATOR*********************************************************")
                 self.thread = \
                     Thread(target=self.isolator.spin,
                         args=[
@@ -56,7 +54,6 @@ class IsolateSystem:
                             ]
                     )
             else:
-                # #print("IDLING ISOLATOR*********************************************************")
                 self.thread = \
                     Thread(target=self.isolator.spin,
                         args=[
@@ -106,19 +103,6 @@ class IsolateSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            #print("##########################################################")
-            b = self.shared_data["start-imaging"]
-            #print(f"++++++++++START IMAGING++++++++++: {b}")
-            #print(f"Last Intention: {self.isolator.last_intention}")
-            #print(f"B2 steps: {self.isolator.belts_command.b2steps}")
-            #print(f"B1 steps: {self.isolator.belts_command.b1steps}")
-            #print(f"Isolation System State: {self.curr_state}")
-            # if self.isolator.bdrop == None:
-                #print("BDROP: NONE")
-
-            # else:
-                #print(f"BDROP CURRENT N: {self.isolator.bdrop.N}")
-                #print(f"BDROP LAST N: {self.isolator.bdrop.last_N}")
             # get last station_state and depositor state
             self.belts_state = self.core_comms.getInData("isolate_classify")["belts_curr_state"]
             self.depositor_state = self.core_comms.getInData("isolate_classify")["depositor_curr_state"]
@@ -128,4 +112,3 @@ class IsolateSystem:
             self.core_comms.updateOutData("belts_des_state", self.des_belt_state, "isolate_classify")
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
-            #print("##########################################################\n\n\n\n")

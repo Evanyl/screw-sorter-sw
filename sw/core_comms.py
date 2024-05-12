@@ -82,14 +82,14 @@ class CoreComms:
 
     def run50ms(self, scheduler):
         if scheduler.taskReleased(self.id):
-            # Read in new serial data
-
+            # read in new serial data
             if not self.serial0_calib and not self.serial1_calib:
-                # calibrate the serial connections, just check one of two.
+                # calibrate the serial connections, monitor just one of two
                 if self.connection0.in_waiting > 0:
                     try:
                         s = self.connection0.read_until(b"\n").decode('utf-8')
-                        self.in_data_isolate_classify = self.fromString(s, "isolate_classify")
+                        self.in_data_isolate_classify = \
+                            self.fromString(s, "isolate_classify")
                         self.isolate_classify_connection = self.connection0
                         self.deposit_connection = self.connection1
                         self.serial0_calib = True
@@ -99,33 +99,28 @@ class CoreComms:
                         self.deposit_connection = self.connection0
                         self.serial0_calib = True
                         self.serial1_calib = True
-                
                 self.connection0.write(str.encode("calib-serial\n"))
                 self.connection1.write(str.encode("calib-serial\n"))
                 print("Calibrating Serial Connections")
             else:
                 # process commands in a regular fashion
                 if self.isolate_classify_connection.in_waiting > 0:
-                    s = self.isolate_classify_connection.read_until(b"\n").decode('utf-8')
-                    self.in_data_isolate_classify = self.fromString(s, "isolate_classify")
+                    s = self.isolate_classify_connection.\
+                        read_until(b"\n").decode('utf-8')
+                    self.in_data_isolate_classify = \
+                        self.fromString(s, "isolate_classify")
                 else:
                     pass # no new data, don't read from serial buffer
 
                 if self.deposit_connection.in_waiting > 0:
-                    s = self.deposit_connection.read_until(b"\n").decode('utf-8')
-                    self.in_data_deposit = self.fromString(s, "deposit")
+                    s = self.deposit_connection.read_until(b"\n").\
+                        decode('utf-8')
+                    self.in_data_deposit = \
+                        self.fromString(s, "deposit")
                 else:
                     pass # no new data don't read from serial buffer
 
-            # if self.connection.in_waiting > 0:
-            #     s = self.connection.read_until(b"\n").decode('utf-8')
-            #     self.in_data = self.fromString(s)
-            #     # print(self.in_data)
-            # else:
-            #     # no new data, don't read from the serial buffer
-            #     pass
-            
-            # Send an updated version of out_data to both connections
+                # send an updated version of out_data to both connections
                 out_str_isolate_classify = self.toString("isolate_classify")
                 out_str_deposit = self.toString("deposit")
                 self.isolate_classify_connection.write(out_str_isolate_classify)
@@ -137,49 +132,60 @@ class CoreComms:
         elif id == "deposit":
             self.out_data_deposit[name] = val
         else:
-            pass
+            pass # invalid id, don't update out_data
 
     def toString(self, id):
         ret = ""
         if id == "isolate_classify":
+            # numerical values
             angle = self.out_data_isolate_classify["corr_angle"]
             top_belt_steps = self.out_data_isolate_classify["top_belt_steps"]
-            bottom_belt_steps = self.out_data_isolate_classify["bottom_belt_steps"]
-            ret = str.encode(                                                   \
-                        "des-state " + self.out_data_isolate_classify["des_state"] +             \
-                        f" corr-angle {angle:.2f} " +                           \
-                        "belts-des-state " + self.out_data_isolate_classify["belts_des_state"] + \
-                        f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"  \
-                    )
+            bottom_belt_steps = \
+                self.out_data_isolate_classify["bottom_belt_steps"]
+            # message string
+            ret = str.encode(                                                  \
+                "des-state " + self.out_data_isolate_classify["des_state"] +   \
+                f" corr-angle {angle:.2f} " +                                  \
+                "belts-des-state " + self.out_data_isolate_classify            \
+                                     ["belts_des_state"] +                     \
+                f" belts-steps {top_belt_steps} {bottom_belt_steps}\n"         \
+            )
         elif id == "deposit":
             des_box = self.out_data_deposit["boxes_des_box"]
-            des_state = self.out_data_deposit["boxes_des_state"]
-            ret = str.encode("boxes-des-state " + des_state +                   \
-                             f" boxes-box {des_box}\n")
+            ret = str.encode(
+                "boxes-des-state " + self.out_data_deposit["boxes_des_state"] +\
+                f" boxes-box {des_box}\n"
+            )
         else:
-            pass
+            pass # not a valid id, return empty string
         return ret
 
     def fromString(self, s, id):
         d = json.loads(s.strip("\n"))
         if id == "isolate_classify":
             ret = {
-                   "curr_state": self.system_state_decode[d["system_state"]],
-                   "belts_curr_state": self.belts_state_decode[d["belts_state"]],
-                   "depositor_curr_state": self.depositor_state_decode[d["depositor_state"]]
-                  }
+                "curr_state":                                                  \
+                    self.system_state_decode[d["system_state"]],
+                "belts_curr_state":                                            \
+                    self.belts_state_decode[d["belts_state"]],
+                "depositor_curr_state":                                        \
+                    self.depositor_state_decode[d["depositor_state"]]
+            }
         elif id == "deposit":
             ret = {
-                   "boxes_curr_state": self.boxes_state_decode[d["boxes_state"]],
-                  }
+                "boxes_curr_state": self.boxes_state_decode[d["boxes_state"]],
+            }
         else:
-            pass
+            pass # invalid id, don't process string
         return ret
 
     def getInData(self, id):
+        ret = None
         if id == "isolate_classify":
             ret = self.in_data_isolate_classify
         elif id == "deposit":
             ret = self.in_data_deposit
+        else:
+            pass # invalid id, return None
         return ret
 

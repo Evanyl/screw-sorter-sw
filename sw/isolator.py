@@ -438,7 +438,6 @@ class Isolator:
         """
         enum class for isolator to track its internal intention with a directive
         """
-
         NULL = 0
         SIGNAL_START_IMAGING = 1
         B2_REJECT_ALL = 2
