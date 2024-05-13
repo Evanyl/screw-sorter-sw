@@ -20,12 +20,17 @@ typedef bool (*stepper_cond_f) (void);
 
 typedef enum
 {
+#ifdef DEPOSIT
+    STEPPER_BOXES,
+#elif ISOLATE_CLASSIFY
     STEPPER_DEPOSITOR,
     STEPPER_PLANE,
     STEPPER_ARM,
     STEPPER_SIDELIGHT,
     STEPPER_BELT_TOP,
     STEPPER_BELT_BOTTOM,
+#else
+#endif
     STEPPER_COUNT
 } stepper_id_E;
 
@@ -55,6 +60,6 @@ void stepper_cli_dump(uint8_t argNumber, char* args[]);
 #define STEPPER_COMMANDS \
 {stepper_cli_move, "stepper-move", NULL, NULL, 6, 7},\
 {stepper_cli_dump, "stepper-dump", NULL, NULL, 1, 1},\
-{stepper_cli_zero, "stepper-zero", NULL, NULL, 1, 1} \
+{stepper_cli_zero, "stepper-zero", NULL, NULL, 2, 2} \
 
 #endif

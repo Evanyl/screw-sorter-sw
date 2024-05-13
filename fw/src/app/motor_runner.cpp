@@ -6,7 +6,9 @@
 #include "motor_runner.h"
 #include "scheduler.h"
 
+#ifdef ISOLATE_CLASSIFY
 #include "dev/servo.h"
+#endif
 #include "dev/stepper.h"
 
 /*******************************************************************************
@@ -20,7 +22,9 @@
 typedef struct
 {
     struct pt thread;
+#ifdef ISOLATE_CLASSIFY
     servo_update_f servo_update_func;
+#endif
     stepper_update_f stepper_update_func;
 } motor_runner_data_s;
 
@@ -36,7 +40,9 @@ void run500us(void);
 
 static motor_runner_data_s motor_runner_data = 
 {
+#ifdef ISOLATE_CLASSIFY
     .servo_update_func = &servo_update,
+#endif
     .stepper_update_func = &stepper_update
 };
 
@@ -50,10 +56,13 @@ static PT_THREAD(run500us(struct pt* thread))
     PT_WAIT_UNTIL(thread, scheduler_taskReleased(PERIOD_500us, (uint8_t) MOTOR_RUNNER));
     
     // call all the update functions of all motors
+
+#ifdef ISOLATE_CLASSIFY
     for (uint8_t servo = 0; servo < SERVO_COUNT; servo++)
     {
         motor_runner_data.servo_update_func((servo_id_E) servo);
     }
+#endif
     
     for (uint8_t stepper = 0; stepper < STEPPER_COUNT; stepper++)
     {

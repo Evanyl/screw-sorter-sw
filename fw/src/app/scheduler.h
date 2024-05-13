@@ -37,19 +37,31 @@ typedef enum
 
 typedef enum
 {
+#ifdef DEPOSIT
+    BOXES,
+#elif ISOLATE_CLASSIFY
     LIGHTING,
     DEPOSITOR,
     ARM,
     PLANE,
     BELTS,
+#else
+    // nothing
+#endif
     CORE_COMMS, 
     TASK_10ms_COUNT
 } tasks_10ms_E;
 
 typedef enum
 {
-    CLI,
+#ifdef DEPOSIT
+    // nothing
+#elif ISOLATE_CLASSIFY
     SYSTEM_STATE,
+#else
+    // nothing
+#endif
+    CLI,
     TASK_100ms_COUNT
 } tasks_100ms_E;
 
