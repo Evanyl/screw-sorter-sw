@@ -16,8 +16,8 @@
 #define DEPOSITOR_CLOSE_RATE   255
 #define DEPOSITOR_CLOSE_ANGLE  62.0 // Fully closed
 
-#define DEPOSITOR_OPEN_STEPS   200
-#define DEPOSITOR_OPEN_RATE    25
+#define DEPOSITOR_OPEN_STEPS   255
+#define DEPOSITOR_OPEN_RATE    255
 #define DEPOSITOR_OPEN_ANGLE   0.0 //-90.0 achieves full open
 
 #define DEPOSITOR_SLIT_ANGLE   DEPOSITOR_CLOSE_ANGLE - 12.0
@@ -35,7 +35,10 @@
 
 #define DEPOSITOR_ARM_CW 1
 
-#define DEPOSITOR_JOSTLE_MOVEMENTS 20
+#define DEPOSITOR_JOSTLE_MOVEMENTS 40
+#define DEPOSITOR_JOSTLE_ITERATIONS 4
+#define DEPOSITOR_DELTA_THETA 1.0
+#define DEPOSITOR_JOSTLE_RATE 1000
 
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
@@ -45,7 +48,9 @@ typedef struct
 {
     struct pt  thread;
     depositor_state_E state;
+    int8_t jostle_iter_counter;
     int8_t jostle_counter;
+    uint16_t jostle_rate;
     float jostle_routine[DEPOSITOR_JOSTLE_MOVEMENTS];
 } depositor_data_S;
 
@@ -64,8 +69,10 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state);
 static depositor_data_S depositor_data = 
 {
     .state = DEPOSITOR_STATE_HOMING,
+    .jostle_iter_counter = 0,
     .jostle_counter = 0,
-    .jostle_routine = {0,1,-1,0,0,0,-1,1,0,0,0,1,-1,0,0,0,-1,1,0,0},
+    .jostle_rate = DEPOSITOR_JOSTLE_RATE,
+    .jostle_routine = {0,0.25,-0.25,0.25,-0.25,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 };
 
 /*******************************************************************************
@@ -166,10 +173,10 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 uint8_t j = depositor_data.jostle_counter;
                 float dtheta = depositor_data.jostle_routine[j];
                 bool stepper = stepper_commandAngle(STEPPER_DEPOSITOR, 
-                                         DEPOSITOR_ARM_CENTER_ANGLE + dtheta,
-                                         0.0,
-                                         DEPOSITOR_ARM_NAV_RATE,
-                                         DEPOSITOR_ARM_NAV_RATE);
+                                        DEPOSITOR_ARM_CENTER_ANGLE + dtheta,
+                                        0.0,
+                                        depositor_data.jostle_rate,
+                                        depositor_data.jostle_rate);
                 if (stepper == false)
                 {
                     // wait for current motion to finish
@@ -177,6 +184,24 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 else
                 {
                     depositor_data.jostle_counter++;
+                }
+            }
+            else if (depositor_data.jostle_iter_counter < DEPOSITOR_JOSTLE_ITERATIONS)
+            {
+                uint8_t m = depositor_data.jostle_iter_counter;
+                // open servo little bit more
+                if (servo_command(SERVO_DEPOSITOR,
+                                  DEPOSITOR_SLIT_ANGLE - (m+1)*DEPOSITOR_DELTA_THETA,
+                                  50,
+                                  100) == false)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    depositor_data.jostle_counter = 0;
+                    depositor_data.jostle_iter_counter += 1;
+                    // depositor_data.jostle_rate -= 100;
                 }
             }
             else
@@ -192,6 +217,8 @@ static depositor_state_E depositor_update_state(depositor_state_E curr_state)
                 {
                     // reset jostle counter for next time, change state
                     depositor_data.jostle_counter = 0;
+                    depositor_data.jostle_iter_counter = 0;
+                    depositor_data.jostle_rate = DEPOSITOR_JOSTLE_RATE;
                     next_state = DEPOSITOR_STATE_ENTERING_IDLE;
                 }
             }

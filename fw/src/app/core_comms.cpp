@@ -3,10 +3,16 @@
 *******************************************************************************/ 
 
 #include "core_comms.h"
+#ifdef DEPOSIT
+#include "boxes.h"
+#elif ISOLATE_CLASSIFY
 #include "plane.h"
 #include "system_state.h"
 #include "belts.h"
 #include "depositor.h"
+#else
+// nothing
+#endif
 
 /*******************************************************************************
 *                               C O N S T A N T S                              *
@@ -30,18 +36,30 @@ typedef struct
 
 typedef struct
 {
+#ifdef DEPOSIT
+    // nothing
+#elif ISOLATE_CLASSIFY
     system_state_E des_state;
     float corr_angle;
 
     belts_state_E belts_des_state;
     uint16_t top_belt_steps;
     uint16_t bottom_belt_steps;
+#else
+    // nothing
+#endif
 } core_comms_in_s;
 
 typedef struct
 {
+#ifdef DEPOSIT
+    // nothing
+#elif ISOLATE_CLASSIFY
     system_state_E curr_state;
     belts_state_E belts_curr_state;
+#else
+    // nothing
+#endif
 } core_comms_out_s;
 
 typedef struct 
@@ -64,6 +82,8 @@ typedef struct
 
 static char run10ms(struct pt* thread);
 
+static void core_comms_calib(uint8_t argNumber, char* args[]);
+
 /*******************************************************************************
 *                 S T A T I C    D A T A    D E F I N I T I O N S              *
 *******************************************************************************/ 
@@ -72,24 +92,43 @@ static core_comms_s core_comms_data =
 {
     .in_data =
     {
+#ifdef DEPOSIT
+        // nothing
+#elif ISOLATE_CLASSIFY
         .des_state = SYSTEM_STATE_IDLE,
         .corr_angle = 0.0,
 
         .belts_des_state = BELTS_STATE_IDLE,
         .top_belt_steps = 0,
         .bottom_belt_steps = 0,
+#else
+        // nothing
+#endif
     },
     .out_data =
     {
+#ifdef DEPOSIT
+        // nothing
+#elif ISOLATE_CLASSIFY
         .curr_state = SYSTEM_STATE_STARTUP,
 
         .belts_curr_state = BELTS_STATE_IDLE,
+#else
+        // nothing
+#endif
     },
     .cmds = 
     {
+#ifdef DEPOSIT
+        BOXES_CORE_COMMS_COMMANDS,
+#elif ISOLATE_CLASSIFY
         SYSTEM_STATE_CORE_COMMS_COMMANDS,
         PLANE_CORE_COMMS_COMMANDS,
         BELTS_CORE_COMMS_COMMANDS,
+#else
+        // nothing
+#endif
+        {core_comms_calib, "calib-serial", 0},
         {NULL, CORE_COMMS_CMD_LIST_TERMINATOR, 0}
     },
 };
@@ -97,6 +136,11 @@ static core_comms_s core_comms_data =
 /*******************************************************************************
 *                      P R I V A T E    F U N C T I O N S                      *
 *******************************************************************************/ 
+
+static void core_comms_calib(uint8_t argNumber, char* args[])
+{
+    // do nothing, just want to elicit response from firmware for SW calib
+}
 
 static void core_comms_parseLine(char* message)
 {
@@ -135,6 +179,18 @@ static void core_comms_parseLine(char* message)
             }
             k++;
         }
+        if (strcmp(cmds[k].command, CORE_COMMS_CMD_LIST_TERMINATOR) == 0) {
+            if (DEBUG_COMMS) {
+                // send a debug msg to PC port in event of invalid msg
+                char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE + 50);
+                sprintf(resp, "invalid command: %s", core_comms_data.tokLine[j]);
+                serial_send_nl(PORT_COMPUTER, resp);
+                free(resp);
+                serial_send_nl(PORT_COMPUTER, message);
+            }
+            // break out so we don't infinite-loop in an invalid command
+            break;
+        }
     }
 
     // Reset the args and command arrays
@@ -154,6 +210,11 @@ static PT_THREAD(run10ms(struct pt* thread))
             serial_getLine(PORT_RPI, core_comms_data.line);
             core_comms_parseLine(core_comms_data.line);
             char* resp = (char*) malloc(SERIAL_MESSAGE_SIZE);
+#ifdef DEPOSIT
+            sprintf(resp,
+                    "{\"boxes_state\": %d}\n",
+                    boxes_getState());
+#elif ISOLATE_CLASSIFY
             sprintf(resp,
                     "{\"system_state\": %d, \
                       \"belts_state\": %d,  \
@@ -161,6 +222,9 @@ static PT_THREAD(run10ms(struct pt* thread))
                     system_state_getState(),
                     belts_getState(),
                     depositor_getState());
+#else
+            // nothing
+#endif
             // send back the current state of the entire system
             serial_send(PORT_RPI, resp);
             free(resp);

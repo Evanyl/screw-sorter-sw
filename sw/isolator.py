@@ -161,8 +161,6 @@ class Isolator:
                 self.bdrop = None
                 self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
                 return
-            
-        
 
         if self.b2.N > 0:
             """

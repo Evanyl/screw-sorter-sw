@@ -94,14 +94,14 @@ static belts_state_E belts_update_state(belts_state_E curr_state)
             top = stepper_command(STEPPER_BELT_TOP,  
                                 belts_data.top_belt_steps, 
                                 belts_data.top_belt_dir, 
-                                750, 
-                                belts_data.top_belt_steps*0.1, 
+                                1500, 
+                                belts_data.top_belt_steps*0.05, 
                                 100);
             bottom = stepper_command(STEPPER_BELT_BOTTOM,  
                                 belts_data.bottom_belt_steps, 
                                 belts_data.bottom_belt_dir, 
-                                750, 
-                                belts_data.bottom_belt_steps*0.1, 
+                                1500, 
+                                belts_data.bottom_belt_steps*0.05, 
                                 100);
             if (top == false || bottom == false)
             {

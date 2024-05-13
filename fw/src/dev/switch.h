@@ -18,9 +18,15 @@
 
 typedef enum
 {
+#ifdef DEPOSIT
+    SWITCH_BOXES,
+#elif ISOLATE_CLASSIFY
     SWITCH_DEPOSITOR,
     SWITCH_ARM,
     SWITCH_SIDELIGHT,
+#else
+    // nothing
+#endif
     SWITCH_COUNT
 } switch_id_E;
 

@@ -30,7 +30,6 @@ class CoreComms:
             "curr_state": "idle",
             "belts_curr_state": "idle",
             "depositor_curr_state": "idle"
-        }
         # outgoing/ingoing data for deposit
         self.in_data_deposit = \
         {

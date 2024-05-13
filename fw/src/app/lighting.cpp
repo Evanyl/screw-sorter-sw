@@ -25,6 +25,9 @@
 #define LIGHTING_SIDELIGHT_ON  0
 #define LIGHTING_SIDELIGHT_OFF 65535
 
+#define LIGHTING_COVER_CLOSE_ANGLE 62.0
+#define LIGHTING_COVER_OPEN_ANGLE -50.0
+
 /*******************************************************************************
 *                      D A T A    D E C L A R A T I O N S                      *
 *******************************************************************************/ 
@@ -64,7 +67,8 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
 {
     lighting_state_E next_state = curr_state;
     system_state_E system_state = system_state_getState();
-
+    bool stepper = false;
+    bool servo = false;
     switch (curr_state)
     {
         case LIGHTING_STATE_HOMING:
@@ -81,12 +85,18 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             }
             break;
         case LIGHTING_STATE_ENTERING_IDLE:
-            if (stepper_command(STEPPER_SIDELIGHT,
+            stepper = stepper_command(STEPPER_SIDELIGHT,
                                 LIGHTING_SIDELIGHT_IDLE_HEIGHT_STEPS,
                                 LIGHTING_SIDELIGHT_UP,
                                 LIGHTING_NAV_RATE,
                                 750,
-                                50) == false)
+                                50);
+            servo = servo_command(SERVO_COVER,
+                              LIGHTING_COVER_OPEN_ANGLE,
+                              20,
+                              250);
+
+            if (servo == false || stepper == false)
             {
                 // do nothing, navigating to idle position.
             }
@@ -122,12 +132,17 @@ static lighting_state_E lighting_update_state(lighting_state_E curr_state)
             }
             break;
         case LIGHTING_STATE_ENTERING_SIDEON:
-            if (stepper_command(STEPPER_SIDELIGHT, 
+            servo = servo_command(SERVO_COVER,
+                              LIGHTING_COVER_CLOSE_ANGLE,
+                              20,
+                              250);
+            stepper = stepper_command(STEPPER_SIDELIGHT, 
                                 LIGHTING_SIDELIGHT_IDLE_HEIGHT_STEPS, 
                                 LIGHTING_SIDELIGHT_DOWN, 
                                 LIGHTING_NAV_RATE,
                                 750,
-                                50) == false)
+                                50);
+            if (servo == false || stepper == false)
             {
                 // do nothing, still navigating to deployed position
             }
@@ -173,7 +188,7 @@ void lighting_init(void)
 {
     PT_INIT(&lighting_data.thread);
 
-    servo_init(SERVO_COVER, 0);
+    servo_init(SERVO_COVER, LIGHTING_COVER_OPEN_ANGLE);
     stepper_init(STEPPER_SIDELIGHT);
     switch_init(SWITCH_SIDELIGHT);
     light_init(LIGHT_BACK, LIGHTING_BACKLIGHT_OFF);
