@@ -6,11 +6,11 @@ from pathlib import Path
 from ui.fractional_spinbox import CustomDoubleSpinBox
 
 UI_PATH = Path("./sw/ui/data_collection.ui")
-IMG_PATH = Path("./sw/ui/side_diagram_1.png")
+IMG_DIR_PATH = Path("./sw/ui/images")
 
 COLORS_CONFIDENCE = {
-    0.9: "#04a004",
-    0.6: "#bfbf07",
+    0.7: "#04a004",
+    0.5: "#bfbf07",
     0.0: "#d80202"
 }
 
@@ -38,13 +38,12 @@ class DataCollectionCoreUi(QtWidgets.QMainWindow):
         self.setup_inference_results()
 
     def setup_inference_results(self):
-        self.inference_results_img.setPixmap(QtGui.QPixmap(str(IMG_PATH)))
         inference_features_to_locations = {
-            "pitch": [531, 242],
-            "width": [92, 422],
-            "length": [637, 817],
-            "drive": [1211, 474],
-            "head": [1110, 129]
+            "pitch": [368, 190],
+            "width": [56, 224],
+            "length": [464, 707],
+            "drive": [1179, 134],
+            "head": [735, 122],
         }
 
         for feature, coords in inference_features_to_locations.items():
@@ -54,11 +53,20 @@ class DataCollectionCoreUi(QtWidgets.QMainWindow):
             label.setStyleSheet("font: 18pt")
             self.inference_features_map[feature] = label
 
-    def display_inference_results(self, processed_preds):
+    def display_inference_results(self, processed_preds, head=None, drive=None):
+        if head and drive:
+            img_name = f"{head}_{drive}.png"
+            img_path = IMG_DIR_PATH / img_name
+
+            if not img_path.exists():
+                print(f"{str(img_path)} does not exist")
+
+            self.inference_results_img.setPixmap(QtGui.QPixmap(str(img_path)))
+
         for feature, label in self.inference_features_map.items():
             pred, conf = processed_preds[feature]
             label.setText(f"{feature.title()}: {pred}")
-            label.setStyleSheet(f"font: 18pt; {self.color_confidence(conf)}")
+            label.setStyleSheet(f"font: 18pt; font-weight: bold; {self.color_confidence(conf)}")
 
     def color_confidence(self, confidence):
         for conf_threshold, color in COLORS_CONFIDENCE.items():

@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import time
+from math import floor
 from enum import Enum
 
 from picamera2 import Picamera2
@@ -59,51 +60,81 @@ class Isolator:
     B1_DROP = B1_CV["bbox-top-left"][1]
     B1_DROP_CLOSE_DIST = 100
     B1_MICRO_STEP = 100
+    B1_PIXEL_TO_STEPS = 2
 
     B2_CV = {
-        "bbox-top-left": (98, 585), #562
-        "bbox-bot-right": (2430, 1200), #2430
-        "background-lab-mask-lower": [0, 113, 113],
-        "background-lab-mask-upper": [75, 139, 139],
+        "bbox-top-left": (98, 585),  # 562
+        "bbox-bot-right": (2435, 1200),  # 2430
+        "background-lab-mask-lower": [0, 114, 114],
+        "background-lab-mask-upper": [95, 139, 139],
         "background-mask-ksize": (10, 10),
         "fastener-contour-min-area": 250,
     }
-    B2_MIN_SEP = 10
+    B2_MIN_SEP = 15
     B2_DEPOSITOR_DROP = B2_CV["bbox-bot-right"][0]
     B2_STEPS_PER_REV = 10000
-    B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV / 2
-    B2_DEPOSITOR_CLOSE_DIST = 100
+    B2_STEPS_TO_CLEAR = B2_STEPS_PER_REV
+    B2_PIXEL_TO_STEPS = 2
+    B2_DEPOSITOR_CLOSE_DIST = 150
     B2_MICRO_STEP = 100
+
+    B21_CV = B2_CV.copy()
+    B21_CV["bbox-top-left"] = (
+        int(floor(B2_CV["bbox-bot-right"][0] - 75)),
+        B2_CV["bbox-top-left"][1],
+    )
+    B21_CV["bbox-bot-right"] = (
+        int(floor(B2_CV["bbox-bot-right"][0])),
+        B2_CV["bbox-bot-right"][1],
+    )
 
     def __init__(self):
 
         self.b1 = self.Locale("Belt 1", self.B1_CV)
         self.b2 = self.Locale("Belt 2", self.B2_CV)
+        self.b21 = self.Locale("Belt 2 - Drop Zone", self.B21_CV)
         self.cam = Picamera2()
         camera_config = self.cam.create_still_configuration(
             main={"size": (self.FRAME_WIDTH, self.FRAME_HEIGHT)}
         )
         self.cam.configure(camera_config)
         self.cam.set_controls({"ExposureTime": 20000})
-        self.cam.start()
+        # self.cam.start()
 
-        self.belts_command = IsolatorDirective(0,0,False)
+        self._update_intention_command(Isolator.Intention.NULL)
         self.x = 0
+        self.last_drop_count = None
+        self.bdrop = None
 
     def spin(
         self, mission: IsolatorMission, world: IsolatorWorldView
     ) -> IsolatorDirective:
+        print("SPIN")
+        print("------------------------------------------------")
         if mission == IsolatorMission.IDLE:
-            self.belts_command = IsolatorDirective(0, 0, False)
+            print("IDLING*****************************************************IDLING")
+            print("================================================")
+            if self.last_intention == self.Intention.SIGNAL_START_IMAGING:
+                self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
+            elif self.last_intention == self.Intention.B2_ATTEMPT_DROP:
+                self.last_intention = self.Intention.B2_ATTEMPT_DROP
+                self.belts_command = IsolatorDirective(0,0,False)
+            else:
+                self._update_intention_command(self.Intention.NULL) 
             return
 
         # sense the world
+        #print("CAMERA_START")
+        self.cam.start()
         self.frame = self.cam.capture_array("main")
+        self.cam.stop()
+        #print("CAMERA_END")
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGR)
 
         # update state
         self.b1.spin(self.frame)
         self.b2.spin(self.frame)
+        self.b21.spin(self.frame)
 
         self.b2.fasteners.sort(key=lambda f: f.x2, reverse=True)
         b2_isolated = self._b2_is_isolated(right_sorted=True)
@@ -111,19 +142,25 @@ class Isolator:
         self.b1.fasteners.sort(key=lambda f: f.y1, reverse=False)
         b1_dist_to_drop = self._b1_dist_to_drop(top_sorted=True)
 
-        self.belts_command = IsolatorDirective(0, 0, False)
+        print("ISOLATING********************************ISOLATING")
+        self.belts_command = self._intention_to_directive(self.Intention.NULL)
 
-        print("SPIN")
-        print("---")
         print(f"B2 ISOLATED: {b2_isolated}")
         print(f"B2 DIST: {b2_dist_to_depositor}")
         print(f"B1 DIST: {b1_dist_to_drop}")
-        print("=====")
+        print(f"LAST SPIN INTENTION: {self.last_intention}")
+        # print(f"21LAST: {self.b21.last_N}")
+        print(f"2 NOW: {self.b2.N}")
+        print(f"ACCEPTING: {world.depositor_accepting}")
+        #print("================================================")
 
-        if self.b2.last_N != None and self.b2.last_N > self.b2.N:
-            print('ISOLATED***********************************')
-            self.belts_command = IsolatorDirective(0, 0, True)
-            return
+        if self.last_intention == self.Intention.B2_ATTEMPT_DROP and self.bdrop != None:
+            self.bdrop.spin(self.frame)
+            if self.bdrop.N < self.bdrop.last_N:
+                print("*****************************ISOLATED***********************************\n\n\n\n")
+                self.bdrop = None
+                self._update_intention_command(self.Intention.SIGNAL_START_IMAGING)
+                return
 
         if self.b2.N > 0:
             """
@@ -136,8 +173,8 @@ class Isolator:
                 * B2 has at least 1 fastener on board
                 * B2 fasteners are NOT well-isolated
                 """
-                self.belts_command = IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
-                print('booting.....')
+                self._update_intention_command(self.Intention.B2_REJECT_ALL)
+                #print("booting.....")
                 return
 
             """
@@ -145,6 +182,7 @@ class Isolator:
             * B2 has at least 1 fastener on board
             * B2 fasteners are well-isolated
             """
+            #print(f"dist = {b2_dist_to_depositor}")
             if b2_dist_to_depositor < self.B2_DEPOSITOR_CLOSE_DIST:
                 """
                 ASSUMPTIONS:
@@ -152,12 +190,34 @@ class Isolator:
                 * B2 fasteners are well-isolated
                 * B2 rightmost fastener is very close to dropping on to depositor
                 """
-                if world.depositor_accepting == True:
+                cv = self.B2_CV.copy()
+                idx = -1
+                if self.b2.N > 1:
+                    for i in range(self.b2.N - 1):
+                        fl = self.b2.fasteners[i + 1]
+                        fr = self.b2.fasteners[i]
+                        disty = self.Fastener.xdist(fl, fr)
+                        if disty > 50:
+                            idx = i
+                            break
+                width = max(
+                    25 + (self.B2_DEPOSITOR_DROP - self.b2.fasteners[idx].x1),
+                    1.05 * (self.B2_DEPOSITOR_DROP - self.b2.fasteners[idx].x1),
+                )
+                cv["bbox-top-left"] = (
+                    int(floor(self.B2_CV["bbox-bot-right"][0] - width)),
+                    self.B2_CV["bbox-top-left"][1],
+                )
+                #print(f"width = {width}")
+                self.bdrop_cv = cv
+                self.bdrop = self.Locale("Belt 2 - Drop", cv=cv)
+                self.bdrop.spin(self.frame)
+                if world.depositor_accepting == True and self.last_intention != self.Intention.SIGNAL_START_IMAGING:
                     # depositor is free, we can microstep
-                    self.belts_command = IsolatorDirective(0, self.B2_MICRO_STEP, False)
+                    self._update_intention_command(self.Intention.B2_ATTEMPT_DROP)
                 else:
                     # don't start micro-stepping until we can put fastner in depositor
-                    self.belts_command = IsolatorDirective(0,0,False)
+                    self._update_intention_command(self.Intention.NULL)
                 return
 
             """
@@ -166,7 +226,15 @@ class Isolator:
             * B2 fasteners are well-isolated
             * B2 rightmost fastener is still far away from dropping on to depositor
             """
-            self.belts_command = IsolatorDirective(0, max(b2_dist_to_depositor-self.B2_DEPOSITOR_CLOSE_DIST,self.B2_MICRO_STEP), False)
+            self.last_intention = self.Intention.B2_ADVANCE_TO_DROP
+            self.belts_command = IsolatorDirective(
+                0,
+                max(
+                    self.B2_PIXEL_TO_STEPS*(b2_dist_to_depositor - self.B2_DEPOSITOR_CLOSE_DIST),
+                    self.B2_MICRO_STEP,
+                ),
+                False,
+            )
             return
 
         if self.b1.N > 0:
@@ -181,7 +249,7 @@ class Isolator:
                 * B1 has at least 1 fastener on board
                 * B1 topmost fastener is very close to dropping on to B2
                 """
-                self.belts_command = IsolatorDirective(self.B1_MICRO_STEP, 0, False)
+                self._update_intention_command(self.Intention.B1_ATTEMPT_DROP)
                 return
 
             """
@@ -189,19 +257,47 @@ class Isolator:
             * B1 has at least 1 fastener on board
             * B1 topmost fastener is still far away from dropping on to depositor
             """
+            self.last_intention = self.Intention.B1_ADVANCE_DROP
             self.belts_command = IsolatorDirective(
                 max(
-                    b1_dist_to_drop - self.B1_DROP_CLOSE_DIST,
+                    self.B1_PIXEL_TO_STEPS*(b1_dist_to_drop - self.B1_DROP_CLOSE_DIST),
                     self.B1_MICRO_STEP,
                 ),
                 0,
                 False,
             )
             return
+        
+        self.last_intention = self.Intention.NULL
 
     def show(self):
-        self.b1.show()
-        self.b2.show()
+        _1 = self.b1.show()
+        _2 = self.b2.show()
+        _3 = self.b21.show()
+        if self.bdrop != None:
+            cv2.imshow(self.bdrop.name, self.bdrop.show())
+
+        cv2.imshow(self.b1.name, _1)
+        cv2.imshow(self.b2.name, _2)
+        # cv2.imshow(self.b21.name, _3)
+
+    def _intention_to_directive(self, intention):
+
+        if intention == self.Intention.NULL:
+            return IsolatorDirective(0, 0, False)
+        if intention == self.Intention.SIGNAL_START_IMAGING:
+            return IsolatorDirective(0, 0, True)
+        if intention == self.Intention.B2_REJECT_ALL:
+            return IsolatorDirective(0, -self.B2_STEPS_TO_CLEAR, False)
+        if intention == self.Intention.B2_ATTEMPT_DROP:
+            return IsolatorDirective(0, self.B2_MICRO_STEP, False)
+        if intention == self.Intention.B1_ATTEMPT_DROP:
+            return IsolatorDirective(self.B1_MICRO_STEP, 0, False)
+
+    def _update_intention_command(self, intention):
+
+        self.last_intention = intention
+        self.belts_command = self._intention_to_directive(intention)
 
     def _b1_dist_to_drop(self, top_sorted=False):
         if not top_sorted:
@@ -210,7 +306,7 @@ class Isolator:
             topmost = self.b1.fasteners[0]
             return topmost.y1 - self.B1_DROP
         else:
-            return float('inf')
+            return float("inf")
 
     def _b2_dist_to_depositor(self, right_sorted=False):
 
@@ -220,7 +316,7 @@ class Isolator:
             rightmost = self.b2.fasteners[0]
             return self.B2_DEPOSITOR_DROP - rightmost.x2
         else:
-            return float('inf')
+            return float("inf")
 
     def _b2_is_isolated(self, right_sorted=False):
 
@@ -231,7 +327,7 @@ class Isolator:
             fright = self.b2.fasteners[i]
             fleft = self.b2.fasteners[i + 1]
             dist = Isolator.Fastener.xdist(fleft, fright)
-            print(dist)
+            #print(dist)
             if dist < self.B2_MIN_SEP:
                 iso = False
                 break
@@ -248,7 +344,9 @@ class Isolator:
             self.ub = np.array(cv["background-lab-mask-upper"])
             self.ksize = cv["background-mask-ksize"]
             self.fastener_min_area = cv["fastener-contour-min-area"]
+            self.bounded = None
             self.N = 0
+            self.last_N = 0
             self.img = None
 
         def spin(self, img):
@@ -258,18 +356,14 @@ class Isolator:
             self.mask = self._generate_mask()
             self.fasteners = self._find_fasteners()
             self.N = len(self.fasteners)
+            self.bounded = self._generate_show()
 
         def show(self):
-            show = self.img.copy()
-            for i in range(self.N):
-                f = self.fasteners[i]
-                x1 = f.x1 - self.x1
-                y1 = f.y1 - self.y1
-                x4 = f.x4 - self.x1
-                y4 = f.y4 - self.y1
-                cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
-            return show
-        
+            if self.bounded is None:
+                return None
+            else:
+                return self.bounded.copy()
+
         def show_fasteners(self, indices):
             show = self.img.copy()
             colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 255)]
@@ -287,6 +381,18 @@ class Isolator:
                     colors[indices.index(i) % len(colors)],
                     3,
                 )
+
+        def _generate_show(self):
+
+            show = self.img.copy()
+            for i in range(self.N):
+                f = self.fasteners[i]
+                x1 = f.x1 - self.x1
+                y1 = f.y1 - self.y1
+                x4 = f.x4 - self.x1
+                y4 = f.y4 - self.y1
+                cv2.rectangle(show, (x1, y1), (x4, y4), (255, 0, 255), 3)
+            return show
 
         def _generate_mask(self):
             out = cv2.blur(self.lab, self.ksize)
@@ -325,3 +431,15 @@ class Isolator:
         @staticmethod
         def xdist(fleft, fright):
             return fright.x1 - fleft.x2
+
+    class Intention(Enum):
+        """
+        enum class for isolator to track its internal intention with a directive
+        """
+        NULL = 0
+        SIGNAL_START_IMAGING = 1
+        B2_REJECT_ALL = 2
+        B2_ATTEMPT_DROP = 3
+        B2_ADVANCE_TO_DROP = 4
+        B1_ATTEMPT_DROP = 5
+        B1_ADVANCE_DROP = 6

@@ -13,7 +13,7 @@ class Imager:
         self.out_dir_path = out_dir_path
         self.corr_angle = 0.0
         self.camera = None
-        self.side_exposure = 100000
+        self.side_exposure = 167253
         self.top_exposure = 18000
         self.temp_img_folder = "imgs"
         self.side_on_path = ""

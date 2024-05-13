@@ -12,6 +12,7 @@ class IsolateSystem:
         # take picture and process
         next_state = self.curr_state
         if self.thread.is_alive() == False:
+            self.shared_data["isolating"] = False
             # populate data with results of imaging
             self.top_belt_steps = self.isolator.belts_command.b2steps
             self.bottom_belt_steps = self.isolator.belts_command.b1steps
@@ -41,15 +42,28 @@ class IsolateSystem:
             # create an imaging thread and switch states
             accepting = self.depositor_state=="idle" and \
                         self.shared_data["start-imaging"] == False
-            self.thread = \
-                Thread(target=self.isolator.spin,
-                       args=[
-                           IsolatorMission.ISOLATE,
-                           IsolatorWorldView(b1_moving=False,
-                                             b2_moving=False,
-                                             depositor_accepting=accepting)
-                           ]
-                )
+
+            if self.shared_data["classifying"] == False:
+                self.thread = \
+                    Thread(target=self.isolator.spin,
+                        args=[
+                            IsolatorMission.ISOLATE,
+                            IsolatorWorldView(b1_moving=False,
+                                                b2_moving=False,
+                                                depositor_accepting=accepting)
+                            ]
+                    )
+            else:
+                self.thread = \
+                    Thread(target=self.isolator.spin,
+                        args=[
+                            IsolatorMission.IDLE,
+                            IsolatorWorldView(b1_moving=False,
+                                                b2_moving=False,
+                                                depositor_accepting=accepting)
+                            ]
+                    )
+            self.shared_data["isolating"] = True
             self.thread.start()
             next_state = "image-and-process"
         return next_state
@@ -89,22 +103,12 @@ class IsolateSystem:
 
     def run100ms(self, scheduler):
         if scheduler.taskReleased("isolate_system"):
-            a = self.shared_data["start-imaging"]
-            print(f"start-imaging (shared): {a}")
             # get last station_state and depositor state
-            self.belts_state = self.core_comms.getInData()["belts_curr_state"]
-            self.depositor_state = self.core_comms.getInData()["depositor_curr_state"]
-            print(f"depositor_state: {self.depositor_state}")
+            self.belts_state = self.core_comms.getInData("isolate_classify")["belts_curr_state"]
+            self.depositor_state = self.core_comms.getInData("isolate_classify")["depositor_curr_state"]
             # send next desired state
-            self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps)
-            self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps)
-            self.core_comms.updateOutData("belts_des_state", self.des_belt_state)
-            # update shared data between controller modules
-            # if self.shared_data["start-imaging"] == False:
-            #     self.shared_data["start-imaging"] = self.start_imaging
-            # else:
-            #     pass
-            # print(f"start_imaging (machine): {self.start_imaging}")
-            print(f"start_imaging (belts): {self.isolator.belts_command.start_imaging}")
+            self.core_comms.updateOutData("top_belt_steps", self.top_belt_steps, "isolate_classify")
+            self.core_comms.updateOutData("bottom_belt_steps", self.bottom_belt_steps, "isolate_classify")
+            self.core_comms.updateOutData("belts_des_state", self.des_belt_state, "isolate_classify")
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()

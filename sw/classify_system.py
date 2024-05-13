@@ -15,14 +15,12 @@ class ClassifySystem:
     
     def __idle_state_func(self):
         next_state = self.curr_state
-        b = self.shared_data["start-imaging"]
-        print(f"start_imaging (classify): {b}")
-        print(f"station_state: {self.station_state}")
-        if self.station_state == "idle" and self.shared_data["start-imaging"] == True:
+        if self.station_state == "idle" and \
+           self.shared_data["start-imaging"] == True and \
+           self.shared_data["start-deposit"] == False:
             # indicate that we are processing the isolated fastener
-            self.shared_data["start-imaging"] = False
-            next_state = "top-down"
             self.des_station_state = "top-down"
+            next_state = "top-down"
         else:
             # do nothing, the station is homing still...
             pass
@@ -30,22 +28,29 @@ class ClassifySystem:
     
     def __top_down_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "top-down" and self.thread.is_alive() == False:
+        if self.station_state == "top-down" and self.thread.is_alive() == False \
+           and self.shared_data["isolating"] == False:
             # branch off a thread to handle imaging, processing, storage...
             self.thread = Thread(target=self.imager.image_and_process,
                                  args=[self.curr_state])
+            self.shared_data["classifying"] = True
             self.thread.start()
             next_state = "image-and-process"
         else:
             # do nothing, station assuming top-down position
-            pass
+            if self.depositor_state == "idle":
+                # wait to exit idle
+                pass
+            else:
+                self.shared_data["start-imaging"] = False
         return next_state
     
     def __image_and_process_state_func(self):
         next_state = self.curr_state
         if self.station_state == "top-down" and self.thread.is_alive() == False:
             # imaging and processing is finished, pass corr-angle to core_comms
-            self.core_comms.updateOutData("corr_angle", self.imager.corr_angle)
+            self.shared_data["classifying"] = False
+            self.core_comms.updateOutData("corr_angle", self.imager.corr_angle, "isolate_classify")
             self.des_station_state = "side-on"
             next_state = "side-on"
         if self.station_state == "side-on" and self.thread.is_alive() == False:
@@ -61,10 +66,12 @@ class ClassifySystem:
     
     def __side_on_state_func(self):
         next_state = self.curr_state
-        if self.station_state == "side-on" and self.thread.is_alive() == False:
+        if self.station_state == "side-on" and self.thread.is_alive() == False \
+           and self.shared_data["isolating"] == False:
             # break off a new thread for side-on imaging
             self.thread = Thread(target=self.imager.image_and_process, 
                                  args=[self.curr_state])
+            self.shared_data["classifying"] = True
             self.thread.start()
             next_state = "image-and-process"
         else:
@@ -75,9 +82,12 @@ class ClassifySystem:
     def __inference_state_func(self):
         next_state = self.curr_state
         if self.station_state == "idle" and self.thread.is_alive() == False:
-            # finished inference, print it out for now
+            # finished inference, ##print it out for now
+            self.shared_data["classifying"] = False
             preds = self.predictor.decode(self.predictor.predictions)
             next_state = "idle"
+
+            self.run_number += 1
 
             ui_comms_out = {
                 "action": "process_results",
@@ -87,10 +97,13 @@ class ClassifySystem:
                 "raw_side_img_path": str(self.imager.raw_side_on_path),
                 "composed_path": str(self.imager.composed_path),
                 "inference_results": preds,
+                "run_number": self.run_number,
             }
 
             with open(self.core_comms.ui_comms_path, 'w') as f:
                 json.dump(ui_comms_out, f)
+
+            self.shared_data["start-deposit"] = True
         else:
             # performing inference, wait for thread to finish
             pass
@@ -115,17 +128,24 @@ class ClassifySystem:
         self.curr_state = "idle"
         self.des_station_state = "idle"
         self.station_state = "startup"
+        self.depositor_state = "startup"
         self.core_comms = core_comms
         self.thread = Thread()
         self.imager = Imager(out_dir_path)
         self.predictor = Predictor(model_path, decoder_path) 
 
+        self.run_number = 0
+
     def run200ms(self, scheduler):
         if scheduler.taskReleased("classify_system"):
-            # print(self.curr_state)
+            ##print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+            #print(f"Classify System State: {self.curr_state}")
+            # get depositor_state
+            self.depositor_state = self.core_comms.getInData("isolate_classify")["depositor_curr_state"]
             # get last station_state
-            self.station_state = self.core_comms.getInData()["curr_state"]
+            self.station_state = self.core_comms.getInData("isolate_classify")["curr_state"]
             # send next desired state
-            self.core_comms.updateOutData("des_state", self.des_station_state)
+            self.core_comms.updateOutData("des_state", self.des_station_state, "isolate_classify")
             # call state updating function
             self.curr_state = self.switch_dict[self.curr_state]()
+            #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n\n\n")
